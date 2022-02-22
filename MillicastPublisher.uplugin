@@ -1,0 +1,34 @@
+{
+	"FileVersion": 3,
+	"Version": 1,
+	"VersionName": "1.0",
+	"FriendlyName": "MillicastPublisher",
+	"Description": "Stream game contents to Millicast Platform",
+	"Category": "Media",
+	"CreatedBy": "Millicast",
+	"CreatedByURL": "https://millicast.com",
+	"DocsURL": "",
+	"MarketplaceURL": "",
+	"SupportURL": "",
+	"CanContainContent": true,
+	"SupportedTargetPlatforms": [ "Win64", "Linux" ],
+	"IsBetaVersion": true,
+	"IsExperimentalVersion": true,
+	"Installed": false,
+	"Modules": [
+		{
+			"Name": "MillicastPublisher",
+			"Type": "Runtime",
+			"LoadingPhase": "PreLoadingScreen",
+			"WhitelistPlatforms": [ "Win64", "Linux" ],
+			"EngineVersion": "4.27.0"
+		},
+		{
+			"Name": "MillicastPublisherEditor",
+			"Type": "Editor",
+			"LoadingPhase": "PostEngineInit",
+			"WhitelistPlatforms": [ "Win64", "Linux" ],
+			"EngineVersion": "4.27.0"
+		}
+	]
+}
