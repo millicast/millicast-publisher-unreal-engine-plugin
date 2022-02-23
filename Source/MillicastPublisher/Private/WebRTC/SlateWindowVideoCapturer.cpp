@@ -20,7 +20,7 @@ rtc::scoped_refptr<webrtc::VideoTrackInterface> SlateWindowVideoCapturer::StartC
 
 	auto PeerConnectionFactory = FWebRTCPeerConnection::GetPeerConnectionFactory();
 
-	RtcVideoTrack = PeerConnectionFactory->CreateVideoTrack("video", RtcVideoSource);
+	RtcVideoTrack = PeerConnectionFactory->CreateVideoTrack("slate-window", RtcVideoSource);
 
 	if (RtcVideoTrack) 
 	{
@@ -36,14 +36,18 @@ rtc::scoped_refptr<webrtc::VideoTrackInterface> SlateWindowVideoCapturer::StartC
 
 void SlateWindowVideoCapturer::StopCapture()
 {
-	RtcVideoSource = nullptr;
-	RtcVideoTrack = nullptr;
+	FScopeLock lock(&CriticalSection);
 
 	FSlateApplication::Get().GetRenderer()->OnBackBufferReadyToPresent().RemoveAll(this);
+
+	RtcVideoSource = nullptr;
+	RtcVideoTrack = nullptr;
 }
 
 void SlateWindowVideoCapturer::OnBackBufferReadyToPresent(SWindow& SlateWindow, const FTexture2DRHIRef& Buffer)
 {
+	FScopeLock lock(&CriticalSection);
+
 	if (RtcVideoSource)
 	{
 		check(IsInRenderingThread());

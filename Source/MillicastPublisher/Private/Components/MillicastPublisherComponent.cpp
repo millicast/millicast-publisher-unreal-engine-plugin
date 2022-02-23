@@ -205,9 +205,6 @@ bool UMillicastPublisherComponent::PublishToMillicast()
 
 	RemoteDescriptionObserver->SetOnSuccessCallback([this]() {
 		UE_LOG(LogMillicastPublisher, Log, TEXT("Set remote description suceeded"));
-		webrtc::PeerConnectionInterface::BitrateParameters bitrateParameters;
-		bitrateParameters.max_bitrate_bps = 2'000'000;
-		(*PeerConnection)->SetBitrate(bitrateParameters);
 	});
 	RemoteDescriptionObserver->SetOnFailureCallback([](const std::string& err) {
 		UE_LOG(LogMillicastPublisher, Error, TEXT("Set remote description failed : %s"), *ToString(err));

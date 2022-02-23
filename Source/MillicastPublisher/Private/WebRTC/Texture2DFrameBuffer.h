@@ -20,8 +20,6 @@ namespace libyuv {
 	}
 }
 
-
-
 class FTexture2DFrameBuffer : public webrtc::VideoFrameBuffer
 {
 	int Width;

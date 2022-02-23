@@ -9,6 +9,7 @@ class SlateWindowVideoCapturer : public IMillicastVideoSource
 {
 	rtc::scoped_refptr<FTexture2DVideoSourceAdapter> RtcVideoSource;
 	FVideoTrackInterface RtcVideoTrack;
+	FCriticalSection CriticalSection;
 
 public:
 
