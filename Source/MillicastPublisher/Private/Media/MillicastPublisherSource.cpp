@@ -18,6 +18,15 @@ void UMillicastPublisherSource::BeginDestroy()
  * IMediaOptions interface
  */
 
+void UMillicastPublisherSource::MuteVideo(bool Muted)
+{
+	if (VideoSource)
+	{
+		auto track = VideoSource->GetTrack();
+		track->set_enabled(!Muted);
+	}
+}
+
 FString UMillicastPublisherSource::GetMediaOption(const FName& Key, const FString& DefaultValue) const
 {
 	if (Key == MillicastPublisherOption::StreamName)

@@ -29,6 +29,10 @@ public:
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = Stream, AssetRegistrySearchable)
 	FString PublishingToken;
 
+	/** Mute the video stream */
+	UFUNCTION(BlueprintCallable, Category = "MillicastPublisher", META = (DisplayName = "MuteVideo"))
+	void MuteVideo(bool Muted);
+
 public:
 	//~ IMediaOptions interface
 

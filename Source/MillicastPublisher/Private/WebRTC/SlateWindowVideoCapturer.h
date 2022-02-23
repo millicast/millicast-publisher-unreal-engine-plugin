@@ -12,11 +12,12 @@ class SlateWindowVideoCapturer : public IMillicastVideoSource
 	FCriticalSection CriticalSection;
 
 public:
+	SlateWindowVideoCapturer() noexcept : RtcVideoSource(nullptr), RtcVideoTrack(nullptr) {}
 
 	FVideoTrackInterface StartCapture() override;
 	void StopCapture() override;
+	FVideoTrackInterface GetTrack() override;
 
 private:
-
 	void OnBackBufferReadyToPresent(SWindow& SlateWindow, const FTexture2DRHIRef& Buffer);
 };

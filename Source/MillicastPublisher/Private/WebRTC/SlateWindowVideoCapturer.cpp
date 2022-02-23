@@ -44,6 +44,11 @@ void SlateWindowVideoCapturer::StopCapture()
 	RtcVideoTrack = nullptr;
 }
 
+SlateWindowVideoCapturer::FVideoTrackInterface SlateWindowVideoCapturer::GetTrack()
+{
+	return RtcVideoTrack;
+}
+
 void SlateWindowVideoCapturer::OnBackBufferReadyToPresent(SWindow& SlateWindow, const FTexture2DRHIRef& Buffer)
 {
 	FScopeLock lock(&CriticalSection);
@@ -55,3 +60,4 @@ void SlateWindowVideoCapturer::OnBackBufferReadyToPresent(SWindow& SlateWindow, 
 		RtcVideoSource->OnFrameReady(Buffer);
 	}
 }
+
