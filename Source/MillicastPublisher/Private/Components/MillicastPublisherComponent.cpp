@@ -19,6 +19,15 @@
 
 constexpr auto HTTP_OK = 200;
 
+auto MakeBroadcastEvent = [](auto&& Event) {
+	return [&Event](auto&& ... Args) {
+		if (Event.IsBound()) 
+		{
+			Event.Broadcast(std::forward<Args>()...);
+		}
+	};
+};
+
 inline std::string to_string(const FString& Str)
 {
 	auto Ansi = StringCast<ANSICHAR>(*Str, Str.Len());
@@ -33,10 +42,19 @@ inline FString ToString(const std::string& Str)
 	return Res;
 }
 
-
 UMillicastPublisherComponent::UMillicastPublisherComponent(const FObjectInitializer& ObjectInitializer) : Super(ObjectInitializer)
 {
 	PeerConnection = nullptr;
+	WS = nullptr;
+	bIsPublishing = false;
+
+	EventBroadcaster.Emplace("active", MakeBroadcastEvent(OnActive));
+	EventBroadcaster.Emplace("inactive", MakeBroadcastEvent(OnInactive));
+}
+
+UMillicastPublisherComponent::~UMillicastPublisherComponent()
+{
+	UnPublish();
 }
 
 /**
@@ -96,7 +114,6 @@ bool UMillicastPublisherComponent::Publish()
 				UE_LOG(LogMillicastPublisher, Log, TEXT("WsUrl : %s \njwt : %s"),
 					*WsUrl, *Jwt);
 
-
 				StartWebSocketConnection(WsUrl, Jwt);
 			}
 		}
@@ -125,16 +142,20 @@ void UMillicastPublisherComponent::UnPublish()
 		delete PeerConnection;
 		PeerConnection = nullptr;
 
-		WS->Close();
-		WS = nullptr;
-
 		MillicastMediaSource->StopCapture();
 	}
+
+	if (WS) {
+		WS->Close();
+		WS = nullptr;
+	}
+
+	bIsPublishing = false;
 }
 
 bool UMillicastPublisherComponent::IsPublishing() const
 {
-	return PeerConnection != nullptr;
+	return bIsPublishing;
 }
 
 bool UMillicastPublisherComponent::StartWebSocketConnection(const FString& Url,
@@ -173,8 +194,9 @@ bool UMillicastPublisherComponent::PublishToMillicast()
 		PeerConnection->SetLocalDescription(sdp, type);
 	});
 
-	CreateSessionDescriptionObserver->SetOnFailureCallback([](const std::string& err) {
+	CreateSessionDescriptionObserver->SetOnFailureCallback([this](const std::string& err) {
 		UE_LOG(LogMillicastPublisher, Error, TEXT("pc.createOffer() | Error: %s"), *ToString(err));
+		OnPublishingError.Broadcast(TEXT("Could not create offer"));
 	});
 
 	LocalDescriptionObserver->SetOnSuccessCallback([this]() {
@@ -182,9 +204,14 @@ bool UMillicastPublisherComponent::PublishToMillicast()
 		std::string sdp;
 		(*PeerConnection)->local_description()->ToString(&sdp);
 
+		TArray<TSharedPtr<FJsonValue>> eventsJson;
+		eventsJson.Add(MakeShared<FJsonValueString>("active"));
+		eventsJson.Add(MakeShared<FJsonValueString>("inactive"));
+
 		auto DataJson = MakeShared<FJsonObject>();
 		DataJson->SetStringField("name", MillicastMediaSource->StreamName);
 		DataJson->SetStringField("sdp", ToString(sdp));
+		DataJson->SetArrayField("events", eventsJson);
 
 		auto Payload = MakeShared<FJsonObject>();
 		Payload->SetStringField("type", "cmd");
@@ -197,17 +224,25 @@ bool UMillicastPublisherComponent::PublishToMillicast()
 		FJsonSerializer::Serialize(Payload, Writer);
 
 		WS->Send(StringStream);
+
+		UE_LOG(LogMillicastPublisher, Log, TEXT("WebSocket publish payload : %s"), *StringStream);
 	});
 
-	LocalDescriptionObserver->SetOnFailureCallback([](const std::string& err) {
+	LocalDescriptionObserver->SetOnFailureCallback([this](const std::string& err) {
 		UE_LOG(LogMillicastPublisher, Error, TEXT("Set local description failed : %s"), *ToString(err));
+		OnPublishingError.Broadcast(TEXT("Could not set local description"));
 	});
 
 	RemoteDescriptionObserver->SetOnSuccessCallback([this]() {
 		UE_LOG(LogMillicastPublisher, Log, TEXT("Set remote description suceeded"));
+
+		bIsPublishing = true;
+
+		OnPublishing.Broadcast();
 	});
-	RemoteDescriptionObserver->SetOnFailureCallback([](const std::string& err) {
+	RemoteDescriptionObserver->SetOnFailureCallback([this](const std::string& err) {
 		UE_LOG(LogMillicastPublisher, Error, TEXT("Set remote description failed : %s"), *ToString(err));
+		OnPublishingError.Broadcast(TEXT("Could not set remote description"));
 	});
 
 	PeerConnection->OaOptions.offer_to_receive_video = false;
@@ -230,6 +265,7 @@ void UMillicastPublisherComponent::OnConnected()
 void UMillicastPublisherComponent::OnConnectionError(const FString& Error)
 {
 	UE_LOG(LogMillicastPublisher, Log, TEXT("Millicast WebSocket Connection error : %s"), *Error);
+	OnPublishingError.Broadcast(TEXT("Could not connect websocket"));
 }
 
 void UMillicastPublisherComponent::OnClosed(int32 StatusCode,
@@ -246,24 +282,43 @@ void UMillicastPublisherComponent::OnMessage(const FString& Msg)
 	TSharedPtr<FJsonObject> ResponseJson;
 	auto Reader = TJsonReaderFactory<>::Create(Msg);
 
-	if(FJsonSerializer::Deserialize(Reader, ResponseJson)) {
-		FString Type;
-		if(!ResponseJson->TryGetStringField("type", Type)) return;
+	bool ok = FJsonSerializer::Deserialize(Reader, ResponseJson);
+	if (!ok) {
+		UE_LOG(LogMillicastPublisher, Error, TEXT("Could not deserialize JSON"));
+		return;
+	}
 
-		if(Type == "response") {
-			auto DataJson = ResponseJson->GetObjectField("data");
-			FString Sdp = DataJson->GetStringField("sdp");
+	FString Type;
+	if(!ResponseJson->TryGetStringField("type", Type)) return;
+
+	if(Type == "response") 
+	{
+		auto DataJson = ResponseJson->GetObjectField("data");
+		FString Sdp = DataJson->GetStringField("sdp");
+		if (PeerConnection) 
+		{
 			PeerConnection->SetRemoteDescription(to_string(Sdp));
 		}
-		else if(Type == "error") {
-			// TODO: Parse error and fire an event
-		}
-		else if(Type == "event") {
-			// TODO: Parse broadcaster event and a blueprint event for each
-		}
-		else {
-			// TODO: Unknown answer
-		}
+	}
+	else if(Type == "error") 
+	{
+		FString errorMessage;
+		auto dataJson = ResponseJson->TryGetStringField("data", errorMessage);
+
+		UE_LOG(LogMillicastPublisher, Error, TEXT("WebSocket error : %s"), *errorMessage);
+	}
+	else if(Type == "event") 
+	{
+		FString eventName;
+		ResponseJson->TryGetStringField("name", eventName);
+
+		UE_LOG(LogMillicastPublisher, Log, TEXT("Received event : %s"), *eventName);
+
+		EventBroadcaster[eventName]();
+	}
+	else 
+	{
+		UE_LOG(LogMillicastPublisher, Warning, TEXT("WebSocket response type not handled (yet?) %s"), *Type);
 	}
 }
 

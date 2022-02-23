@@ -17,6 +17,12 @@ class FWebRTCPeerConnection;
 DECLARE_DYNAMIC_MULTICAST_SPARSE_DELEGATE(FMillicastPublisherComponentAuthenticated, UMillicastPublisherComponent, OnAuthenticated);
 DECLARE_DYNAMIC_MULTICAST_SPARSE_DELEGATE_TwoParams(FMillicastPublisherComponentAuthenticationFailure, UMillicastPublisherComponent, OnAuthenticationFailure, int, Code, const FString&, Msg);
 
+DECLARE_DYNAMIC_MULTICAST_SPARSE_DELEGATE(FMillicastPublisherComponentPublishing, UMillicastPublisherComponent, OnPublishing);
+DECLARE_DYNAMIC_MULTICAST_SPARSE_DELEGATE_OneParam(FMillicastPublisherComponentPublishingError, UMillicastPublisherComponent, OnPublishingError, const FString&, ErrorMsg);
+
+DECLARE_DYNAMIC_MULTICAST_SPARSE_DELEGATE(FMillicastPublisherComponentActive, UMillicastPublisherComponent, OnActive);
+DECLARE_DYNAMIC_MULTICAST_SPARSE_DELEGATE(FMillicastPublisherComponentInactive, UMillicastPublisherComponent, OnInactive);
+
 /**
 	A component used to receive audio, video from a Millicast feed.
 */
@@ -27,12 +33,16 @@ class MILLICASTPUBLISHER_API UMillicastPublisherComponent : public UActorCompone
 	GENERATED_UCLASS_BODY()
 
 private:
+	TMap <FString, TFunction<void()>> EventBroadcaster;
+
 	/** The Millicast Media Source representing the configuration of the network source */
 	UPROPERTY(EditDefaultsOnly, Category = "Properties",
 			  META = (DisplayName = "Millicast Publisher Source", AllowPrivateAccess = true))
 	UMillicastPublisherSource* MillicastMediaSource = nullptr;
 
 public:
+	~UMillicastPublisherComponent();
+
 	/**
 		Initialize this component with the media source required for receiving NDI audio, video, and metadata.
 		Returns false, if the MediaSource is already been set. This is usually the case when this component is
@@ -73,6 +83,22 @@ public:
 	UPROPERTY(BlueprintAssignable, Category = "Components|Activation")
 	FMillicastPublisherComponentAuthenticationFailure OnAuthenticationFailure;
 
+	/** Called when the publisher is publishing to Millicast */
+	UPROPERTY(BlueprintAssignable, Category = "Components|Activation")
+	FMillicastPublisherComponentPublishing OnPublishing;
+
+	/** Called when the publisher is failed to publish to Millicast */
+	UPROPERTY(BlueprintAssignable, Category = "Components|Activation")
+	FMillicastPublisherComponentPublishingError OnPublishingError;
+
+	/** Called when the first viewer starts viewing the stream being published by this publisher */
+	UPROPERTY(BlueprintAssignable, Category = "Components|Activation")
+	FMillicastPublisherComponentActive OnActive;
+
+	/** Called when the last viewer quit viewing the stream being published by this publisher */
+	UPROPERTY(BlueprintAssignable, Category = "Components|Activation")
+	FMillicastPublisherComponentInactive OnInactive;
+
 private:
 	/** Websocket Connection */
 	bool StartWebSocketConnection(const FString& url, const FString& jwt);
@@ -95,4 +121,5 @@ private:
 	FDelegateHandle OnMessageHandle;
 
 	FWebRTCPeerConnection* PeerConnection;
+	bool bIsPublishing;
 };

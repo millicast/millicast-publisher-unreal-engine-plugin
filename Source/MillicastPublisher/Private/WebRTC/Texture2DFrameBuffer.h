@@ -55,7 +55,7 @@ public:
 			TextureData[ind] = ColorData[i].B;
 			TextureData[ind + 1] = ColorData[i].G;
 			TextureData[ind + 2] = ColorData[i].R;
-			TextureData[ind + 3] = 0;
+			TextureData[ind + 3] = ColorData[i].A;
 		}
 
 		libyuv::ARGBToI420(TextureData, stride,
