@@ -3,7 +3,6 @@
 #pragma once
 
 #include "api/media_stream_interface.h"
-// #include "TextureRenderTarget2D.h"
 
 class IMillicastVideoSource
 {	
@@ -20,5 +19,5 @@ public:
 	// Create VideoSource with SlateWindow Capture
 	static IMillicastVideoSource* Create();
 	// Create VideoSource and capture from a RenderTarget
-	// static IMillicastVideoSource* Create(UTextureRenderTarget2D* RenderTarget);
+	static IMillicastVideoSource* Create(UTextureRenderTarget2D* RenderTarget);
 };

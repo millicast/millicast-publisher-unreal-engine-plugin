@@ -25,7 +25,7 @@ void FTexture2DVideoSourceAdapter::OnFrameReady(const FTexture2DRHIRef& FrameBuf
 
 	const int64 Timestamp = rtc::TimeMicros();
 
-	// if (!AdaptVideoFrame(Timestamp, FrameBuffer->GetSizeXY())) return;
+	if (!AdaptVideoFrame(Timestamp, FrameBuffer->GetSizeXY())) return;
 
 	rtc::scoped_refptr<webrtc::VideoFrameBuffer> Buffer = new rtc::RefCountedObject<FTexture2DFrameBuffer>(FrameBuffer);
 

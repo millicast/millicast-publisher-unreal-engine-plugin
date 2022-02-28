@@ -2,6 +2,7 @@
 
 #include "MillicastPublisherSource.h"
 #include "MillicastPublisherPrivate.h"
+#include "WebRTC/RenderTargetCapturer.h"
 
 #include <RenderTargetPool.h>
 
@@ -80,15 +81,34 @@ void UMillicastPublisherSource::PostEditChangeChainProperty(struct FPropertyChan
 
 IMillicastVideoSource::FVideoTrackInterface UMillicastPublisherSource::StartCapture()
 {
-	VideoSource = IMillicastVideoSource::Create();
+	if (RenderTarget != nullptr)
+	{
+		VideoSource = TUniquePtr<IMillicastVideoSource>(IMillicastVideoSource::Create(RenderTarget));
+	}
+	else
+	{
+		VideoSource = TUniquePtr<IMillicastVideoSource>(IMillicastVideoSource::Create());
+	}
+
 	return VideoSource->StartCapture();
 }
 
 void UMillicastPublisherSource::StopCapture()
 {
-	if (VideoSource) {
+	if (VideoSource) 
+	{
 		VideoSource->StopCapture();
 		VideoSource = nullptr;
+	}
+}
+
+void UMillicastPublisherSource::ChangeRenderTarget(UTextureRenderTarget2D* InRenderTarget)
+{
+	if (InRenderTarget != nullptr && RenderTarget != nullptr && VideoSource != nullptr)
+	{
+		RenderTarget = InRenderTarget;
+		auto* src = static_cast<RenderTargetCapturer*>(VideoSource.Get());
+		src->SwitchTarget(RenderTarget);
 	}
 }
 

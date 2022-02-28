@@ -31,24 +31,21 @@ public:
 
 	explicit FTexture2DFrameBuffer(FTexture2DRHIRef SourceTexture) noexcept
 	{
-		uint32 stride;
-
 		Width = SourceTexture->GetSizeX();
 		Height = SourceTexture->GetSizeY();
 
 		Buffer = webrtc::I420Buffer::Create(Width, Height);
 
 		FRHICommandListImmediate& RHICommandList = FRHICommandListExecutor::GetImmediateCommandList();
-		uint8 * TextureData = (uint8*)RHILockTexture2D(SourceTexture, 0, EResourceLockMode::RLM_ReadOnly, stride, true);
 
 		FIntRect Rect(0, 0, Width, Height);
 		TArray<FColor> ColorData;
+		uint8* TextureData = new uint8[Width * Height * 4];
 			
-		RHICommandList.ReadSurfaceData(SourceTexture, Rect, ColorData, FReadSurfaceDataFlags{});
+		FReadSurfaceDataFlags ReadSurfaceData{};
+		ReadSurfaceData.SetMip(0);
 
-		uint8* DataY = Buffer->MutableDataY();
-		uint8* DataU = Buffer->MutableDataU();
-		uint8* DataV = Buffer->MutableDataV();
+		RHICommandList.ReadSurfaceData(SourceTexture, Rect, ColorData, ReadSurfaceData);
 
 		for (uint64 i = 0; i < Width * Height; ++i) {
 			const int64 ind = i * 4;
@@ -58,11 +55,15 @@ public:
 			TextureData[ind + 3] = ColorData[i].A;
 		}
 
-		libyuv::ARGBToI420(TextureData, stride,
+		uint8* DataY = Buffer->MutableDataY();
+		uint8* DataU = Buffer->MutableDataU();
+		uint8* DataV = Buffer->MutableDataV();
+
+		libyuv::ARGBToI420(TextureData, Width * 4,
 			DataY, Buffer->StrideY(), DataU, Buffer->StrideU(), DataV, Buffer->StrideV(),
 			Width, Height);
 
-		RHIUnlockTexture2D(SourceTexture, 0, true);
+		delete[] TextureData;
 	}
 	
 	int width() const override { return Width; }

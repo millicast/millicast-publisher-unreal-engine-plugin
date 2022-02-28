@@ -29,10 +29,17 @@ public:
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = Stream, AssetRegistrySearchable)
 	FString PublishingToken;
 
+	/** Publish video from this render target */
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = Texture, AssetRegistrySearchable)
+	UTextureRenderTarget2D* RenderTarget = nullptr;
+
 	/** Mute the video stream */
 	UFUNCTION(BlueprintCallable, Category = "MillicastPublisher", META = (DisplayName = "MuteVideo"))
 	void MuteVideo(bool Muted);
 
+	/** Set a new render target while publishing */
+	UFUNCTION(BlueprintCallable, Category = "MillicastPublisher", META = (DisplayName = "ChangeRenderTarget"))
+	void ChangeRenderTarget(UTextureRenderTarget2D * InRenderTarget);
 public:
 	//~ IMediaOptions interface
 
@@ -65,5 +72,5 @@ public:
 	void StopCapture();
 
 private:
-	IMillicastVideoSource * VideoSource;
+	TUniquePtr<IMillicastVideoSource> VideoSource;
 };
