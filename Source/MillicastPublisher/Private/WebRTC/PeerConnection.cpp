@@ -24,13 +24,33 @@ void FWebRTCPeerConnection::CreatePeerConnectionFactory()
 	TaskQueueFactory = webrtc::CreateDefaultTaskQueueFactory();
 	AudioDeviceModule = FAudioDeviceModule::Create(TaskQueueFactory.get());
 
+	webrtc::AudioProcessing* AudioProcessingModule = webrtc::AudioProcessingBuilder().Create();
+	webrtc::AudioProcessing::Config ApmConfig;
+
+	ApmConfig.pipeline.multi_channel_capture = true;
+	ApmConfig.pipeline.multi_channel_render = true;
+	ApmConfig.pipeline.maximum_internal_processing_rate = 48000;
+	ApmConfig.pre_amplifier.enabled = false;
+	ApmConfig.high_pass_filter.enabled = false;
+	ApmConfig.echo_canceller.enabled = false;
+	ApmConfig.noise_suppression.enabled = false;
+	ApmConfig.transient_suppression.enabled = false;
+	ApmConfig.voice_detection.enabled = false;
+	ApmConfig.gain_controller1.enabled = false;
+	ApmConfig.gain_controller2.enabled = false;
+	ApmConfig.residual_echo_detector.enabled = false;
+	ApmConfig.level_estimation.enabled = false;
+
+	// Apply the config.
+	AudioProcessingModule->ApplyConfig(ApmConfig);
+
 	PeerConnectionFactory = webrtc::CreatePeerConnectionFactory(
 				nullptr, nullptr, SignalingThread.Get(), AudioDeviceModule,
 				webrtc::CreateAudioEncoderFactory<webrtc::AudioEncoderOpus>(),
 				webrtc::CreateAudioDecoderFactory<webrtc::AudioDecoderOpus>(),
 				webrtc::CreateBuiltinVideoEncoderFactory(),
 				webrtc::CreateBuiltinVideoDecoderFactory(),
-				nullptr, nullptr
+				nullptr, AudioProcessingModule
 	  );
 
 	// Check

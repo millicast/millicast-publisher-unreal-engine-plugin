@@ -3,13 +3,14 @@
 #pragma once
 
 #include "WebRTC/WebRTCInc.h"
+#include "AudioDevice.h"
 
 #include "Sound/SoundWaveProcedural.h"
 
 // A custom audio device module for WebRTC.
-class FAudioDeviceModule : public webrtc::AudioDeviceModule
+class FAudioDeviceModule : public webrtc::AudioDeviceModule, public ISubmixBufferListener
 {
-	typedef uint16_t Sample;
+	typedef int16_t Sample;
 
 	static constexpr int kTimePerFrameMs = 10;
 	static constexpr uint8_t kNumberOfChannels = 2;
@@ -19,15 +20,20 @@ class FAudioDeviceModule : public webrtc::AudioDeviceModule
 	static constexpr uint32_t kMaxVolume = 14392;
 	static constexpr size_t kNumberSamples = kTimePerFrameMs * kSamplesPerSecond / 1000;
 	static constexpr size_t kNumberBytesPerSample = sizeof(Sample) * kNumberOfChannels;
+	static constexpr size_t kBytesPerBuffer = kNumberBytesPerSample * kNumberSamples;
 
 	static const char kTimerQueueName[];
 
 public:
-	explicit FAudioDeviceModule(webrtc::TaskQueueFactory * queue_factory) noexcept;
+	explicit FAudioDeviceModule(webrtc::TaskQueueFactory * QueueFactory) noexcept;
 
 	~FAudioDeviceModule() = default;
 
 	static rtc::scoped_refptr<FAudioDeviceModule> Create(webrtc::TaskQueueFactory * queue_factory);
+
+public:
+	void OnNewSubmixBuffer(const USoundSubmix* OwningSubmix, float* AudioData,
+		int32 NumSamples, int32 NumChannels, const int32 SampleRate, double AudioClock) override;
 
 public:
 	// webrtc::AudioDeviceModule interface
@@ -179,13 +185,11 @@ public:
 	}
 
 private:
-	void Process();
+	void Send();
 
-	// Callback for playout and recording.
-	webrtc::AudioTransport* AudioCallback;
-
-	bool bIsPlaying;    // True when audio is being pulled by the instance.
-	bool bIsPlayInitialized;  // True when the instance is ready to pull audio.
+private:
+	bool bIsRecording;    // True when audio is being pulled by the instance.
+	bool bIsRecordingInitialized;  // True when the instance is ready to pull audio.
 
 	bool bIsStarted;
 	int64_t NextFrameTime;
@@ -193,13 +197,8 @@ private:
 	rtc::TaskQueue TaskQueue;
 
 	// Buffer for samples to send to the webrtc::AudioTransport.
-	uint8 AudioBuffer[kNumberSamples * kNumberBytesPerSample];
+	TArray<Sample> AudioBuffer;
+	webrtc::AudioTransport * AudioTransport;
 
-
-	// Protects variables that are accessed from process_thread_ and
-	// the main thread.
-	mutable rtc::CriticalSection CriticalSection;
-
-	USoundWaveProcedural * SoundStreaming;
-	UAudioComponent      * AudioComponent;
+	FCriticalSection CriticalSection;
 };

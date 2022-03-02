@@ -2,28 +2,25 @@
 
 #include "AudioDeviceModule.h"
 #include "MillicastPublisherPrivate.h"
+#include "common_audio/include/audio_util.h"
 
 const char FAudioDeviceModule::kTimerQueueName[] = "FAudioDeviceModuleTimer";
 
-FAudioDeviceModule::FAudioDeviceModule(webrtc::TaskQueueFactory* queue_factory) noexcept
-	: AudioCallback(nullptr),
-	bIsPlaying(false),
-	bIsPlayInitialized(false),
+FAudioDeviceModule::FAudioDeviceModule(webrtc::TaskQueueFactory* TaskQueueFactory) noexcept
+	: bIsRecording(false),
+	bIsRecordingInitialized(false),
 	bIsStarted(false),
 	NextFrameTime(0),
-	TaskQueue(queue_factory->CreateTaskQueue(kTimerQueueName,
-		webrtc::TaskQueueFactory::Priority::NORMAL)),
-	SoundStreaming(nullptr),
-	AudioComponent(nullptr)
+	TaskQueue(TaskQueueFactory->CreateTaskQueue(kTimerQueueName, webrtc::TaskQueueFactory::Priority::NORMAL))
 {
-
+	AudioTransport = nullptr;
 }
 
 rtc::scoped_refptr<FAudioDeviceModule>
-FAudioDeviceModule::Create(webrtc::TaskQueueFactory* queue_factory)
+FAudioDeviceModule::Create(webrtc::TaskQueueFactory* TaskQueueFactory)
 {
 	rtc::scoped_refptr<FAudioDeviceModule>
-		AudioDeviceModule(new rtc::RefCountedObject<FAudioDeviceModule>(queue_factory));
+		AudioDeviceModule(new rtc::RefCountedObject<FAudioDeviceModule>(TaskQueueFactory));
 
 	return AudioDeviceModule;
 }
@@ -34,9 +31,11 @@ int32 FAudioDeviceModule::ActiveAudioLayer(AudioLayer* audioLayer) const
 	return 0;
 }
 
-int32_t FAudioDeviceModule::RegisterAudioCallback(webrtc::AudioTransport* audio_callback)
+int32_t FAudioDeviceModule::RegisterAudioCallback(webrtc::AudioTransport* InAudioTransport)
 {
-	AudioCallback = audio_callback;
+	FScopeLock Lock(&CriticalSection);
+	UE_LOG(LogMillicastPublisher, Display, TEXT("RegisterAudioCallback"));
+	AudioTransport = InAudioTransport;
 	return 0;
 }
 
@@ -86,12 +85,15 @@ int32_t FAudioDeviceModule::SetRecordingDevice(WindowsDeviceType)
 
 int32_t FAudioDeviceModule::InitPlayout()
 {
-	bIsPlayInitialized = true;
 	return 0;
 }
 
 int32_t FAudioDeviceModule::InitRecording()
 {
+	UE_LOG(LogMillicastPublisher, Log, TEXT("Init recording"));
+
+	bIsRecordingInitialized = true;
+
 	return 0;
 }
 
@@ -107,28 +109,73 @@ int32_t FAudioDeviceModule::StopPlayout()
 
 bool FAudioDeviceModule::Playing() const
 {
-	rtc::CritScope cs(&CriticalSection);
-	return bIsPlaying;
+	return false;
+}
+
+inline FAudioDevice* GetUEAudioDevice()
+{
+	if (!GEngine)
+	{
+		UE_LOG(LogMillicastPublisher, Warning, TEXT("GEngine is NULL"));
+		return nullptr;
+	}
+
+	auto AudioDevice = GEngine->GetMainAudioDevice();
+	if (!AudioDevice)
+	{
+		UE_LOG(LogMillicastPublisher, Warning, TEXT("Could not get main audio device"));
+		return nullptr;
+	}
+
+	return AudioDevice.GetAudioDevice();
 }
 
 int32_t FAudioDeviceModule::StartRecording()
 {
+	UE_LOG(LogMillicastPublisher, Log, TEXT("Start Recording"));
+
+	if (bIsRecording)
+	{
+		UE_LOG(LogMillicastPublisher, Log, TEXT("AudioDeviceModule is already recording"));
+		return 0;
+	}
+
+	auto AudioDevice = GetUEAudioDevice();
+	if (AudioDevice == nullptr) return -1;
+
+	AudioDevice->RegisterSubmixBufferListener(this);
+	bIsRecording = true;
+
+	TaskQueue.PostTask([this]() { Send(); });
+
 	return 0;
 }
 
 int32_t FAudioDeviceModule::StopRecording()
 {
+	if (!bIsRecording)
+	{
+		return 0;
+	}
+
+	bIsRecording = false;
+	bIsStarted = false;
+
+	auto AudioDevice = GetUEAudioDevice();
+	if (AudioDevice == nullptr) return -1;
+	AudioDevice->UnregisterSubmixBufferListener(this);
+
 	return 0;
 }
 
 bool FAudioDeviceModule::Recording() const
 {
-	return false;
+	return bIsRecording;
 }
 
 int32 FAudioDeviceModule::RecordingIsAvailable(bool* available)
 {
-	*available = false;
+	*available = true;
 	return 0;
 }
 
@@ -152,31 +199,31 @@ int32_t FAudioDeviceModule::MaxMicrophoneVolume(
 
 int32 RecordingIsAvailable(bool* available)
 {
-	*available = false;
+	*available = true;
 	return 0;
 }
 
 int32 FAudioDeviceModule::PlayoutIsAvailable(bool* available)
 {
-	*available = true;
+	*available = false;
 	return 0;
 }
 
 int32 FAudioDeviceModule::StereoPlayoutIsAvailable(bool* available) const
 {
-	*available = true;
+	*available = false;
 	return 0;
 }
 
 int32 FAudioDeviceModule::StereoPlayout(bool* available) const
 {
-	*available = true;
+	*available = false;
 	return 0;
 }
 
 int32 FAudioDeviceModule::StereoRecordingIsAvailable(bool* available) const
 {
-	*available = false;
+	*available = true;
 	return 0;
 }
 
@@ -187,7 +234,7 @@ int32 FAudioDeviceModule::SetStereoRecording(bool enable)
 
 int32 FAudioDeviceModule::StereoRecording(bool* enabled) const
 {
-	*enabled = false;
+	*enabled = true;
 	return 0;
 }
 
@@ -197,26 +244,66 @@ int32_t FAudioDeviceModule::PlayoutDelay(uint16_t* delay_ms) const
 	return 0;
 }
 
-void FAudioDeviceModule::Process()
+void FAudioDeviceModule::OnNewSubmixBuffer(const USoundSubmix* OwningSubmix, float* AudioData, 
+	int32 NumSamples, int32 NumChannels, const int32 SampleRate, double AudioClock)
+{
+	static int sini = 0;
+
+	if (!bIsRecordingInitialized)
+	{
+		UE_LOG(LogMillicastPublisher, Warning, TEXT("AudioDeviceModule has not been iniatilized"));
+		return;
+	}
+
+	if (kSamplesPerSecond != SampleRate)
+	{
+		UE_LOG(LogMillicastPublisher, Warning, TEXT("AudioDeviceModule supports only %d Hz"), kSamplesPerSecond);
+		return;
+	}
+
+	Audio::TSampleBuffer<float> Buffer(AudioData, NumSamples, NumChannels, SampleRate);
+	if (Buffer.GetNumChannels() != kNumberOfChannels)
+	{
+		Buffer.MixBufferToChannels(kNumberOfChannels);
+	}
+	
+	const float* Data = Buffer.GetData();
+
+	{
+		FScopeLock Lock(&CriticalSection);
+		const auto num = AudioBuffer.Num();
+		AudioBuffer.AddZeroed(Buffer.GetNumSamples());
+
+		webrtc::FloatToS16(AudioData, Buffer.GetNumSamples(), AudioBuffer.GetData() + num);
+	}
+}
+
+void FAudioDeviceModule::Send()
 {
 	RTC_DCHECK_RUN_ON(&TaskQueue);
 	{
-		rtc::CritScope cs(&CriticalSection);
+		FScopeLock Lock(&CriticalSection);
 
-		if (!bIsStarted)
+		if (bIsRecording)
 		{
-			NextFrameTime = rtc::TimeMillis();
-			bIsStarted = true;
-		}
+			if (!bIsStarted)
+			{
+				NextFrameTime = rtc::TimeMillis();
+				bIsStarted = true;
+			}
 
-		if (bIsPlaying)
-		{
+			if (AudioBuffer.Num() >= kNumberSamples * kNumberOfChannels)
+			{
+				uint32_t micLevel = 0;
+				AudioTransport->RecordedDataIsAvailable(AudioBuffer.GetData(), kNumberSamples, sizeof(Sample),
+					kNumberOfChannels, kSamplesPerSecond, 0, 0, micLevel, false, micLevel);
+				AudioBuffer.RemoveAt(0, kNumberSamples * kNumberOfChannels, true);
+			}
 			NextFrameTime += kTimePerFrameMs;
 			const int64_t current_time = rtc::TimeMillis();
 			const int64_t wait_time =
 				(NextFrameTime > current_time) ? NextFrameTime - current_time : 0;
-			TaskQueue.PostDelayedTask([this]() { Process(); }, int32_t(wait_time));
+			TaskQueue.PostDelayedTask([this]() { Send(); }, int32_t(wait_time));
 		}
 	}
 }
-

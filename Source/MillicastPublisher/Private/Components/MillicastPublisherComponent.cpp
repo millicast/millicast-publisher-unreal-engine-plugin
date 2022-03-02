@@ -190,7 +190,7 @@ bool UMillicastPublisherComponent::PublishToMillicast()
 	auto * RemoteDescriptionObserver = PeerConnection->GetRemoteDescriptionObserver();
 
 	CreateSessionDescriptionObserver->SetOnSuccessCallback([this](const std::string& type, const std::string& sdp) {
-		UE_LOG(LogMillicastPublisher, Log, TEXT("pc.createOffer() | sucess\nsdp : %s"), *ToString(sdp));
+		UE_LOG(LogMillicastPublisher, Display, TEXT("pc.createOffer() | sucess\nsdp : %s"), *ToString(sdp));
 		PeerConnection->SetLocalDescription(sdp, type);
 	});
 
@@ -324,13 +324,13 @@ void UMillicastPublisherComponent::OnMessage(const FString& Msg)
 
 void UMillicastPublisherComponent::CaptureAndAddTracks()
 {
-	auto VideoTrack = MillicastMediaSource->StartCapture();
+	auto videoTrack = MillicastMediaSource->StartCapture();
 	
-	webrtc::RtpTransceiverInit Init;
-	Init.direction = webrtc::RtpTransceiverDirection::kSendOnly;
-	Init.stream_ids = { "unrealstream" };
+	webrtc::RtpTransceiverInit init;
+	init.direction = webrtc::RtpTransceiverDirection::kSendOnly;
+	init.stream_ids = { "unrealstream" };
 
-	auto result = (*PeerConnection)->AddTransceiver(VideoTrack, Init);
+	auto result = (*PeerConnection)->AddTransceiver(videoTrack, init);
 
 	if (result.ok())
 	{
@@ -338,6 +338,38 @@ void UMillicastPublisherComponent::CaptureAndAddTracks()
 	}
 	else
 	{
-		UE_LOG(LogMillicastPublisher, Log, TEXT("Couldn't add transceiver for video track : %s"), result.error().message());
+		UE_LOG(LogMillicastPublisher, Error, TEXT("Couldn't add transceiver for video track : %s"), result.error().message());
+	}
+
+
+	auto peerConnectionFactory = FWebRTCPeerConnection::GetPeerConnectionFactory();
+
+	cricket::AudioOptions options;
+	options.echo_cancellation.emplace(false);
+	options.auto_gain_control.emplace(false);
+	options.noise_suppression.emplace(false);
+	options.highpass_filter.emplace(false);
+	options.stereo_swapping.emplace(false);
+	options.typing_detection.emplace(false);
+	options.experimental_agc.emplace(false);
+	options.experimental_ns.emplace(false);
+	options.residual_echo_detector.emplace(false);
+
+	options.audio_jitter_buffer_max_packets = 1000;
+	options.audio_jitter_buffer_fast_accelerate = false;
+	options.audio_jitter_buffer_min_delay_ms = 0;
+	options.audio_jitter_buffer_enable_rtx_handling = false;
+
+	auto audioSource = peerConnectionFactory->CreateAudioSource(options);
+	auto audioTrack = peerConnectionFactory->CreateAudioTrack("audio", audioSource);
+
+	result = (*PeerConnection)->AddTransceiver(audioTrack, init);
+	if (result.ok())
+	{
+		UE_LOG(LogMillicastPublisher, Log, TEXT("Add transceiver for audio track"));
+	}
+	else
+	{
+		UE_LOG(LogMillicastPublisher, Error, TEXT("Couldn't add transceiver for audio track : %s"), result.error().message());
 	}
 }
