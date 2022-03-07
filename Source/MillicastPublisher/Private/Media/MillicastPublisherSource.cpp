@@ -2,7 +2,7 @@
 
 #include "MillicastPublisherSource.h"
 #include "MillicastPublisherPrivate.h"
-#include "WebRTC/RenderTargetCapturer.h"
+#include "RenderTargetCapturer.h"
 
 #include <RenderTargetPool.h>
 
@@ -69,6 +69,14 @@ bool UMillicastPublisherSource::Validate() const
 #if WITH_EDITOR
 bool UMillicastPublisherSource::CanEditChange(const FProperty* InProperty) const
 {
+	FString Name;
+	InProperty->GetName(Name);
+
+	if (Name == MillicastPublisherOption::RenderTarget.ToString())
+	{
+		return CaptureVideo;
+	}
+
 	return Super::CanEditChange(InProperty);
 }
 
@@ -79,18 +87,32 @@ void UMillicastPublisherSource::PostEditChangeChainProperty(struct FPropertyChan
 
 #endif //WITH_EDITOR
 
-IMillicastVideoSource::FVideoTrackInterface UMillicastPublisherSource::StartCapture()
+void UMillicastPublisherSource::StartCapture(TFunction<void(IMillicastSource::FStreamTrackInterface)> Callback)
 {
-	if (RenderTarget != nullptr)
+	if (CaptureVideo)
 	{
-		VideoSource = TUniquePtr<IMillicastVideoSource>(IMillicastVideoSource::Create(RenderTarget));
-	}
-	else
-	{
-		VideoSource = TUniquePtr<IMillicastVideoSource>(IMillicastVideoSource::Create());
-	}
+		if (RenderTarget != nullptr)
+		{
+			VideoSource = TUniquePtr<IMillicastVideoSource>(IMillicastVideoSource::Create(RenderTarget));
+		}
+		else
+		{
+			VideoSource = TUniquePtr<IMillicastVideoSource>(IMillicastVideoSource::Create());
+		}
 
-	return VideoSource->StartCapture();
+		if (VideoSource && Callback)
+		{
+			Callback(VideoSource->StartCapture());
+		}
+	}
+	if (CaptureAudio)
+	{
+		AudioSource = TUniquePtr<IMillicastAudioSource>(IMillicastAudioSource::Create());
+		if (AudioSource && Callback)
+		{
+			Callback(AudioSource->StartCapture());
+		}
+	}
 }
 
 void UMillicastPublisherSource::StopCapture()

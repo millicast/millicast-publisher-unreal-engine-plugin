@@ -4,7 +4,6 @@
 
 #include "WebRTCInc.h"
 #include "RHI.h"
-#include "IMillicastVideoSource.h"
 
 
 class FTexture2DVideoSourceAdapter : public rtc::AdaptedVideoTrackSource

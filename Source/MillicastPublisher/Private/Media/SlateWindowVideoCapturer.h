@@ -2,8 +2,8 @@
 
 #pragma once
 
-#include "IMillicastVideoSource.h"
-#include "Texture2DVideoSourceAdapter.h"
+#include "IMillicastSource.h"
+#include "WebRTC/Texture2DVideoSourceAdapter.h"
 
 class SlateWindowVideoCapturer : public IMillicastVideoSource
 {
@@ -14,9 +14,9 @@ class SlateWindowVideoCapturer : public IMillicastVideoSource
 public:
 	SlateWindowVideoCapturer() noexcept : RtcVideoSource(nullptr), RtcVideoTrack(nullptr) {}
 
-	FVideoTrackInterface StartCapture() override;
+	FStreamTrackInterface StartCapture() override;
 	void StopCapture() override;
-	FVideoTrackInterface GetTrack() override;
+	FStreamTrackInterface GetTrack() override;
 
 private:
 	void OnBackBufferReadyToPresent(SWindow& SlateWindow, const FTexture2DRHIRef& Buffer);

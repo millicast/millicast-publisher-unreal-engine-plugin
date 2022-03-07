@@ -1,8 +1,9 @@
 #include "RenderTargetCapturer.h"
 #include "MillicastPublisherPrivate.h"
-#include "PeerConnection.h"
+#include "WebRTC/PeerConnection.h"
 
 #include "Engine/TextureRenderTarget2D.h"
+#include "Util.h"
 
 IMillicastVideoSource* IMillicastVideoSource::Create(UTextureRenderTarget2D* RenderTarget)
 {
@@ -13,7 +14,7 @@ RenderTargetCapturer::RenderTargetCapturer(UTextureRenderTarget2D* InRenderTarge
 	: RenderTarget(InRenderTarget)
 {}
 
-RenderTargetCapturer::FVideoTrackInterface RenderTargetCapturer::StartCapture()
+RenderTargetCapturer::FStreamTrackInterface RenderTargetCapturer::StartCapture()
 {
 	if (RenderTarget == nullptr) 
 	{
@@ -25,7 +26,7 @@ RenderTargetCapturer::FVideoTrackInterface RenderTargetCapturer::StartCapture()
 
 	auto PeerConnectionFactory = FWebRTCPeerConnection::GetPeerConnectionFactory();
 
-	RtcVideoTrack = PeerConnectionFactory->CreateVideoTrack("slate-window", RtcVideoSource);
+	RtcVideoTrack = PeerConnectionFactory->CreateVideoTrack(to_string(TrackId.Get("render-target-track")), RtcVideoSource);
 
 	if (RtcVideoTrack)
 	{
@@ -51,7 +52,7 @@ void RenderTargetCapturer::StopCapture()
 	FCoreDelegates::OnEndFrameRT.RemoveAll(this);
 }
 
-RenderTargetCapturer::FVideoTrackInterface RenderTargetCapturer::GetTrack()
+RenderTargetCapturer::FStreamTrackInterface RenderTargetCapturer::GetTrack()
 {
 	return RtcVideoTrack;
 }

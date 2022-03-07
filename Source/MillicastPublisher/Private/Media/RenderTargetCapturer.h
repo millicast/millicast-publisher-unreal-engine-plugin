@@ -1,7 +1,7 @@
 #pragma once
 
-#include "IMillicastVideoSource.h"
-#include "Texture2DVideoSourceAdapter.h"
+#include "IMillicastSource.h"
+#include "WebRTC/Texture2DVideoSourceAdapter.h"
 
 class RenderTargetCapturer : public IMillicastVideoSource
 {
@@ -12,18 +12,16 @@ class RenderTargetCapturer : public IMillicastVideoSource
 	FCriticalSection CriticalSection;
 
 public:
-
 	explicit RenderTargetCapturer(UTextureRenderTarget2D* InRenderTarget) noexcept;
 
-	FVideoTrackInterface StartCapture() override;
+	FStreamTrackInterface StartCapture() override;
 	void StopCapture() override;
 
-	FVideoTrackInterface GetTrack() override;
+	FStreamTrackInterface GetTrack() override;
 
 	void SwitchTarget(UTextureRenderTarget2D* InRenderTarget);
 
 private:
-
 	void OnEndFrameRenderThread();
 	void OnEndFrame();
 };

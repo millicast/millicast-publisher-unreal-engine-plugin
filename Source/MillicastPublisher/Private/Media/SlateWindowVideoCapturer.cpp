@@ -2,8 +2,10 @@
 
 #include "Framework/Application/SlateApplication.h"
 
-#include "PeerConnection.h"
+#include "WebRTC/PeerConnection.h"
 #include "MillicastPublisherPrivate.h"
+
+#include "Util.h"
 
 // Maybe return a TUniquePtr or Shared or somehting less ... raw
 IMillicastVideoSource* IMillicastVideoSource::Create()
@@ -11,7 +13,7 @@ IMillicastVideoSource* IMillicastVideoSource::Create()
 	return new SlateWindowVideoCapturer;
 }
 
-rtc::scoped_refptr<webrtc::VideoTrackInterface> SlateWindowVideoCapturer::StartCapture()
+IMillicastSource::FStreamTrackInterface SlateWindowVideoCapturer::StartCapture()
 {
 	RtcVideoSource = new rtc::RefCountedObject<FTexture2DVideoSourceAdapter>();
 
@@ -20,7 +22,7 @@ rtc::scoped_refptr<webrtc::VideoTrackInterface> SlateWindowVideoCapturer::StartC
 
 	auto PeerConnectionFactory = FWebRTCPeerConnection::GetPeerConnectionFactory();
 
-	RtcVideoTrack = PeerConnectionFactory->CreateVideoTrack("slate-window", RtcVideoSource);
+	RtcVideoTrack = PeerConnectionFactory->CreateVideoTrack(to_string(TrackId.Get("slate-window-track")), RtcVideoSource);
 
 	if (RtcVideoTrack) 
 	{
@@ -44,7 +46,7 @@ void SlateWindowVideoCapturer::StopCapture()
 	RtcVideoTrack = nullptr;
 }
 
-SlateWindowVideoCapturer::FVideoTrackInterface SlateWindowVideoCapturer::GetTrack()
+SlateWindowVideoCapturer::FStreamTrackInterface SlateWindowVideoCapturer::GetTrack()
 {
 	return RtcVideoTrack;
 }

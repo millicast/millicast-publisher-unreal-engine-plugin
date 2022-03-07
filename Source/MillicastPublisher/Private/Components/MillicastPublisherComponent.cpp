@@ -17,6 +17,8 @@
 #include "IWebSocket.h"
 #include "WebRTC/PeerConnection.h"
 
+#include "Util.h"
+
 constexpr auto HTTP_OK = 200;
 
 auto MakeBroadcastEvent = [](auto&& Event) {
@@ -27,20 +29,6 @@ auto MakeBroadcastEvent = [](auto&& Event) {
 		}
 	};
 };
-
-inline std::string to_string(const FString& Str)
-{
-	auto Ansi = StringCast<ANSICHAR>(*Str, Str.Len());
-	std::string Res{ Ansi.Get(), static_cast<SIZE_T>(Ansi.Length()) };
-	return Res;
-}
-
-inline FString ToString(const std::string& Str)
-{
-	auto Conv = StringCast<TCHAR>(Str.c_str(), Str.size());
-	FString Res{ Conv.Length(), Conv.Get() };
-	return Res;
-}
 
 UMillicastPublisherComponent::UMillicastPublisherComponent(const FObjectInitializer& ObjectInitializer) : Super(ObjectInitializer)
 {
@@ -58,7 +46,7 @@ UMillicastPublisherComponent::~UMillicastPublisherComponent()
 }
 
 /**
-	Initialize this component with the media source required for receiving Millicast audio, video.
+	Initialize this component with the media source required for publishing Millicast audio, video.
 	Returns false, if the MediaSource is already been set. This is usually the case when this component is
 	initialized in Blueprints.
 */
@@ -213,6 +201,11 @@ bool UMillicastPublisherComponent::PublishToMillicast()
 		DataJson->SetStringField("sdp", ToString(sdp));
 		DataJson->SetArrayField("events", eventsJson);
 
+		if (!MillicastMediaSource->SourceId.IsEmpty())
+		{
+			DataJson->SetStringField("sourceId", MillicastMediaSource->SourceId);
+		}
+
 		auto Payload = MakeShared<FJsonObject>();
 		Payload->SetStringField("type", "cmd");
 		Payload->SetNumberField("transId", std::rand());
@@ -324,52 +317,24 @@ void UMillicastPublisherComponent::OnMessage(const FString& Msg)
 
 void UMillicastPublisherComponent::CaptureAndAddTracks()
 {
-	auto videoTrack = MillicastMediaSource->StartCapture();
-	
-	webrtc::RtpTransceiverInit init;
-	init.direction = webrtc::RtpTransceiverDirection::kSendOnly;
-	init.stream_ids = { "unrealstream" };
+	MillicastMediaSource->StartCapture([this](auto&& Track) {
+		webrtc::RtpTransceiverInit init;
+		init.direction = webrtc::RtpTransceiverDirection::kSendOnly;
+		init.stream_ids = { "unrealstream" };
 
-	auto result = (*PeerConnection)->AddTransceiver(videoTrack, init);
+		auto result = (*PeerConnection)->AddTransceiver(Track, init);
 
-	if (result.ok())
-	{
-		UE_LOG(LogMillicastPublisher, Log, TEXT("Add transceiver for video track"));
-	}
-	else
-	{
-		UE_LOG(LogMillicastPublisher, Error, TEXT("Couldn't add transceiver for video track : %s"), result.error().message());
-	}
-
-
-	auto peerConnectionFactory = FWebRTCPeerConnection::GetPeerConnectionFactory();
-
-	cricket::AudioOptions options;
-	options.echo_cancellation.emplace(false);
-	options.auto_gain_control.emplace(false);
-	options.noise_suppression.emplace(false);
-	options.highpass_filter.emplace(false);
-	options.stereo_swapping.emplace(false);
-	options.typing_detection.emplace(false);
-	options.experimental_agc.emplace(false);
-	options.experimental_ns.emplace(false);
-	options.residual_echo_detector.emplace(false);
-
-	options.audio_jitter_buffer_max_packets = 1000;
-	options.audio_jitter_buffer_fast_accelerate = false;
-	options.audio_jitter_buffer_min_delay_ms = 0;
-	options.audio_jitter_buffer_enable_rtx_handling = false;
-
-	auto audioSource = peerConnectionFactory->CreateAudioSource(options);
-	auto audioTrack = peerConnectionFactory->CreateAudioTrack("audio", audioSource);
-
-	result = (*PeerConnection)->AddTransceiver(audioTrack, init);
-	if (result.ok())
-	{
-		UE_LOG(LogMillicastPublisher, Log, TEXT("Add transceiver for audio track"));
-	}
-	else
-	{
-		UE_LOG(LogMillicastPublisher, Error, TEXT("Couldn't add transceiver for audio track : %s"), result.error().message());
-	}
+		if (result.ok())
+		{
+			UE_LOG(LogMillicastPublisher, Log, TEXT("Add transceiver for %s track : %s"), 
+				Track->kind().c_str(), Track->id().c_str());
+		}
+		else
+		{
+			UE_LOG(LogMillicastPublisher, Error, TEXT("Couldn't add transceiver for %s track %s : %s"), 
+				Track->kind().c_str(),
+				Track->id().c_str(),
+				result.error().message());
+		}
+	});
 }

@@ -4,7 +4,7 @@
 #include "UObject/ObjectMacros.h"
 #include "Materials/MaterialInstanceDynamic.h"
 #include "StreamMediaSource.h"
-#include "IMillicastVideoSource.h"
+#include "IMillicastSource.h"
 
 #include "MillicastPublisherSource.generated.h"
 
@@ -29,9 +29,21 @@ public:
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = Stream, AssetRegistrySearchable)
 	FString PublishingToken;
 
+	/** Source id to use Millicast multisource feature */
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = Stream, AssetRegistrySearchable)
+	FString SourceId;
+
+	/** Whether we should capture video or not */
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = Video, AssetRegistrySearchable)
+	bool CaptureVideo = true;
+
 	/** Publish video from this render target */
-	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = Texture, AssetRegistrySearchable)
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = Video, AssetRegistrySearchable)
 	UTextureRenderTarget2D* RenderTarget = nullptr;
+
+	/** Whether we should capture game audio or not */
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = Audio, AssetRegistrySearchable)
+	bool CaptureAudio = true;
 
 	/** Mute the video stream */
 	UFUNCTION(BlueprintCallable, Category = "MillicastPublisher", META = (DisplayName = "MuteVideo"))
@@ -68,9 +80,11 @@ public:
 	//~ End UObject interface
 
 public:
-	IMillicastVideoSource::FVideoTrackInterface StartCapture();
+	void StartCapture(TFunction<void(IMillicastSource::FStreamTrackInterface)> Callback = nullptr);
+
 	void StopCapture();
 
 private:
 	TUniquePtr<IMillicastVideoSource> VideoSource;
+	TUniquePtr<IMillicastAudioSource> AudioSource;
 };
