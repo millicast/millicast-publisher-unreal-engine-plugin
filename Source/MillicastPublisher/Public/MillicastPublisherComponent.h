@@ -27,7 +27,7 @@ DECLARE_DYNAMIC_MULTICAST_SPARSE_DELEGATE(FMillicastPublisherComponentInactive, 
 	A component used to receive audio, video from a Millicast feed.
 */
 UCLASS(BlueprintType, Blueprintable, Category = "MillicastPublisher",
-	   META = (DisplayName = "Millicast Subscriber Component", BlueprintSpawnableComponent))
+	   META = (DisplayName = "Millicast Publisher Component", BlueprintSpawnableComponent))
 class MILLICASTPUBLISHER_API UMillicastPublisherComponent : public UActorComponent
 {
 	GENERATED_UCLASS_BODY()
