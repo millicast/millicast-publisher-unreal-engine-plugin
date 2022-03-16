@@ -10,7 +10,7 @@
 
 
 /**
- * Media source description for Millicast Player.
+ * Media source description for Millicast Publisher.
  */
 UCLASS(BlueprintType, hideCategories=(Platforms,Object),
        META = (DisplayName = "Millicast Publisher Source"))
@@ -18,7 +18,6 @@ class MILLICASTPUBLISHER_API UMillicastPublisherSource : public UStreamMediaSour
 {
 	GENERATED_BODY()
 public:
-
 	UMillicastPublisherSource();
 
 	/** The Millicast Stream name. */
@@ -60,7 +59,6 @@ public:
 
 public:
 	//~ UMediaSource interface
-
 	FString GetUrl() const override;
 	bool Validate() const override;
 
@@ -80,8 +78,13 @@ public:
 	//~ End UObject interface
 
 public:
+	/** 
+	* Create a capturer from the configuration set for video and audio and start the capture
+	* You can set a callback to get the track returns by the capturer when starting the capture
+	*/
 	void StartCapture(TFunction<void(IMillicastSource::FStreamTrackInterface)> Callback = nullptr);
 
+	/** Stop the capture and destroy all capturers */
 	void StopCapture();
 
 private:

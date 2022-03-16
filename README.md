@@ -1,10 +1,10 @@
-# MillicastPlayer plugin for Unreal Engine 4
+# MillicastPublisher plugin for Unreal Engine 4
 
 * Supported UE version 4.27
 * Supported on Windows and Linux
 
-This plugin enable to play real time stream from Millicast in your Unreal Engine game.
-You can configure your credentials and configure your game logic using unreal object and then render the video in a texture2D.
+This plugin enable to publish game audio and video content to Millicast.
+You can configure your credentials and configure your game logic using unreal object, capture and publish from virtual camera.
 
 ## Installation
 
@@ -15,15 +15,15 @@ Follow these steps :
 * Close the editor
 * Go at the root of your project folder (C:\Users\User\Unreal Engine\MyProject)
 * Create a new directory "Plugins" and move into it
-* Clone the MillicastPlayer repository : ``git clone https://github.com/millicast/millicast-player-unreal-engine-plugin.git MillicastPlayer``
+* Clone the MillicastPublisher repository : ``git clone https://github.com/millicast/millicast-publisher-unreal-engine-plugin.git MillicastPublisher``
 * Open your project with UE
 
-It will prompt you, saying if you want to re-build MillicastPlayer plugin, say yes.
-You are now in the editor and can build your game using MillicastPlayer.
+It will prompt you, saying if you want to re-build MillicastPublisher plugin, say yes.
+You are now in the editor and can build your game using MillicastPublisher.
 
 Note: After you package your game, it is possible that you will get an error when launching the game :  
 
-> "Plugin MillicastPlayer could not be load because module MillicastPlayer has not been found"
+> "Plugin MillicastPublisher could not be load because module MillicastPublisher has not been found"
 
 And then the game fails to launch.
 That is because Unreal has excluded the plugin.
@@ -31,4 +31,4 @@ If that is the case, create an empty C++ class in your project. This will force 
 
 ## Documentation
 
-You can find the documentation for the plugin here: [https://docs.millicast.com/docs/millicast-player-plugin](https://docs.millicast.com/docs/millicast-player-plugin)
+You can find the documentation for the plugin here: [https://docs.millicast.com/docs/millicast-publisher-plugin](https://docs.millicast.com/docs/millicast-publisher-plugin)

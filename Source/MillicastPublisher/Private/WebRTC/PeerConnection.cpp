@@ -225,13 +225,7 @@ void FWebRTCPeerConnection::OnAddTrack(rtc::scoped_refptr<webrtc::RtpReceiverInt
 {}
 
 void FWebRTCPeerConnection::OnTrack(rtc::scoped_refptr<webrtc::RtpTransceiverInterface> Transceiver)
-{
-	if(VideoSink && Transceiver->media_type() == cricket::MediaType::MEDIA_TYPE_VIDEO)
-	{
-		auto * VideoTrack = static_cast<webrtc::VideoTrackInterface*>(Transceiver->receiver()->track().get());
-		VideoTrack->AddOrUpdateSink(VideoSink, rtc::VideoSinkWants());
-	}
-}
+{}
 
 void FWebRTCPeerConnection::OnRemoveTrack(rtc::scoped_refptr<webrtc::RtpReceiverInterface>)
 {}

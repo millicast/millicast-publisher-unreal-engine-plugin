@@ -11,7 +11,10 @@ UMillicastPublisherSource::UMillicastPublisherSource()
 
 void UMillicastPublisherSource::BeginDestroy()
 {
+	// Stop the capture before destroying the object
 	StopCapture();
+
+	// Call parent Destroyer
 	Super::BeginDestroy();
 }
 
@@ -63,6 +66,7 @@ FString UMillicastPublisherSource::GetUrl() const
 
 bool UMillicastPublisherSource::Validate() const
 {
+	// Check if stream name and publishing token are not empty
 	return !StreamName.IsEmpty() && !PublishingToken.IsEmpty();
 }
 
@@ -72,6 +76,7 @@ bool UMillicastPublisherSource::CanEditChange(const FProperty* InProperty) const
 	FString Name;
 	InProperty->GetName(Name);
 
+	// Can't change render target if Capture video is disabled
 	if (Name == MillicastPublisherOption::RenderTarget.ToString())
 	{
 		return CaptureVideo;
@@ -89,8 +94,10 @@ void UMillicastPublisherSource::PostEditChangeChainProperty(struct FPropertyChan
 
 void UMillicastPublisherSource::StartCapture(TFunction<void(IMillicastSource::FStreamTrackInterface)> Callback)
 {
+	// If video is enabled, create video capturer
 	if (CaptureVideo)
 	{
+		// If a render target has been set, create a Render Target capturer
 		if (RenderTarget != nullptr)
 		{
 			VideoSource = TUniquePtr<IMillicastVideoSource>(IMillicastVideoSource::Create(RenderTarget));
@@ -100,14 +107,17 @@ void UMillicastPublisherSource::StartCapture(TFunction<void(IMillicastSource::FS
 			VideoSource = TUniquePtr<IMillicastVideoSource>(IMillicastVideoSource::Create());
 		}
 
+		// Starts the capture and notify observers
 		if (VideoSource && Callback)
 		{
 			Callback(VideoSource->StartCapture());
 		}
 	}
+	// If audio is enabled, create audio capturer
 	if (CaptureAudio)
 	{
 		AudioSource = TUniquePtr<IMillicastAudioSource>(IMillicastAudioSource::Create());
+		// Start the capture and notify observers
 		if (AudioSource && Callback)
 		{
 			Callback(AudioSource->StartCapture());
@@ -117,15 +127,23 @@ void UMillicastPublisherSource::StartCapture(TFunction<void(IMillicastSource::FS
 
 void UMillicastPublisherSource::StopCapture()
 {
+	// Stop video capturer
 	if (VideoSource) 
 	{
 		VideoSource->StopCapture();
 		VideoSource = nullptr;
 	}
+	// Stop audio capturer
+	if (AudioSource)
+	{
+		AudioSource->StopCapture();
+		AudioSource = nullptr;
+	}
 }
 
 void UMillicastPublisherSource::ChangeRenderTarget(UTextureRenderTarget2D* InRenderTarget)
 {
+	// This is allowed only when a capture has been starts with the Render Target capturer
 	if (InRenderTarget != nullptr && RenderTarget != nullptr && VideoSource != nullptr)
 	{
 		RenderTarget = InRenderTarget;

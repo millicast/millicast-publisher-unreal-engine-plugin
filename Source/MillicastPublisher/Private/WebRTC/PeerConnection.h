@@ -34,8 +34,6 @@ class FWebRTCPeerConnection : public webrtc::PeerConnectionObserver
 	TUniquePtr<FSetSessionDescriptionObserver>    LocalSessionDescription;
 	TUniquePtr<FSetSessionDescriptionObserver>    RemoteSessionDescription;
 
-	rtc::VideoSinkInterface<webrtc::VideoFrame>* VideoSink;
-
 	template<typename Callback>
 	webrtc::SessionDescriptionInterface* CreateDescription(const std::string&,
 														   const std::string&,
@@ -45,28 +43,37 @@ class FWebRTCPeerConnection : public webrtc::PeerConnectionObserver
 	static void CreatePeerConnectionFactory();
   
 public:
-
+	/** Offer/Answer options (e.g. offer to receive audio/video) */
 	webrtc::PeerConnectionInterface::RTCOfferAnswerOptions OaOptions;
 
 	FWebRTCPeerConnection() = default;
 
+	/** Get WebRTC Peerconnection configuration */
 	static FRTCConfig GetDefaultConfig();
+	/** Create an instance of FWebRTCPeerConnection */
 	static FWebRTCPeerConnection* Create(const FRTCConfig& config);
+	/** Get the peerconnection factory pointer.*/
 	static rtc::scoped_refptr<webrtc::PeerConnectionFactoryInterface> GetPeerConnectionFactory();
 
+	/** Get local description observer to set callback for set local description success or failure */
 	FSetSessionDescriptionObserver* GetLocalDescriptionObserver();
+	/** Get remote description observer to set callback for set remote description success or failure */
 	FSetSessionDescriptionObserver* GetRemoteDescriptionObserver();
+	/** Get create description observer to set callback for set createOffer success or failure */
 	FCreateSessionDescriptionObserver* GetCreateDescriptionObserver();
 
 	const FSetSessionDescriptionObserver* GetLocalDescriptionObserver()     const;
 	const FSetSessionDescriptionObserver* GetRemoteDescriptionObserver()    const;
 	const FCreateSessionDescriptionObserver* GetCreateDescriptionObserver() const;
 
+	/** Create offer and generates SDP */
 	void CreateOffer();
+	/** Set local SDP */
 	void SetLocalDescription(const std::string& Sdp, const std::string& Type);
+	/** Set remote SDP */
 	void SetRemoteDescription(const std::string& Sdp, const std::string& Type=std::string("answer"));
 
-	// PeerConnection Observer interface
+	/* PeerConnection Observer interface */
 	void OnSignalingChange(webrtc::PeerConnectionInterface::SignalingState new_state) override;
 	void OnAddStream(rtc::scoped_refptr<webrtc::MediaStreamInterface> stream) override;
 	void OnRemoveStream(rtc::scoped_refptr<webrtc::MediaStreamInterface> stream) override;
@@ -81,6 +88,7 @@ public:
 	void OnIceCandidate(const webrtc::IceCandidateInterface* candidate) override;
 	void OnIceConnectionReceivingChange(bool receiving) override;
 
+	/* Return the webrtc peerconnection underlying pointer */
 	webrtc::PeerConnectionInterface* operator->()
 	{
 		return PeerConnection.get();

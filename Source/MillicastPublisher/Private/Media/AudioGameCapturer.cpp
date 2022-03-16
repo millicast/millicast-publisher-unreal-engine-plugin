@@ -12,13 +12,14 @@ IMillicastAudioSource* IMillicastAudioSource::Create()
 
 AudioGameCapturer::AudioGameCapturer() noexcept :
 	RtcAudioSource(nullptr), RtcAudioTrack(nullptr)
-{
-}
+{}
 
 IMillicastSource::FStreamTrackInterface AudioGameCapturer::StartCapture()
 {
+	// Get PCF to create audio source and audio track
 	auto peerConnectionFactory = FWebRTCPeerConnection::GetPeerConnectionFactory();
 
+	// Disable WebRTC processing
 	cricket::AudioOptions options;
 	options.echo_cancellation.emplace(false);
 	options.auto_gain_control.emplace(false);

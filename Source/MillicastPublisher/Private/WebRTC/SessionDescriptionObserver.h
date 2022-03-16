@@ -13,7 +13,6 @@ template<typename T>
 class TSessionDescriptionObserver : public rtc::RefCountedObject<T>
 {
 	friend class ::FWebRTCPeerConnection;
-	// friend class PeerConnection;
 	TFunction<void(const std::string&)> OnFailureCallback;
 public:
 	TSessionDescriptionObserver() : OnFailureCallback(nullptr) {}

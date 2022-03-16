@@ -7,11 +7,13 @@
 
 #include "Sound/SoundWaveProcedural.h"
 
-// A custom audio device module for WebRTC.
+/** A custom audio device module for WebRTC. */
 class FAudioDeviceModule : public webrtc::AudioDeviceModule, public ISubmixBufferListener
 {
+	/** Audio Sample type */
 	typedef int16_t Sample;
 
+	/** Audio device module constants */
 	static constexpr int kTimePerFrameMs = 10;
 	static constexpr uint8_t kNumberOfChannels = 2;
 	static constexpr int kSamplesPerSecond = 48000;
@@ -32,6 +34,7 @@ public:
 	static rtc::scoped_refptr<FAudioDeviceModule> Create(webrtc::TaskQueueFactory * queue_factory);
 
 public:
+	/** Called by the main audio device when a new audio data buffer is ready */
 	void OnNewSubmixBuffer(const USoundSubmix* OwningSubmix, float* AudioData,
 		int32 NumSamples, int32 NumChannels, const int32 SampleRate, double AudioClock) override;
 
@@ -196,7 +199,6 @@ private:
 
 	rtc::TaskQueue TaskQueue;
 
-	// Buffer for samples to send to the webrtc::AudioTransport.
 	TArray<Sample> AudioBuffer;
 	webrtc::AudioTransport * AudioTransport;
 

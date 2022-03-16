@@ -24,7 +24,7 @@ DECLARE_DYNAMIC_MULTICAST_SPARSE_DELEGATE(FMillicastPublisherComponentActive, UM
 DECLARE_DYNAMIC_MULTICAST_SPARSE_DELEGATE(FMillicastPublisherComponentInactive, UMillicastPublisherComponent, OnInactive);
 
 /**
-	A component used to receive audio, video from a Millicast feed.
+	A component used to publish audio, video feed to millicast.
 */
 UCLASS(BlueprintType, Blueprintable, Category = "MillicastPublisher",
 	   META = (DisplayName = "Millicast Publisher Component", BlueprintSpawnableComponent))
@@ -44,7 +44,7 @@ public:
 	~UMillicastPublisherComponent();
 
 	/**
-		Initialize this component with the media source required for receiving NDI audio, video, and metadata.
+		Initialize this component with the media source required for publishing  audio, video to Millicast.
 		Returns false, if the MediaSource is already been set. This is usually the case when this component is
 		initialized in Blueprints.
 	*/
@@ -64,14 +64,15 @@ public:
 	bool PublishWithWsAndJwt(const FString& WebSocketUrl, const FString& Jwt);
 
 	/**
-		Attempts to stop receiving video from the Millicast feed
+		Attempts to stop publishing video from the Millicast feed
 	*/
 	UFUNCTION(BlueprintCallable, Category = "MillicastPublisher", META = (DisplayName = "Unpublish"))
 	void UnPublish();
 
 	/**
-	* UFUNCTION(BlueprintCallable, Category = "MillicastPublisher", META = (DisplayName = "Unsubscribe"))
+	* Tells whether the compenent is publishing or not. true means it is publishing.
 	*/
+	UFUNCTION(BlueprintCallable, Category = "MillicastPublisher", META = (DisplayName = "IsPublishing"))
 	bool IsPublishing() const;
 
 public:
@@ -100,7 +101,7 @@ public:
 	FMillicastPublisherComponentInactive OnInactive;
 
 private:
-	/** Websocket Connection */
+	/** Websocket callback */
 	bool StartWebSocketConnection(const FString& url, const FString& jwt);
 	void OnConnected();
 	void OnConnectionError(const FString& Error);
@@ -113,6 +114,7 @@ private:
 	/** Create the peerconnection and starts subscribing*/
 	bool PublishToMillicast();
 
+private:
 	/** WebSocket Connection */
 	TSharedPtr<IWebSocket> WS;
 	FDelegateHandle OnConnectedHandle;
@@ -120,6 +122,9 @@ private:
 	FDelegateHandle OnClosedHandle;
 	FDelegateHandle OnMessageHandle;
 
+	/** WebRTC */
 	FWebRTCPeerConnection* PeerConnection;
+
+	/** Publisher */
 	bool bIsPublishing;
 };

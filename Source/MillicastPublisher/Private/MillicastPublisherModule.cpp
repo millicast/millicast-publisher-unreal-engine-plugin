@@ -13,7 +13,7 @@ DEFINE_LOG_CATEGORY(LogMillicastPublisher);
 #define LOCTEXT_NAMESPACE "MillicastPublisherModule"
 
 /**
- * Implements the NdiMedia module.
+ * Implements the Millicast Publisher module.
  */
 class FMillicastPublisherModule : public IMillicastPublisherModule
 {

@@ -16,14 +16,17 @@ RenderTargetCapturer::RenderTargetCapturer(UTextureRenderTarget2D* InRenderTarge
 
 RenderTargetCapturer::FStreamTrackInterface RenderTargetCapturer::StartCapture()
 {
+	// Check if a render target has been set in order to start the capture
 	if (RenderTarget == nullptr) 
 	{
 		UE_LOG(LogMillicastPublisher, Warning, TEXT("Could not start capture, no render target has been provided"));
 		return nullptr;
 	}
 
+	// Create WebRTC Video source
 	RtcVideoSource = new rtc::RefCountedObject<FTexture2DVideoSourceAdapter>();
 
+	// Get PCF to create video track
 	auto PeerConnectionFactory = FWebRTCPeerConnection::GetPeerConnectionFactory();
 
 	RtcVideoTrack = PeerConnectionFactory->CreateVideoTrack(to_string(TrackId.Get("render-target-track")), RtcVideoSource);
@@ -37,6 +40,7 @@ RenderTargetCapturer::FStreamTrackInterface RenderTargetCapturer::StartCapture()
 		UE_LOG(LogMillicastPublisher, Warning, TEXT("Could not create video track"));
 	}
 
+	// Attach a callback to be notified when a new frame is ready
 	FCoreDelegates::OnEndFrameRT.AddRaw(this, &RenderTargetCapturer::OnEndFrameRenderThread);
 
 	return RtcVideoTrack;
@@ -49,6 +53,7 @@ void RenderTargetCapturer::StopCapture()
 	RtcVideoTrack = nullptr;
 	RtcVideoSource = nullptr;
 
+	// Remove callback to stop receiveng end frame rendering event
 	FCoreDelegates::OnEndFrameRT.RemoveAll(this);
 }
 
@@ -70,20 +75,10 @@ void RenderTargetCapturer::OnEndFrameRenderThread()
 
 	if (RtcVideoSource)
 	{
+		// Read the render target resource texture 2D
 		FTexture2DRHIRef texture = RenderTarget->Resource->GetTexture2DRHI();
 
-		RtcVideoSource->OnFrameReady(texture);
-	}
-}
-
-void RenderTargetCapturer::OnEndFrame()
-{
-	FScopeLock Lock(&CriticalSection);
-
-	if (RtcVideoSource)
-	{
-		FTexture2DRHIRef texture = RenderTarget->Resource->GetTexture2DRHI();
-
+		// Convert it to WebRTC video frame
 		RtcVideoSource->OnFrameReady(texture);
 	}
 }

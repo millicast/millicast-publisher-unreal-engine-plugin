@@ -1,4 +1,4 @@
-// Copyright CoSMoSOftware 2021. All Rights Reserved.
+// Copyright Millicast 2022. All Rights Reserved.
 
 #pragma once
 

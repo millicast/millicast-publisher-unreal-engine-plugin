@@ -21,6 +21,7 @@
 
 constexpr auto HTTP_OK = 200;
 
+// lambda check if the event is bound before broadcasting.
 auto MakeBroadcastEvent = [](auto&& Event) {
 	return [&Event](auto&& ... Args) {
 		if (Event.IsBound()) 
@@ -36,6 +37,7 @@ UMillicastPublisherComponent::UMillicastPublisherComponent(const FObjectInitiali
 	WS = nullptr;
 	bIsPublishing = false;
 
+	// Event received from websocket signaling
 	EventBroadcaster.Emplace("active", MakeBroadcastEvent(OnActive));
 	EventBroadcaster.Emplace("inactive", MakeBroadcastEvent(OnInactive));
 }
@@ -67,32 +69,42 @@ bool UMillicastPublisherComponent::Publish()
 {
 	if (!IsValid(MillicastMediaSource)) return false;
 
+	// Create an HTTP request
 	auto PostHttpRequest = FHttpModule::Get().CreateRequest();
+	// Request parameters
 	PostHttpRequest->SetURL(MillicastMediaSource->GetUrl());
 	PostHttpRequest->SetVerb("POST");
+	// Fill HTTP request headers
 	PostHttpRequest->SetHeader("Content-Type", "application/json");
 	PostHttpRequest->SetHeader("Authorization", "Bearer " + MillicastMediaSource->PublishingToken);
 
+	// Creates JSON data fro the request
 	auto RequestData = MakeShared<FJsonObject>();
 	RequestData->SetStringField("streamName", MillicastMediaSource->StreamName);
 
+	// Serialize JSON into FString
 	FString SerializedRequestData;
 	auto JsonWriter = TJsonWriterFactory<>::Create(&SerializedRequestData);
 	FJsonSerializer::Serialize(RequestData, JsonWriter);
 
+	// Fill HTTP request data
 	PostHttpRequest->SetContentAsString(SerializedRequestData);
 
 	PostHttpRequest->OnProcessRequestComplete()
 		.BindLambda([this](FHttpRequestPtr Request,
 			FHttpResponsePtr Response,
 			bool bConnectedSuccessfully) {
+		// HTTP request sucessful
 		if (bConnectedSuccessfully && Response->GetResponseCode() == HTTP_OK) {
 			FString ResponseDataString = Response->GetContentAsString();
 			TSharedPtr<FJsonObject> ResponseDataJson;
 			auto JsonReader = TJsonReaderFactory<>::Create(ResponseDataString);
 
+			// Deserialize received JSON message
 			if (FJsonSerializer::Deserialize(JsonReader, ResponseDataJson)) {
 				TSharedPtr<FJsonObject> DataField = ResponseDataJson->GetObjectField("data");
+
+				// Extract JSON WebToken and Websocket URL
 				auto Jwt = DataField->GetStringField("jwt");
 				auto WebSocketUrlField = DataField->GetArrayField("urls")[0];
 				FString WsUrl;
@@ -102,6 +114,7 @@ bool UMillicastPublisherComponent::Publish()
 				UE_LOG(LogMillicastPublisher, Log, TEXT("WsUrl : %s \njwt : %s"),
 					*WsUrl, *Jwt);
 
+				// Creates websocket connection and starts signaling
 				StartWebSocketConnection(WsUrl, Jwt);
 			}
 		}
@@ -121,10 +134,11 @@ bool UMillicastPublisherComponent::PublishWithWsAndJwt(const FString& WsUrl, con
 }
 
 /**
-	Attempts to stop receiving audio, video.
+	Attempts to stop publishing audio, video.
 */
 void UMillicastPublisherComponent::UnPublish()
 {
+	// Release peerconnection and stop capture
 	if(PeerConnection)
 	{
 		delete PeerConnection;
@@ -133,6 +147,7 @@ void UMillicastPublisherComponent::UnPublish()
 		MillicastMediaSource->StopCapture();
 	}
 
+	// Close websocket connection
 	if (WS) {
 		WS->Close();
 		WS = nullptr;
@@ -149,6 +164,7 @@ bool UMillicastPublisherComponent::IsPublishing() const
 bool UMillicastPublisherComponent::StartWebSocketConnection(const FString& Url,
                                                      const FString& Jwt)
 {
+	// Check if WebSocket module is loaded. It may crash otherwise.
 	if (!FModuleManager::Get().IsModuleLoaded("WebSockets"))
 	{
 		FModuleManager::Get().LoadModule("WebSockets");
@@ -156,6 +172,7 @@ bool UMillicastPublisherComponent::StartWebSocketConnection(const FString& Url,
 
 	WS = FWebSocketsModule::Get().CreateWebSocket(Url + "?token=" + Jwt);
 
+	// Attach callback
 	OnConnectedHandle = WS->OnConnected().AddLambda([this]() { OnConnected(); });
 	OnConnectionErrorHandle = WS->OnConnectionError().AddLambda([this](const FString& Error) { OnConnectionError(Error); });
 	OnClosedHandle = WS->OnClosed().AddLambda([this](int32 StatusCode, const FString& Reason, bool bWasClean) { OnClosed(StatusCode, Reason, bWasClean); });
@@ -171,8 +188,11 @@ bool UMillicastPublisherComponent::PublishToMillicast()
 	PeerConnection =
 		FWebRTCPeerConnection::Create(FWebRTCPeerConnection::GetDefaultConfig());
 
+	// Starts the capture first and add track to the peerconnection
+	// TODO: add a boolean to let choose autoplay or not
 	CaptureAndAddTracks();
 
+	// Get session description observers
 	auto * CreateSessionDescriptionObserver = PeerConnection->GetCreateDescriptionObserver();
 	auto * LocalDescriptionObserver  = PeerConnection->GetLocalDescriptionObserver();
 	auto * RemoteDescriptionObserver = PeerConnection->GetRemoteDescriptionObserver();
@@ -192,15 +212,23 @@ bool UMillicastPublisherComponent::PublishToMillicast()
 		std::string sdp;
 		(*PeerConnection)->local_description()->ToString(&sdp);
 
+		// Add events we want to receive from millicast
 		TArray<TSharedPtr<FJsonValue>> eventsJson;
-		eventsJson.Add(MakeShared<FJsonValueString>("active"));
-		eventsJson.Add(MakeShared<FJsonValueString>("inactive"));
+		TArray<FString> EvKeys;
+		EventBroadcaster.GetKeys(EvKeys);
 
+		for (auto& ev : EvKeys) 
+		{
+			eventsJson.Add(MakeShared<FJsonValueString>(ev));
+		}
+
+		// Fill signaling data
 		auto DataJson = MakeShared<FJsonObject>();
 		DataJson->SetStringField("name", MillicastMediaSource->StreamName);
 		DataJson->SetStringField("sdp", ToString(sdp));
 		DataJson->SetArrayField("events", eventsJson);
 
+		// If multisource feature
 		if (!MillicastMediaSource->SourceId.IsEmpty())
 		{
 			DataJson->SetStringField("sourceId", MillicastMediaSource->SourceId);
@@ -238,6 +266,7 @@ bool UMillicastPublisherComponent::PublishToMillicast()
 		OnPublishingError.Broadcast(TEXT("Could not set remote description"));
 	});
 
+	// Send only
 	PeerConnection->OaOptions.offer_to_receive_video = false;
 	PeerConnection->OaOptions.offer_to_receive_audio = false;
 
@@ -275,6 +304,7 @@ void UMillicastPublisherComponent::OnMessage(const FString& Msg)
 	TSharedPtr<FJsonObject> ResponseJson;
 	auto Reader = TJsonReaderFactory<>::Create(Msg);
 
+	// Deserialize JSON message
 	bool ok = FJsonSerializer::Deserialize(Reader, ResponseJson);
 	if (!ok) {
 		UE_LOG(LogMillicastPublisher, Error, TEXT("Could not deserialize JSON"));
@@ -284,6 +314,7 @@ void UMillicastPublisherComponent::OnMessage(const FString& Msg)
 	FString Type;
 	if(!ResponseJson->TryGetStringField("type", Type)) return;
 
+	// Signaling response
 	if(Type == "response") 
 	{
 		auto DataJson = ResponseJson->GetObjectField("data");
@@ -293,14 +324,14 @@ void UMillicastPublisherComponent::OnMessage(const FString& Msg)
 			PeerConnection->SetRemoteDescription(to_string(Sdp));
 		}
 	}
-	else if(Type == "error") 
+	else if(Type == "error") // Error in the request data sent to millicast
 	{
 		FString errorMessage;
 		auto dataJson = ResponseJson->TryGetStringField("data", errorMessage);
 
 		UE_LOG(LogMillicastPublisher, Error, TEXT("WebSocket error : %s"), *errorMessage);
 	}
-	else if(Type == "event") 
+	else if(Type == "event") // Events received from millicast
 	{
 		FString eventName;
 		ResponseJson->TryGetStringField("name", eventName);
@@ -317,7 +348,9 @@ void UMillicastPublisherComponent::OnMessage(const FString& Msg)
 
 void UMillicastPublisherComponent::CaptureAndAddTracks()
 {
+	// Starts audio and video capture
 	MillicastMediaSource->StartCapture([this](auto&& Track) {
+		// Add transceiver with sendonly direction
 		webrtc::RtpTransceiverInit init;
 		init.direction = webrtc::RtpTransceiverDirection::kSendOnly;
 		init.stream_ids = { "unrealstream" };

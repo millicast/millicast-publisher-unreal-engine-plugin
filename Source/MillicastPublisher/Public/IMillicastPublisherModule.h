@@ -11,7 +11,7 @@ class IMediaEventSink;
 class IMediaPlayer;
 
 /**
- * Interface for the Media module.
+ * Interface Millicast publisher module
  */
 class IMillicastPublisherModule : public IModuleInterface
 {

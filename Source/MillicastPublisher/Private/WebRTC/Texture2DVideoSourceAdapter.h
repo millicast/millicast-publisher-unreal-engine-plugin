@@ -5,15 +5,13 @@
 #include "WebRTCInc.h"
 #include "RHI.h"
 
-
+/** Video Source adapter to create webrtc video frame from a Texture 2D and push it into webrtc pipelines */
 class FTexture2DVideoSourceAdapter : public rtc::AdaptedVideoTrackSource
 {
 public:
 	FTexture2DVideoSourceAdapter() noexcept = default;
 	~FTexture2DVideoSourceAdapter() = default;
 
-	void Initialize(const FTexture2DRHIRef& FrameBuffer);
-	bool IsInitialized();
 	void OnFrameReady(const FTexture2DRHIRef& FrameBuffer);
 
 	webrtc::MediaSourceInterface::SourceState state() const override;

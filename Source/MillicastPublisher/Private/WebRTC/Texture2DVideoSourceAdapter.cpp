@@ -5,24 +5,9 @@
 #include "Texture2DFrameBuffer.h"
 
 #include "MillicastPublisherPrivate.h"
-#include "GlobalShader.h"
-#include "ScreenRendering.h"
-#include "CommonRenderResources.h"
-
-void FTexture2DVideoSourceAdapter::Initialize(const FTexture2DRHIRef& FrameBuffer)
-{
-
-}
-
-bool FTexture2DVideoSourceAdapter::IsInitialized()
-{
-	return true;
-}
 
 void FTexture2DVideoSourceAdapter::OnFrameReady(const FTexture2DRHIRef& FrameBuffer)
 {
-	if (!IsInitialized()) return;
-
 	const int64 Timestamp = rtc::TimeMicros();
 
 	if (!AdaptVideoFrame(Timestamp, FrameBuffer->GetSizeXY())) return;

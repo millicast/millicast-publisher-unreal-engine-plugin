@@ -7,6 +7,7 @@
 
 namespace libyuv {
 	extern "C" {
+		/** libyuv header can't be included here, so just declare this function to convert the frames. */
 		int ARGBToI420(const uint8_t* src_bgra,
 			int src_stride_bgra,
 			uint8_t* dst_y,
@@ -31,16 +32,20 @@ public:
 
 	explicit FTexture2DFrameBuffer(FTexture2DRHIRef SourceTexture) noexcept
 	{
+		/* Get video farme height and  width */
 		Width = SourceTexture->GetSizeX();
 		Height = SourceTexture->GetSizeY();
 
+		/* Create an I420 buffer */
 		Buffer = webrtc::I420Buffer::Create(Width, Height);
 
+		/* Convert the texture2d frame to YUV pixel format */
 		FRHICommandListImmediate& RHICommandList = FRHICommandListExecutor::GetImmediateCommandList();
 
+		const auto ARGB_BUFFER_SIZE = Width * Height * 4;
 		FIntRect Rect(0, 0, Width, Height);
 		TArray<FColor> ColorData;
-		uint8* TextureData = new uint8[Width * Height * 4];
+		uint8* TextureData = new uint8[ARGB_BUFFER_SIZE];
 			
 		FReadSurfaceDataFlags ReadSurfaceData{};
 		ReadSurfaceData.SetMip(0);
@@ -59,17 +64,25 @@ public:
 		uint8* DataU = Buffer->MutableDataU();
 		uint8* DataV = Buffer->MutableDataV();
 
-		libyuv::ARGBToI420(TextureData, Width * 4,
+		/* The buffer is in BGRA, but for some reason, this is ARGGToI420 that we need to use */
+		const auto STRIDES = Width * 4;
+		libyuv::ARGBToI420(TextureData, STRIDES,
 			DataY, Buffer->StrideY(), DataU, Buffer->StrideU(), DataV, Buffer->StrideV(),
 			Width, Height);
 
 		delete[] TextureData;
 	}
 	
+	/** Get video frame width */
 	int width() const override { return Width; }
+
+	/** Get video frame height */
 	int height() const override { return Height; }
+
+	/** Get buffer type */
 	Type type() const override { return Type::kNative; }
 
+	/** Get the I420 buffer */
 	rtc::scoped_refptr<webrtc::I420BufferInterface> ToI420() override
 	{
 		return Buffer;
