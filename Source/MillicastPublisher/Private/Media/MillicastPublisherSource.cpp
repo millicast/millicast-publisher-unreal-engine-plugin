@@ -7,7 +7,10 @@
 #include <RenderTargetPool.h>
 
 UMillicastPublisherSource::UMillicastPublisherSource()
-{}
+{
+	// Add default StreamUrl
+	StreamUrl = "https://director.millicast.com/director/api/publish";
+}
 
 void UMillicastPublisherSource::BeginDestroy()
 {
