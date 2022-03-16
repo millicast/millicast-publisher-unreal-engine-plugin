@@ -59,7 +59,7 @@ private:
 		const FVector2D Icon20x20(20.0f, 20.0f);
 		const FVector2D Icon64x64(64.0f, 64.0f);
 
-		StyleInstance->Set("ClassThumbnail.MillicastMediaSource",
+		StyleInstance->Set("ClassThumbnail.MillicastPublisherSource",
 				   new IMAGE_BRUSH("MillicastMediaSource_64x", Icon64x64));
 		StyleInstance->Set("ClassIcon.MillicastMediaSource",
 				   new IMAGE_BRUSH("MillicastMediaSource_20x", Icon20x20));
