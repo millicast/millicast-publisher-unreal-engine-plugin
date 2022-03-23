@@ -14,6 +14,17 @@ RenderTargetCapturer::RenderTargetCapturer(UTextureRenderTarget2D* InRenderTarge
 	: RenderTarget(InRenderTarget)
 {}
 
+RenderTargetCapturer::~RenderTargetCapturer() noexcept
+{
+	FScopeLock Lock(&CriticalSection);
+
+	if (RtcVideoSource)
+	{
+		// Remove callback to stop receiveng end frame rendering event
+		FCoreDelegates::OnEndFrameRT.RemoveAll(this);
+	}
+}
+
 RenderTargetCapturer::FStreamTrackInterface RenderTargetCapturer::StartCapture()
 {
 	// Check if a render target has been set in order to start the capture

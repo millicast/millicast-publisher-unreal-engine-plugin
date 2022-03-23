@@ -54,6 +54,7 @@ UMillicastPublisherComponent::~UMillicastPublisherComponent()
 */
 bool UMillicastPublisherComponent::Initialize(UMillicastPublisherSource* InMediaSource)
 {
+	UE_LOG(LogMillicastPublisher, Log, TEXT("Initialize Millicast Publisher component"));
 	if (MillicastMediaSource == nullptr && InMediaSource != nullptr)
 	{
 		MillicastMediaSource = InMediaSource;
@@ -68,7 +69,8 @@ bool UMillicastPublisherComponent::Initialize(UMillicastPublisherSource* InMedia
 bool UMillicastPublisherComponent::Publish()
 {
 	if (!IsValid(MillicastMediaSource)) return false;
-
+	
+	UE_LOG(LogMillicastPublisher, Log, TEXT("Making HTTP director request"));
 	// Create an HTTP request
 	auto PostHttpRequest = FHttpModule::Get().CreateRequest();
 	// Request parameters
@@ -138,6 +140,7 @@ bool UMillicastPublisherComponent::PublishWithWsAndJwt(const FString& WsUrl, con
 */
 void UMillicastPublisherComponent::UnPublish()
 {
+	UE_LOG(LogMillicastPublisher, Display, TEXT("Unpublish"));
 	// Release peerconnection and stop capture
 	if(PeerConnection)
 	{
@@ -164,6 +167,7 @@ bool UMillicastPublisherComponent::IsPublishing() const
 bool UMillicastPublisherComponent::StartWebSocketConnection(const FString& Url,
                                                      const FString& Jwt)
 {
+	UE_LOG(LogMillicastPublisher, Log, TEXT("Start WebSocket connection"));
 	// Check if WebSocket module is loaded. It may crash otherwise.
 	if (!FModuleManager::Get().IsModuleLoaded("WebSockets"))
 	{
@@ -270,6 +274,7 @@ bool UMillicastPublisherComponent::PublishToMillicast()
 	PeerConnection->OaOptions.offer_to_receive_video = false;
 	PeerConnection->OaOptions.offer_to_receive_audio = false;
 
+	UE_LOG(LogMillicastPublisher, Log, TEXT("Create offer"));
 	PeerConnection->CreateOffer();
 
 	return true;

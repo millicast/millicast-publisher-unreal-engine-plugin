@@ -51,7 +51,7 @@ void FWebRTCPeerConnection::CreatePeerConnectionFactory()
 				webrtc::CreateBuiltinVideoEncoderFactory(),
 				webrtc::CreateBuiltinVideoDecoderFactory(),
 				nullptr, AudioProcessingModule
-	  );
+	  ).release();
 
 	// Check
 	if (!PeerConnectionFactory)

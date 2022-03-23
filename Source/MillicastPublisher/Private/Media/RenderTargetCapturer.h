@@ -17,6 +17,7 @@ class RenderTargetCapturer : public IMillicastVideoSource
 
 public:
 	explicit RenderTargetCapturer(UTextureRenderTarget2D* InRenderTarget) noexcept;
+	~RenderTargetCapturer() noexcept;
 
 	FStreamTrackInterface StartCapture() override;
 	void StopCapture() override;

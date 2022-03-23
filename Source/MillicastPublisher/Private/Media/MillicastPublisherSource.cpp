@@ -6,14 +6,15 @@
 
 #include <RenderTargetPool.h>
 
-UMillicastPublisherSource::UMillicastPublisherSource()
+UMillicastPublisherSource::UMillicastPublisherSource() : VideoSource(nullptr), AudioSource(nullptr)
 {
 	// Add default StreamUrl
-	StreamUrl = "https://director.millicast.com/director/api/publish";
+	StreamUrl = "https://director.millicast.com/api/director/publish";
 }
 
 void UMillicastPublisherSource::BeginDestroy()
 {
+	UE_LOG(LogMillicastPublisher, Display, TEXT("Destroy MillicastPublisher Source"));
 	// Stop the capture before destroying the object
 	StopCapture();
 
@@ -29,6 +30,15 @@ void UMillicastPublisherSource::MuteVideo(bool Muted)
 {
 	if (VideoSource)
 	{
+		if (Muted)
+		{
+			UE_LOG(LogMillicastPublisher, Log, TEXT("Mute video"));
+		}
+		else
+		{
+			UE_LOG(LogMillicastPublisher, Log, TEXT("Unmute video"));
+		}
+
 		auto track = VideoSource->GetTrack();
 		track->set_enabled(!Muted);
 	}
@@ -97,6 +107,7 @@ void UMillicastPublisherSource::PostEditChangeChainProperty(struct FPropertyChan
 
 void UMillicastPublisherSource::StartCapture(TFunction<void(IMillicastSource::FStreamTrackInterface)> Callback)
 {
+	UE_LOG(LogMillicastPublisher, Log, TEXT("Start capture"));
 	// If video is enabled, create video capturer
 	if (CaptureVideo)
 	{
@@ -130,6 +141,7 @@ void UMillicastPublisherSource::StartCapture(TFunction<void(IMillicastSource::FS
 
 void UMillicastPublisherSource::StopCapture()
 {
+	UE_LOG(LogMillicastPublisher, Display, TEXT("Stop capture"));
 	// Stop video capturer
 	if (VideoSource) 
 	{
@@ -149,6 +161,7 @@ void UMillicastPublisherSource::ChangeRenderTarget(UTextureRenderTarget2D* InRen
 	// This is allowed only when a capture has been starts with the Render Target capturer
 	if (InRenderTarget != nullptr && RenderTarget != nullptr && VideoSource != nullptr)
 	{
+		UE_LOG(LogMillicastPublisher, Log, TEXT("Changing render target"));
 		RenderTarget = InRenderTarget;
 		auto* src = static_cast<RenderTargetCapturer*>(VideoSource.Get());
 		src->SwitchTarget(RenderTarget);

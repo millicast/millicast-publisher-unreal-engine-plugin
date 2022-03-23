@@ -24,7 +24,7 @@ UMillicastPublisherSourceFactoryNew::UMillicastPublisherSourceFactoryNew(const F
 
 FText UMillicastPublisherSourceFactoryNew::GetDisplayName() const
 {
-	return LOCTEXT("MillicastPublisherSourceFactory", "Millicast Media Source");
+	return LOCTEXT("MillicastPublisherSourceFactory", "Millicast Publisher Source");
 }
 
 UObject* UMillicastPublisherSourceFactoryNew::FactoryCreateNew(UClass* InClass, UObject* InParent, FName InName, EObjectFlags Flags, UObject* Context, FFeedbackContext* Warn)
