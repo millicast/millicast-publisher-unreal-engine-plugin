@@ -44,7 +44,9 @@ namespace UnrealBuildTool.Rules
 					"Json",
 					"SSL",
 					"RHI",
-					"HeadMountedDisplay"
+					"HeadMountedDisplay",
+					"CinematicCamera",
+					"InputCore"
 		});
 
 			PrivateIncludePathModuleNames.AddRange(
