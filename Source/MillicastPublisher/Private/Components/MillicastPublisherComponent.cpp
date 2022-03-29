@@ -40,6 +40,8 @@ UMillicastPublisherComponent::UMillicastPublisherComponent(const FObjectInitiali
 	// Event received from websocket signaling
 	EventBroadcaster.Emplace("active", MakeBroadcastEvent(OnActive));
 	EventBroadcaster.Emplace("inactive", MakeBroadcastEvent(OnInactive));
+
+	PeerConnectionConfig = FWebRTCPeerConnection::GetDefaultConfig();
 }
 
 UMillicastPublisherComponent::~UMillicastPublisherComponent()
@@ -61,6 +63,79 @@ bool UMillicastPublisherComponent::Initialize(UMillicastPublisherSource* InMedia
 	}
 
 	return InMediaSource != nullptr && InMediaSource == MillicastMediaSource;
+}
+
+void UMillicastPublisherComponent::SetupIceServersFromJson(TArray<TSharedPtr<FJsonValue>> IceServersField)
+{
+	PeerConnectionConfig.servers.clear();
+	for (auto& elt : IceServersField)
+	{
+		const TSharedPtr<FJsonObject>* IceServerJson;
+		bool ok = elt->TryGetObject(IceServerJson);
+
+		if (!ok)
+		{
+			UE_LOG(LogMillicastPublisher, Warning, TEXT("Could not read ice server json"));
+			continue;
+		}
+
+		TArray<FString> iceServerUrls;
+		FString iceServerPassword, iceServerUsername;
+
+		bool hasUrls = (*IceServerJson)->TryGetStringArrayField("urls", iceServerUrls);
+		bool hasUsername = (*IceServerJson)->TryGetStringField("username", iceServerUsername);
+		bool hasPassword = (*IceServerJson)->TryGetStringField("credential", iceServerPassword);
+
+		webrtc::PeerConnectionInterface::IceServer iceServer;
+		if (hasUrls)
+		{
+			for (auto& url : iceServerUrls)
+			{
+				iceServer.urls.push_back(to_string(url));
+			}
+		}
+		if (hasUsername)
+		{
+			iceServer.username = to_string(iceServerUsername);
+		}
+		if (hasPassword)
+		{
+			iceServer.password = to_string(iceServerPassword);
+		}
+
+		PeerConnectionConfig.servers.push_back(iceServer);
+	}
+}
+
+void UMillicastPublisherComponent::ParseDirectorResponse(FHttpResponsePtr Response)
+{
+	FString ResponseDataString = Response->GetContentAsString();
+	UE_LOG(LogMillicastPublisher, Log, TEXT("Director response : \n %s \n"), *ResponseDataString);
+
+	TSharedPtr<FJsonObject> ResponseDataJson;
+	auto JsonReader = TJsonReaderFactory<>::Create(ResponseDataString);
+
+	// Deserialize received JSON message
+	if (FJsonSerializer::Deserialize(JsonReader, ResponseDataJson)) 
+	{
+		TSharedPtr<FJsonObject> DataField = ResponseDataJson->GetObjectField("data");
+
+		// Extract JSON WebToken, Websocket URL and ice servers configuration
+		auto Jwt = DataField->GetStringField("jwt");
+		auto WebSocketUrlField = DataField->GetArrayField("urls")[0];
+		auto IceServersField = DataField->GetArrayField("iceServers");
+
+		FString WsUrl;
+		WebSocketUrlField->TryGetString(WsUrl);
+
+		UE_LOG(LogMillicastPublisher, Log, TEXT("WsUrl : %s \njwt : %s"),
+			*WsUrl, *Jwt);
+
+		SetupIceServersFromJson(IceServersField);
+
+		// Creates websocket connection and starts signaling
+		StartWebSocketConnection(WsUrl, Jwt);
+	}
 }
 
 /**
@@ -97,30 +172,12 @@ bool UMillicastPublisherComponent::Publish()
 			FHttpResponsePtr Response,
 			bool bConnectedSuccessfully) {
 		// HTTP request sucessful
-		if (bConnectedSuccessfully && Response->GetResponseCode() == HTTP_OK) {
-			FString ResponseDataString = Response->GetContentAsString();
-			TSharedPtr<FJsonObject> ResponseDataJson;
-			auto JsonReader = TJsonReaderFactory<>::Create(ResponseDataString);
-
-			// Deserialize received JSON message
-			if (FJsonSerializer::Deserialize(JsonReader, ResponseDataJson)) {
-				TSharedPtr<FJsonObject> DataField = ResponseDataJson->GetObjectField("data");
-
-				// Extract JSON WebToken and Websocket URL
-				auto Jwt = DataField->GetStringField("jwt");
-				auto WebSocketUrlField = DataField->GetArrayField("urls")[0];
-				FString WsUrl;
-
-				WebSocketUrlField->TryGetString(WsUrl);
-
-				UE_LOG(LogMillicastPublisher, Log, TEXT("WsUrl : %s \njwt : %s"),
-					*WsUrl, *Jwt);
-
-				// Creates websocket connection and starts signaling
-				StartWebSocketConnection(WsUrl, Jwt);
-			}
+		if (bConnectedSuccessfully && Response->GetResponseCode() == HTTP_OK) 
+		{
+			ParseDirectorResponse(Response);
 		}
-		else {
+		else 
+		{
 			UE_LOG(LogMillicastPublisher, Error, TEXT("Director HTTP request failed %d %s"), Response->GetResponseCode(), *Response->GetContentType());
 			FString ErrorMsg = Response->GetContentAsString();
 			OnAuthenticationFailure.Broadcast(Response->GetResponseCode(), ErrorMsg);
@@ -190,7 +247,7 @@ bool UMillicastPublisherComponent::StartWebSocketConnection(const FString& Url,
 bool UMillicastPublisherComponent::PublishToMillicast()
 {
 	PeerConnection =
-		FWebRTCPeerConnection::Create(FWebRTCPeerConnection::GetDefaultConfig());
+		FWebRTCPeerConnection::Create(PeerConnectionConfig);
 
 	// Starts the capture first and add track to the peerconnection
 	// TODO: add a boolean to let choose autoplay or not

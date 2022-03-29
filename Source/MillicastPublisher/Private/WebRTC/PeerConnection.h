@@ -19,7 +19,6 @@ class TaskQueueFactory;
 class FWebRTCPeerConnection : public webrtc::PeerConnectionObserver
 {
 	using FMediaStreamVector = std::vector<rtc::scoped_refptr<webrtc::MediaStreamInterface>>;
-	using FRTCConfig = webrtc::PeerConnectionInterface::RTCConfiguration;
 
 	rtc::scoped_refptr<webrtc::PeerConnectionInterface> PeerConnection;
 
@@ -43,6 +42,8 @@ class FWebRTCPeerConnection : public webrtc::PeerConnectionObserver
 	static void CreatePeerConnectionFactory();
   
 public:
+	using FRTCConfig = webrtc::PeerConnectionInterface::RTCConfiguration;
+
 	/** Offer/Answer options (e.g. offer to receive audio/video) */
 	webrtc::PeerConnectionInterface::RTCOfferAnswerOptions OaOptions;
 

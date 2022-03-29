@@ -12,6 +12,7 @@
 // Forward declarations
 class IWebSocket;
 class FWebRTCPeerConnection;
+class IHttpResponse;
 
 // Event declaration
 DECLARE_DYNAMIC_MULTICAST_SPARSE_DELEGATE(FMillicastPublisherComponentAuthenticated, UMillicastPublisherComponent, OnAuthenticated);
@@ -114,6 +115,9 @@ private:
 	/** Create the peerconnection and starts subscribing*/
 	bool PublishToMillicast();
 
+	void ParseDirectorResponse(TSharedPtr<IHttpResponse, ESPMode::ThreadSafe> Response);
+	void SetupIceServersFromJson(TArray<TSharedPtr<FJsonValue>> IceServersField);
+
 private:
 	/** WebSocket Connection */
 	TSharedPtr<IWebSocket> WS;
@@ -124,6 +128,7 @@ private:
 
 	/** WebRTC */
 	FWebRTCPeerConnection* PeerConnection;
+	webrtc::PeerConnectionInterface::RTCConfiguration PeerConnectionConfig;
 
 	/** Publisher */
 	bool bIsPublishing;

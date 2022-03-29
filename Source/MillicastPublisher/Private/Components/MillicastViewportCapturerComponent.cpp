@@ -33,7 +33,7 @@ void UMillicastViewportCapturerComponent::InitializeComponent()
 		.EnableBlending(true)
 		.EnableStereoRendering(false)
 		.ForceVolatile(true)
-		.IgnoreTextureAlpha(true);
+		.IgnoreTextureAlpha(false);
 
 	SceneViewport = MakeShareable(new FSceneViewport(this, ViewportWidget));
 	ViewportWidget->SetViewportInterface(SceneViewport.ToSharedRef());
