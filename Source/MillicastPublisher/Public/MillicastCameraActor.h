@@ -18,9 +18,6 @@ class MILLICASTPUBLISHER_API AMillicastCameraActor : public AActor
 	GENERATED_UCLASS_BODY()
 
 public:
-	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = RenderTarget, AssetRegistrySearchable)
-	UTextureRenderTarget2D* RenderTarget = nullptr;
-
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = Viewport, AssetRegistrySearchable)
 	UMillicastViewportCapturerComponent* ViewportCapturer;
 

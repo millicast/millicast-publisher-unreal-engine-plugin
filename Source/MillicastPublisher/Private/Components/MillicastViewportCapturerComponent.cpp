@@ -14,11 +14,11 @@ UMillicastViewportCapturerComponent::UMillicastViewportCapturerComponent(const F
 
 	/** Setup tick component */
 	PrimaryComponentTick.bAllowTickOnDedicatedServer = false;
-	PrimaryComponentTick.bCanEverTick = true;
-	PrimaryComponentTick.bHighPriority = true;
-	PrimaryComponentTick.bRunOnAnyThread = false;
-	PrimaryComponentTick.bStartWithTickEnabled = true;
-	PrimaryComponentTick.bTickEvenWhenPaused = true;
+	PrimaryComponentTick.bCanEverTick                = false;
+	PrimaryComponentTick.bHighPriority               = true;
+	PrimaryComponentTick.bRunOnAnyThread             = false;
+	PrimaryComponentTick.bStartWithTickEnabled       = false;
+	PrimaryComponentTick.bTickEvenWhenPaused         = true;
 }
 
 void UMillicastViewportCapturerComponent::InitializeComponent()
@@ -39,9 +39,11 @@ void UMillicastViewportCapturerComponent::InitializeComponent()
 	ViewportWidget->SetViewportInterface(SceneViewport.ToSharedRef());
 	
 	// Setup tick interval
-	PrimaryComponentTick.TickInterval = TargetRate.Denominator / (float)TargetRate.Numerator;;
+	PrimaryComponentTick.TickInterval = TargetRate.Denominator / (float)TargetRate.Numerator;
+	PrimaryComponentTick.bCanEverTick          = true;
+	PrimaryComponentTick.bStartWithTickEnabled = true;
 
-	/** Create Renderable texture */
+	// Create Renderable texture
 	FRHIResourceCreateInfo CreateInfo = { FClearValueBinding(FLinearColor(0.0f, 0.0f, 0.0f)) };
 
 	FTexture2DRHIRef ReferenceTexture = RHICreateTexture2D(TargetSize.X, TargetSize.Y, EPixelFormat::PF_B8G8R8A8, 1,
@@ -89,9 +91,9 @@ void UMillicastViewportCapturerComponent::TickComponent(float DeltaTime, ELevelT
 				ViewFamily->ViewExtensions.Empty();
 
 				// Update the ViewFamily time
-				ViewFamily->CurrentRealTime = RealTimeSeconds;
+				ViewFamily->CurrentRealTime  = RealTimeSeconds;
 				ViewFamily->CurrentWorldTime = TimeSeconds;
-				ViewFamily->DeltaWorldTime = DeltaTimeSeconds;
+				ViewFamily->DeltaWorldTime   = DeltaTimeSeconds;
 
 				// Start Rendering the ViewFamily
 				GetRendererModule().BeginRenderingViewFamily(&Canvas, ViewFamily);
@@ -133,12 +135,6 @@ void UMillicastViewportCapturerComponent::SetupView()
 	if (ViewFamily == nullptr)
 	{
 		FScopeLock Lock(&UpdateRenderContext);
-
-		if (ViewFamily != nullptr)
-		{
-			delete ViewFamily;
-			ViewFamily = nullptr;
-		}
 
 		// Ensure we have the features we require for nice clean scene capture
 		EngineShowFlags.SetOnScreenDebug(false);

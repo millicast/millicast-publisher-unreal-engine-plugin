@@ -14,9 +14,4 @@ AMillicastCameraActor::AMillicastCameraActor(const FObjectInitializer& ObjectIni
 void AMillicastCameraActor::BeginPlay()
 {
 	Super::BeginPlay();
-
-	if (RenderTarget) 
-	{
-		ViewportCapturer->RenderTarget = RenderTarget;
-	}
 }

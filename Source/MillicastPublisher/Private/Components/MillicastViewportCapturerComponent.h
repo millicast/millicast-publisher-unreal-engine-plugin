@@ -4,7 +4,7 @@
 
 #include <CoreMinimal.h>
 
-#include "Camera/CameraComponent.h"
+#include "CineCameraComponent.h"
 #include <Engine/TextureRenderTarget2D.h>
 #include <Misc/FrameRate.h>
 #include <Slate/SceneViewport.h>
@@ -14,13 +14,14 @@
 
 /** A component used to capture viewport from a Millicast Camera Actor */
 UCLASS(BlueprintType, Blueprintable, Category = "Millicast Publisher", META = (DisplayName = "Millicast Viewport Capturer Component", BlueprintSpawnableComponent))
-class MILLICASTPUBLISHER_API UMillicastViewportCapturerComponent : public UCameraComponent,
+class MILLICASTPUBLISHER_API UMillicastViewportCapturerComponent : public UCineCameraComponent,
 	public FCommonViewportClient,
 	public FRenderTarget
 {
 	GENERATED_UCLASS_BODY()
 
 public:
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Render Target", META = (DisplayName = "Render Target"))
 	UTextureRenderTarget2D* RenderTarget = nullptr;
 
 private:
@@ -37,16 +38,16 @@ private:
 	FFrameRate TargetRate = FFrameRate(60, 1);
 
 protected:
-	virtual void InitializeComponent() override;
-	virtual void TickComponent(float DeltaTime, ELevelTick TickType,
+	void InitializeComponent() override;
+	void TickComponent(float DeltaTime, ELevelTick TickType,
 		FActorComponentTickFunction* ThisTickFunction) override;
-	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason);
-	virtual void CloseRequested(FViewport* Viewport) override;
+	void EndPlay(const EEndPlayReason::Type EndPlayReason);
+	void CloseRequested(FViewport* Viewport) override;
 
 	// RenderTarget overrides
-	virtual FIntPoint GetSizeXY() const override   { return TargetSize;  }
-	virtual float GetDisplayGamma() const override { return GAMMA; }
-	virtual const FTexture2DRHIRef& GetRenderTargetTexture() const override 
+	FIntPoint GetSizeXY() const override   { return TargetSize;  }
+	float GetDisplayGamma() const override { return GAMMA; }
+	const FTexture2DRHIRef& GetRenderTargetTexture() const override 
 	{ 
 		return (FTexture2DRHIRef&)RenderableTexture; 
 	}
