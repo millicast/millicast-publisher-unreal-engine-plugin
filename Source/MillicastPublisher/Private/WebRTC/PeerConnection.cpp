@@ -8,7 +8,7 @@
 
 rtc::scoped_refptr<webrtc::PeerConnectionFactoryInterface> FWebRTCPeerConnection::PeerConnectionFactory = nullptr;
 TUniquePtr<rtc::Thread> FWebRTCPeerConnection::SignalingThread = nullptr;
-rtc::scoped_refptr<webrtc::AudioDeviceModule> FWebRTCPeerConnection::AudioDeviceModule = nullptr;
+rtc::scoped_refptr<FAudioDeviceModule> FWebRTCPeerConnection::AudioDeviceModule = nullptr;
 std::unique_ptr<webrtc::TaskQueueFactory> FWebRTCPeerConnection::TaskQueueFactory = nullptr;
 
 void FWebRTCPeerConnection::CreatePeerConnectionFactory()
@@ -73,6 +73,16 @@ rtc::scoped_refptr<webrtc::PeerConnectionFactoryInterface> FWebRTCPeerConnection
 	}
 
 	return PeerConnectionFactory;
+}
+
+rtc::scoped_refptr<FAudioDeviceModule> FWebRTCPeerConnection::GetAudioDeviceModule()
+{
+	if (PeerConnectionFactory == nullptr)
+	{
+		CreatePeerConnectionFactory();
+	}
+
+	return AudioDeviceModule;
 }
 
 webrtc::PeerConnectionInterface::RTCConfiguration FWebRTCPeerConnection::GetDefaultConfig()

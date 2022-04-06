@@ -46,7 +46,8 @@ namespace UnrealBuildTool.Rules
 					"RHI",
 					"HeadMountedDisplay",
 					"CinematicCamera",
-					"InputCore"
+					"InputCore",
+					"AudioCaptureCore"
 		});
 
 			PrivateIncludePathModuleNames.AddRange(

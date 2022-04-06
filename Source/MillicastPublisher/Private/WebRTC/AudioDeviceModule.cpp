@@ -112,24 +112,6 @@ bool FAudioDeviceModule::Playing() const
 	return false;
 }
 
-inline FAudioDevice* GetUEAudioDevice()
-{
-	if (!GEngine)
-	{
-		UE_LOG(LogMillicastPublisher, Warning, TEXT("GEngine is NULL"));
-		return nullptr;
-	}
-
-	auto AudioDevice = GEngine->GetMainAudioDevice();
-	if (!AudioDevice)
-	{
-		UE_LOG(LogMillicastPublisher, Warning, TEXT("Could not get main audio device"));
-		return nullptr;
-	}
-
-	return AudioDevice.GetAudioDevice();
-}
-
 int32_t FAudioDeviceModule::StartRecording()
 {
 	UE_LOG(LogMillicastPublisher, Log, TEXT("Start Recording"));
@@ -140,10 +122,6 @@ int32_t FAudioDeviceModule::StartRecording()
 		return 0;
 	}
 
-	auto AudioDevice = GetUEAudioDevice();
-	if (AudioDevice == nullptr) return -1;
-
-	AudioDevice->RegisterSubmixBufferListener(this);
 	bIsRecording = true;
 
 	TaskQueue.PostTask([this]() { Send(); });
@@ -160,10 +138,6 @@ int32_t FAudioDeviceModule::StopRecording()
 
 	bIsRecording = false;
 	bIsStarted = false;
-
-	auto AudioDevice = GetUEAudioDevice();
-	if (AudioDevice == nullptr) return -1;
-	AudioDevice->UnregisterSubmixBufferListener(this);
 
 	return 0;
 }
@@ -244,11 +218,8 @@ int32_t FAudioDeviceModule::PlayoutDelay(uint16_t* delay_ms) const
 	return 0;
 }
 
-void FAudioDeviceModule::OnNewSubmixBuffer(const USoundSubmix* OwningSubmix, float* AudioData, 
-	int32 NumSamples, int32 NumChannels, const int32 SampleRate, double AudioClock)
+void FAudioDeviceModule::SendAudioData(const float* AudioData, int32 NumSamples, int32 NumChannels, const int32 SampleRate)
 {
-	static int sini = 0;
-
 	if (!bIsRecordingInitialized)
 	{
 		UE_LOG(LogMillicastPublisher, Warning, TEXT("AudioDeviceModule has not been iniatilized"));

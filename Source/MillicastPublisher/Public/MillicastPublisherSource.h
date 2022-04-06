@@ -8,7 +8,6 @@
 
 #include "MillicastPublisherSource.generated.h"
 
-
 /**
  * Media source description for Millicast Publisher.
  */
@@ -44,6 +43,23 @@ public:
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = Audio, AssetRegistrySearchable)
 	bool CaptureAudio = true;
 
+	/** Which audio capturer to use */
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = Audio, AssetRegistrySearchable)
+	TEnumAsByte<AudioCapturerType> AudioCaptureType;
+
+	/** Audio submix */
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = Audio, AssetRegistrySearchable)
+	USoundSubmix* Submix;
+
+	/** Devices info */
+	UPROPERTY(BlueprintReadWrite, VisibleInstanceOnly, EditFixedSize, Category = Audio, AssetRegistrySearchable)
+	TArray<FString> CaptureDevicesName;
+
+	/** Capture device index  */
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = Audio, AssetRegistrySearchable)
+	int32 CaptureDeviceIndex UMETA(ArrayClamp = "CaptureDevicesName");
+
+public:
 	/** Mute the video stream */
 	UFUNCTION(BlueprintCallable, Category = "MillicastPublisher", META = (DisplayName = "MuteVideo"))
 	void MuteVideo(bool Muted);

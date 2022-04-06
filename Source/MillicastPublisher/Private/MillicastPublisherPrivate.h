@@ -13,4 +13,7 @@ namespace MillicastPublisherOption
 	static const FName CaptureAudio("CaptureAudio");
 	static const FName CaptureVideo("CaptureVideo");
 	static const FName RenderTarget("RenderTarget");
+	static const FName Submix("Submix");
+	static const FName CaptureDeviceIndex("CaptureDeviceIndex");
+	static const FName AudioCaptureType("AudioCaptureType");
 }

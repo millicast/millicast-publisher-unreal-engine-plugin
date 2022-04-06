@@ -8,7 +8,7 @@
 #include "Sound/SoundWaveProcedural.h"
 
 /** A custom audio device module for WebRTC. */
-class FAudioDeviceModule : public webrtc::AudioDeviceModule, public ISubmixBufferListener
+class FAudioDeviceModule : public webrtc::AudioDeviceModule
 {
 	/** Audio Sample type */
 	typedef int16_t Sample;
@@ -34,9 +34,7 @@ public:
 	static rtc::scoped_refptr<FAudioDeviceModule> Create(webrtc::TaskQueueFactory * queue_factory);
 
 public:
-	/** Called by the main audio device when a new audio data buffer is ready */
-	void OnNewSubmixBuffer(const USoundSubmix* OwningSubmix, float* AudioData,
-		int32 NumSamples, int32 NumChannels, const int32 SampleRate, double AudioClock) override;
+	void SendAudioData(const float* AudioData, int32 NumSamples, int32 NumChannels, const int32 SampleRate);
 
 public:
 	// webrtc::AudioDeviceModule interface

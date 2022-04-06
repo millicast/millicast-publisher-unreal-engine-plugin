@@ -3,6 +3,7 @@
 #pragma once
 
 #include "WebRTC/WebRTCInc.h"
+#include "WebRTC/AudioDeviceModule.h"
 
 #include "SessionDescriptionObserver.h"
 
@@ -22,9 +23,9 @@ class FWebRTCPeerConnection : public webrtc::PeerConnectionObserver
 
 	rtc::scoped_refptr<webrtc::PeerConnectionInterface> PeerConnection;
 
-	static TUniquePtr<rtc::Thread>                  SignalingThread;
-	static rtc::scoped_refptr<webrtc::AudioDeviceModule> AudioDeviceModule;
-	static std::unique_ptr<webrtc::TaskQueueFactory> TaskQueueFactory;
+	static TUniquePtr<rtc::Thread>                       SignalingThread;
+	static rtc::scoped_refptr<FAudioDeviceModule> AudioDeviceModule;
+	static std::unique_ptr<webrtc::TaskQueueFactory>     TaskQueueFactory;
 
 	using FCreateSessionDescriptionObserver = TSessionDescriptionObserver<webrtc::CreateSessionDescriptionObserver>;
 	using FSetSessionDescriptionObserver = TSessionDescriptionObserver<webrtc::SetSessionDescriptionObserver>;
@@ -55,6 +56,8 @@ public:
 	static FWebRTCPeerConnection* Create(const FRTCConfig& config);
 	/** Get the peerconnection factory pointer.*/
 	static rtc::scoped_refptr<webrtc::PeerConnectionFactoryInterface> GetPeerConnectionFactory();
+	/** Get the audio device module */
+	static rtc::scoped_refptr<FAudioDeviceModule> GetAudioDeviceModule();
 
 	/** Get local description observer to set callback for set local description success or failure */
 	FSetSessionDescriptionObserver* GetLocalDescriptionObserver();

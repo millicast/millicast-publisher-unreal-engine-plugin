@@ -51,6 +51,13 @@ public:
 	static IMillicastVideoSource* Create(UTextureRenderTarget2D* RenderTarget);
 };
 
+UENUM(BlueprintType)
+enum AudioCapturerType
+{
+	SUBMIX UMETA(DisplayName = "Submix"),
+	DEVICE UMETA(DisplayName = "Device")
+};
+
 /**
 * Specialized interface for audio source.
 * Basically, the audio source is reading audio data from the main audio device 
@@ -64,5 +71,5 @@ public:
 	using FAudioTrackInterface = rtc::scoped_refptr<webrtc::AudioTrackInterface>;
 
 	/** Create audio source to capture audio from the main audio device */
-	static IMillicastAudioSource* Create();
+	static IMillicastAudioSource* Create(AudioCapturerType CapturerType);
 };

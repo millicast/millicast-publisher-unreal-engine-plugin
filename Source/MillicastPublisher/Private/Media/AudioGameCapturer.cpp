@@ -5,16 +5,23 @@
 
 #include "Util.h"
 
-IMillicastAudioSource* IMillicastAudioSource::Create()
+TArray<Audio::FCaptureDeviceInfo> AudioDeviceCapture::CaptureDevices;
+
+IMillicastAudioSource* IMillicastAudioSource::Create(AudioCapturerType CapturerType)
 {
-	return new AudioGameCapturer;
+	switch (CapturerType)
+	{
+	case AudioCapturerType::SUBMIX: return new AudioGameCapturer;
+	case AudioCapturerType::DEVICE: return new AudioDeviceCapture;
+	}
+
+	return nullptr;
 }
 
-AudioGameCapturer::AudioGameCapturer() noexcept :
-	RtcAudioSource(nullptr), RtcAudioTrack(nullptr)
+AudioCapturerBase::AudioCapturerBase() noexcept : RtcAudioSource(nullptr), RtcAudioTrack(nullptr)
 {}
 
-IMillicastSource::FStreamTrackInterface AudioGameCapturer::StartCapture()
+void AudioCapturerBase::CreateRtcSourceTrack()
 {
 	// Get PCF to create audio source and audio track
 	auto peerConnectionFactory = FWebRTCPeerConnection::GetPeerConnectionFactory();
@@ -38,17 +45,152 @@ IMillicastSource::FStreamTrackInterface AudioGameCapturer::StartCapture()
 
 	RtcAudioSource = peerConnectionFactory->CreateAudioSource(options);
 	RtcAudioTrack = peerConnectionFactory->CreateAudioTrack(to_string(TrackId.Get("audio")), RtcAudioSource);
+}
+
+IMillicastSource::FStreamTrackInterface AudioCapturerBase::GetTrack()
+{
+	return RtcAudioTrack;
+}
+
+AudioGameCapturer::AudioGameCapturer() noexcept : Submix(nullptr)
+{}
+
+inline FAudioDevice* GetUEAudioDevice()
+{
+	if (!GEngine)
+	{
+		UE_LOG(LogMillicastPublisher, Warning, TEXT("GEngine is NULL"));
+		return nullptr;
+	}
+	
+	auto AudioDevice = GEngine->GetMainAudioDevice();
+	if (!AudioDevice)
+	{
+		UE_LOG(LogMillicastPublisher, Warning, TEXT("Could not get main audio device"));
+		return nullptr;
+	}
+
+	return AudioDevice.GetAudioDevice();
+}
+
+inline FAudioDevice* GetUEAudioDevice(Audio::FDeviceId id)
+{
+	if (!GEngine)
+	{
+		UE_LOG(LogMillicastPublisher, Warning, TEXT("GEngine is NULL"));
+		return nullptr;
+	}
+
+	UE_LOG(LogMillicastPublisher, Warning, TEXT("CHEVAL"));
+	auto AudioDevice = GEngine->GetAudioDeviceManager()->GetAudioDevice(id);
+	UE_LOG(LogMillicastPublisher, Warning, TEXT("PONEY"));
+	if (!AudioDevice)
+	{
+		UE_LOG(LogMillicastPublisher, Warning, TEXT("Could not get main audio device"));
+		return nullptr;
+	}
+
+	return AudioDevice.GetAudioDevice();
+}
+
+IMillicastSource::FStreamTrackInterface AudioGameCapturer::StartCapture()
+{
+	auto MainAudioDevice = GetUEAudioDevice();
+	if (AudioDevice == nullptr) return nullptr;
+
+	MainAudioDevice->RegisterSubmixBufferListener(this, Submix);
+	AudioDevice = MainAudioDevice;
+
+	CreateRtcSourceTrack();
 
 	return RtcAudioTrack;
 }
 
 void AudioGameCapturer::StopCapture()
 {
-	RtcAudioTrack = nullptr;
-	RtcAudioSource = nullptr;
+	if(RtcAudioTrack) 
+	{
+		RtcAudioTrack = nullptr;
+		RtcAudioSource = nullptr;
+
+		AudioDevice->UnregisterSubmixBufferListener(this, Submix);
+	}
 }
 
-IMillicastSource::FStreamTrackInterface AudioGameCapturer::GetTrack()
+AudioGameCapturer::~AudioGameCapturer()
 {
+	if (RtcAudioTrack)
+	{
+		StopCapture();
+	}
+}
+
+void AudioGameCapturer::SetAudioSubmix(USoundSubmix* InSubmix)
+{
+	Submix = InSubmix;
+}
+
+void AudioGameCapturer::OnNewSubmixBuffer(const USoundSubmix* OwningSubmix, float* AudioData, int32 NumSamples, int32 NumChannels, const int32 SampleRate, double AudioClock)
+{
+	auto Adm = FWebRTCPeerConnection::GetAudioDeviceModule();
+	Adm->SendAudioData(AudioData, NumSamples, NumChannels, SampleRate);
+}
+
+AudioDeviceCapture::AudioDeviceCapture() noexcept
+{
+
+}
+
+AudioDeviceCapture::FStreamTrackInterface AudioDeviceCapture::StartCapture()
+{
+	CreateRtcSourceTrack();
+
+	Audio::FOnCaptureFunction OnCapture = [this](const float* AudioData, int32 NumFrames, int32 NumChannels, int32 SampleRate, double StreamTime, bool bOverFlow)
+	{
+		int32 NumSamples = NumChannels * NumFrames;
+
+		auto Adm = FWebRTCPeerConnection::GetAudioDeviceModule();
+		Adm->SendAudioData(AudioData, NumSamples, NumChannels, SampleRate);
+	};
+
+	Audio::FAudioCaptureDeviceParams Params = Audio::FAudioCaptureDeviceParams();
+	Params.DeviceIndex = DeviceIndex;
+
+	// Start the stream here to avoid hitching the audio render thread. 
+	if (AudioCapture.OpenCaptureStream(Params, MoveTemp(OnCapture), 1024))
+	{
+		UE_LOG(LogMillicastPublisher, Log, TEXT("Starting audio capture"));
+		AudioCapture.StartStream();
+	}
+	else
+	{
+		UE_LOG(LogMillicastPublisher, Warning, TEXT("Could not start audio capture"));
+	}
+
 	return RtcAudioTrack;
+}
+
+void AudioDeviceCapture::StopCapture()
+{
+	if (RtcAudioTrack)
+	{
+		RtcAudioSource = nullptr;
+		RtcAudioTrack  = nullptr;
+		AudioCapture.StopStream();
+	}
+}
+
+void AudioDeviceCapture::SetAudioCaptureinfo(int32 InDeviceIndex)
+{
+	DeviceIndex = InDeviceIndex;
+}
+
+TArray<Audio::FCaptureDeviceInfo>& AudioDeviceCapture::GetCaptureDevicesAvailable()
+{
+	Audio::FAudioCapture AudioCapture;
+
+	CaptureDevices.Empty();
+	AudioCapture.GetCaptureDevicesAvailable(CaptureDevices);
+
+	return CaptureDevices;
 }

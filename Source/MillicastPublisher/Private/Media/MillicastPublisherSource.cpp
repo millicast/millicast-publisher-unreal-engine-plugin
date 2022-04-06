@@ -3,6 +3,7 @@
 #include "MillicastPublisherSource.h"
 #include "MillicastPublisherPrivate.h"
 #include "RenderTargetCapturer.h"
+#include "AudioGameCapturer.h"
 
 #include <RenderTargetPool.h>
 
@@ -10,6 +11,17 @@ UMillicastPublisherSource::UMillicastPublisherSource() : VideoSource(nullptr), A
 {
 	// Add default StreamUrl
 	StreamUrl = "https://director.millicast.com/api/director/publish";
+
+	UE_LOG(LogMillicastPublisher, Log, TEXT("Fetch audio devices available"));
+	auto& CaptureDevices = AudioDeviceCapture::GetCaptureDevicesAvailable();
+
+	bool isFirst = true;
+	for (auto& elt : CaptureDevices)
+	{
+		// UE_LOG(LogMillicastPublisher, Log, TEXT("Audio Device %s"), *elt.DeviceName);
+		CaptureDevicesName.Emplace(elt.DeviceName, isFirst);
+		if (isFirst) isFirst = false;
+	}
 }
 
 void UMillicastPublisherSource::BeginDestroy()
@@ -95,12 +107,28 @@ bool UMillicastPublisherSource::CanEditChange(const FProperty* InProperty) const
 		return CaptureVideo;
 	}
 
+	if (Name == MillicastPublisherOption::CaptureDeviceIndex.ToString())
+	{
+		return CaptureAudio && AudioCaptureType == AudioCapturerType::DEVICE;
+	}
+	if (Name == MillicastPublisherOption::Submix.ToString())
+	{
+		return CaptureAudio && AudioCaptureType == AudioCapturerType::SUBMIX;
+	}
+	if (Name == MillicastPublisherOption::AudioCaptureType.ToString())
+	{
+		return CaptureAudio;
+	}
+
 	return Super::CanEditChange(InProperty);
 }
 
 void UMillicastPublisherSource::PostEditChangeChainProperty(struct FPropertyChangedChainEvent& InPropertyChangedEvent)
 {
 	Super::PostEditChangeChainProperty(InPropertyChangedEvent);
+
+	FName PropertyName = InPropertyChangedEvent.GetPropertyName();
+	UE_LOG(LogMillicastPublisher, Log, TEXT("Edit : %s"), *PropertyName.ToString());
 }
 
 #endif //WITH_EDITOR
@@ -130,7 +158,19 @@ void UMillicastPublisherSource::StartCapture(TFunction<void(IMillicastSource::FS
 	// If audio is enabled, create audio capturer
 	if (CaptureAudio)
 	{
-		AudioSource = TUniquePtr<IMillicastAudioSource>(IMillicastAudioSource::Create());
+		AudioSource = TUniquePtr<IMillicastAudioSource>(IMillicastAudioSource::Create(AudioCaptureType));
+
+		if (AudioCaptureType == AudioCapturerType::DEVICE)
+		{
+			auto source = static_cast<AudioDeviceCapture*>(AudioSource.Get());
+			source->SetAudioCaptureinfo(CaptureDeviceIndex);
+		}
+		else if (AudioCaptureType == AudioCapturerType::SUBMIX)
+		{
+			auto source = static_cast<AudioGameCapturer*>(AudioSource.Get());
+			source->SetAudioSubmix(Submix);
+		}
+
 		// Start the capture and notify observers
 		if (AudioSource && Callback)
 		{
