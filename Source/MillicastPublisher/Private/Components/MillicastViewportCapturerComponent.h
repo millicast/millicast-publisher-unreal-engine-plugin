@@ -31,12 +31,6 @@ private:
 			EditCondition = "bOverrideBroadcastSettings"))
 	FIntPoint TargetSize = FIntPoint(1280, 720);
 
-	/** Target FPS to capture the viewport */
-	UPROPERTY(BlueprintReadwrite, EditAnywhere, Category = "Capture Settings",
-		META = (DisplayName = "Capture Rate", AllowPrivateAccess = true,
-			EditCondition = "bOverrideBroadcastSettings"))
-	FFrameRate TargetRate = FFrameRate(60, 1);
-
 protected:
 	void InitializeComponent() override;
 	void TickComponent(float DeltaTime, ELevelTick TickType,
@@ -44,8 +38,13 @@ protected:
 	void EndPlay(const EEndPlayReason::Type EndPlayReason);
 	void CloseRequested(FViewport* Viewport) override;
 
+	void Activate(bool bReset)   override;
+	void Deactivate() override;
+
+	void UpdateTexture();
+
 	// RenderTarget overrides
-	FIntPoint GetSizeXY() const override   { return TargetSize;  }
+	FIntPoint GetSizeXY()   const override { return TargetSize;  }
 	float GetDisplayGamma() const override { return GAMMA; }
 	const FTexture2DRHIRef& GetRenderTargetTexture() const override 
 	{ 
@@ -68,6 +67,8 @@ private:
 	TSharedPtr<SViewport>      ViewportWidget    = nullptr;
 	TSharedPtr<FSceneViewport> SceneViewport     = nullptr;
 	FTexture2DRHIRef           RenderableTexture = nullptr;
+
+	bool bIsInitialized;
 
 	static constexpr auto GAMMA = 2.2f;
 };
