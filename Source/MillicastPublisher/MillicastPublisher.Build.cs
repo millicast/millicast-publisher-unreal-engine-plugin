@@ -27,7 +27,8 @@ namespace UnrealBuildTool.Rules
 					"OpenSSL",
 					"TimeManagement",
 					"WebRTC",
-					"RenderCore"
+					"RenderCore",
+					"AudioCaptureCore"
 				});
 
 			PrivateDependencyModuleNames.AddRange(
@@ -47,7 +48,6 @@ namespace UnrealBuildTool.Rules
 					"HeadMountedDisplay",
 					"CinematicCamera",
 					"InputCore",
-					"AudioCaptureCore"
 		});
 
 			PrivateIncludePathModuleNames.AddRange(

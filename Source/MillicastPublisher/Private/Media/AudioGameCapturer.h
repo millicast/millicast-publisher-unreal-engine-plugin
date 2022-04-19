@@ -22,6 +22,7 @@ class AudioGameCapturer : public AudioCapturerBase, public ISubmixBufferListener
 {	
 	FAudioDevice* AudioDevice;
 	USoundSubmix* Submix;
+	TOptional<Audio::FDeviceId> DeviceId;
 
 public:
 	AudioGameCapturer() noexcept;
@@ -33,6 +34,9 @@ public:
 
 	/** Set the submix to attach a callback to. nullptr means master submix */
 	void SetAudioSubmix(USoundSubmix* InSubmix = nullptr);
+
+	/** Set the device id to use */
+	void SetAudioDeviceId(Audio::FDeviceId Id);
 
 	/** Called by the main audio device when a new audio data buffer is ready */
 	void OnNewSubmixBuffer(const USoundSubmix* OwningSubmix, float* AudioData,
@@ -57,7 +61,17 @@ public:
 	* Set the audio device to use. 
 	* The device index is the index in the CaptureDevice info list return by GetCaptureDevicesAvailable.
 	*/
-	void SetAudioCaptureinfo(int32 InDeviceIndex);
+	void SetAudioCaptureDevice(int32 InDeviceIndex);
+
+	/**
+	* Set the audio device by its id
+	*/
+	void SetAudioCaptureDeviceById(FStringView Id);
+
+	/**
+	* Set the audio device by its name
+	*/
+	void SetAudioCaptureDeviceByName(FStringView name);
 
 	static TArray<Audio::FCaptureDeviceInfo>& GetCaptureDevicesAvailable();
 };

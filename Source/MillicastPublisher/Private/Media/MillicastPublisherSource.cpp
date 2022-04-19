@@ -12,16 +12,9 @@ UMillicastPublisherSource::UMillicastPublisherSource() : VideoSource(nullptr), A
 	// Add default StreamUrl
 	StreamUrl = "https://director.millicast.com/api/director/publish";
 
-	UE_LOG(LogMillicastPublisher, Log, TEXT("Fetch audio devices available"));
-	auto& CaptureDevices = AudioDeviceCapture::GetCaptureDevicesAvailable();
-
-	bool isFirst = true;
-	for (auto& elt : CaptureDevices)
-	{
-		// UE_LOG(LogMillicastPublisher, Log, TEXT("Audio Device %s"), *elt.DeviceName);
-		CaptureDevicesName.Emplace(elt.DeviceName, isFirst);
-		if (isFirst) isFirst = false;
-	}
+	UE_LOG(LogMillicastPublisher, Log, TEXT("Fetch available audio devices"));
+	
+	RefreshAudioDevicesList();
 }
 
 void UMillicastPublisherSource::BeginDestroy()
@@ -53,6 +46,70 @@ void UMillicastPublisherSource::MuteVideo(bool Muted)
 
 		auto track = VideoSource->GetTrack();
 		track->set_enabled(!Muted);
+	}
+}
+
+void UMillicastPublisherSource::MuteAudio(bool Muted)
+{
+	if (AudioSource)
+	{
+		auto track = AudioSource->GetTrack();
+		track->set_enabled(!Muted);
+	}
+}
+
+void UMillicastPublisherSource::SetAudioDeviceById(FString Id)
+{
+	if (!CaptureAudio || AudioCaptureType != AudioCapturerType::DEVICE)
+	{
+		UE_LOG(LogMillicastPublisher, Warning, 
+			TEXT("You must enable the audio capture and set the Device audio capturer type first"));
+		return;
+	}
+
+	if (AudioSource)
+	{
+		UE_LOG(LogMillicastPublisher, Warning, TEXT("You can't change the capture device while capturing"));
+		return;
+	}
+
+	auto it = CaptureDevicesName.IndexOfByPredicate([&Id](const auto& e) { return Id == e.DeviceId;  });
+	if (it != INDEX_NONE)
+	{
+		CaptureDeviceIndex = it;
+	}
+}
+
+void UMillicastPublisherSource::SetAudioDeviceByName(FString Name)
+{
+	if (!CaptureAudio || AudioCaptureType != AudioCapturerType::DEVICE)
+	{
+		UE_LOG(LogMillicastPublisher, Warning,
+			TEXT("You must enable the audio capture and set the Device audio capturer type first"));
+		return;
+	}
+
+	if (AudioSource)
+	{
+		UE_LOG(LogMillicastPublisher, Warning, TEXT("You can't change the capture device while capturing"));
+		return;
+	}
+
+	auto it = CaptureDevicesName.IndexOfByPredicate([&Name](const auto& e) { return Name == e.DeviceName;  });
+	if (it != INDEX_NONE)
+	{
+		CaptureDeviceIndex = it;
+	}
+}
+
+void UMillicastPublisherSource::RefreshAudioDevicesList()
+{
+	CaptureDevicesName.Empty();
+	auto& CaptureDevices = AudioDeviceCapture::GetCaptureDevicesAvailable();
+
+	for (auto& elt : CaptureDevices)
+	{
+		CaptureDevicesName.Emplace(elt.DeviceName, elt.DeviceId);
 	}
 }
 
@@ -95,44 +152,6 @@ bool UMillicastPublisherSource::Validate() const
 	return !StreamName.IsEmpty() && !PublishingToken.IsEmpty();
 }
 
-#if WITH_EDITOR
-bool UMillicastPublisherSource::CanEditChange(const FProperty* InProperty) const
-{
-	FString Name;
-	InProperty->GetName(Name);
-
-	// Can't change render target if Capture video is disabled
-	if (Name == MillicastPublisherOption::RenderTarget.ToString())
-	{
-		return CaptureVideo;
-	}
-
-	if (Name == MillicastPublisherOption::CaptureDeviceIndex.ToString())
-	{
-		return CaptureAudio && AudioCaptureType == AudioCapturerType::DEVICE;
-	}
-	if (Name == MillicastPublisherOption::Submix.ToString())
-	{
-		return CaptureAudio && AudioCaptureType == AudioCapturerType::SUBMIX;
-	}
-	if (Name == MillicastPublisherOption::AudioCaptureType.ToString())
-	{
-		return CaptureAudio;
-	}
-
-	return Super::CanEditChange(InProperty);
-}
-
-void UMillicastPublisherSource::PostEditChangeChainProperty(struct FPropertyChangedChainEvent& InPropertyChangedEvent)
-{
-	Super::PostEditChangeChainProperty(InPropertyChangedEvent);
-
-	FName PropertyName = InPropertyChangedEvent.GetPropertyName();
-	UE_LOG(LogMillicastPublisher, Log, TEXT("Edit : %s"), *PropertyName.ToString());
-}
-
-#endif //WITH_EDITOR
-
 void UMillicastPublisherSource::StartCapture(TFunction<void(IMillicastSource::FStreamTrackInterface)> Callback)
 {
 	UE_LOG(LogMillicastPublisher, Log, TEXT("Start capture"));
@@ -163,7 +182,7 @@ void UMillicastPublisherSource::StartCapture(TFunction<void(IMillicastSource::FS
 		if (AudioCaptureType == AudioCapturerType::DEVICE)
 		{
 			auto source = static_cast<AudioDeviceCapture*>(AudioSource.Get());
-			source->SetAudioCaptureinfo(CaptureDeviceIndex);
+			source->SetAudioCaptureDevice(CaptureDeviceIndex);
 		}
 		else if (AudioCaptureType == AudioCapturerType::SUBMIX)
 		{
@@ -208,3 +227,40 @@ void UMillicastPublisherSource::ChangeRenderTarget(UTextureRenderTarget2D* InRen
 	}
 }
 
+#if WITH_EDITOR
+bool UMillicastPublisherSource::CanEditChange(const FProperty* InProperty) const
+{
+	FString Name;
+	InProperty->GetName(Name);
+
+	// Can't change render target if Capture video is disabled
+	if (Name == MillicastPublisherOption::RenderTarget.ToString())
+	{
+		return CaptureVideo;
+	}
+
+	if (Name == MillicastPublisherOption::CaptureDeviceIndex.ToString())
+	{
+		return CaptureAudio && AudioCaptureType == AudioCapturerType::DEVICE;
+	}
+	if (Name == MillicastPublisherOption::Submix.ToString())
+	{
+		return CaptureAudio && AudioCaptureType == AudioCapturerType::SUBMIX;
+	}
+	if (Name == MillicastPublisherOption::AudioCaptureType.ToString())
+	{
+		return CaptureAudio;
+	}
+
+	return Super::CanEditChange(InProperty);
+}
+
+void UMillicastPublisherSource::PostEditChangeChainProperty(struct FPropertyChangedChainEvent& InPropertyChangedEvent)
+{
+	Super::PostEditChangeChainProperty(InPropertyChangedEvent);
+
+	FName PropertyName = InPropertyChangedEvent.GetPropertyName();
+	UE_LOG(LogMillicastPublisher, Log, TEXT("Edit : %s"), *PropertyName.ToString());
+}
+
+#endif //WITH_EDITOR

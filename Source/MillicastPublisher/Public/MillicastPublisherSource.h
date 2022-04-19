@@ -6,7 +6,25 @@
 #include "StreamMediaSource.h"
 #include "IMillicastSource.h"
 
+#include "AudioCaptureDeviceInterface.h"
+
 #include "MillicastPublisherSource.generated.h"
+
+USTRUCT(BlueprintType)
+struct FAudioCaptureInfo
+{
+	GENERATED_BODY()
+
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category=Audio, DisplayName = "DeviceName")
+	FString DeviceName;
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = Audio)
+	FString DeviceId;
+
+	FAudioCaptureInfo() noexcept = default;
+
+	FAudioCaptureInfo(FString InDeviceName, FString InDeviceId) noexcept :
+		DeviceName(MoveTemp(InDeviceName)), DeviceId(MoveTemp(InDeviceId)) {}
+};
 
 /**
  * Media source description for Millicast Publisher.
@@ -53,7 +71,7 @@ public:
 
 	/** Devices info */
 	UPROPERTY(BlueprintReadWrite, VisibleInstanceOnly, EditFixedSize, Category = Audio, AssetRegistrySearchable)
-	TArray<FString> CaptureDevicesName;
+	TArray<FAudioCaptureInfo> CaptureDevicesName;
 
 	/** Capture device index  */
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = Audio, AssetRegistrySearchable)
@@ -67,6 +85,24 @@ public:
 	/** Set a new render target while publishing */
 	UFUNCTION(BlueprintCallable, Category = "MillicastPublisher", META = (DisplayName = "ChangeRenderTarget"))
 	void ChangeRenderTarget(UTextureRenderTarget2D * InRenderTarget);
+
+public:
+	/** Mute the audio stream */
+	UFUNCTION(BlueprintCallable, Category = "MillicastPublisher", META = (DisplayName = "MuteAudio"))
+	void MuteAudio(bool Muted);
+
+	/** Set the audio capture device by its id */
+	UFUNCTION(BlueprintCallable, Category = "MillicastPublisher", META = (DisplayName = "SetAudioDeviceById"))
+	void SetAudioDeviceById(FString Id);
+
+	/** Set the audio capture device by its name */
+	UFUNCTION(BlueprintCallable, Category = "MillicastPublisher", META = (DisplayName = "SetAudioDeviceByName"))
+	void SetAudioDeviceByName(FString Name);
+
+	/** Refresh the audio capture devices list */
+	UFUNCTION(BlueprintCallable, Category = "MillicastPublisher", META = (DisplayName = "RefreshAudioDevicesList"))
+	void RefreshAudioDevicesList();
+
 public:
 	//~ IMediaOptions interface
 

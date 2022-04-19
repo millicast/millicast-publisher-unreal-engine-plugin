@@ -44,7 +44,7 @@ void AudioCapturerBase::CreateRtcSourceTrack()
 	options.audio_jitter_buffer_enable_rtx_handling = false;
 
 	RtcAudioSource = peerConnectionFactory->CreateAudioSource(options);
-	RtcAudioTrack = peerConnectionFactory->CreateAudioTrack(to_string(TrackId.Get("audio")), RtcAudioSource);
+	RtcAudioTrack  = peerConnectionFactory->CreateAudioTrack(to_string(TrackId.Get("audio")), RtcAudioSource);
 }
 
 IMillicastSource::FStreamTrackInterface AudioCapturerBase::GetTrack()
@@ -81,9 +81,7 @@ inline FAudioDevice* GetUEAudioDevice(Audio::FDeviceId id)
 		return nullptr;
 	}
 
-	UE_LOG(LogMillicastPublisher, Warning, TEXT("CHEVAL"));
 	auto AudioDevice = GEngine->GetAudioDeviceManager()->GetAudioDevice(id);
-	UE_LOG(LogMillicastPublisher, Warning, TEXT("PONEY"));
 	if (!AudioDevice)
 	{
 		UE_LOG(LogMillicastPublisher, Warning, TEXT("Could not get main audio device"));
@@ -95,11 +93,18 @@ inline FAudioDevice* GetUEAudioDevice(Audio::FDeviceId id)
 
 IMillicastSource::FStreamTrackInterface AudioGameCapturer::StartCapture()
 {
-	auto MainAudioDevice = GetUEAudioDevice();
+	if (DeviceId.IsSet())
+	{
+		AudioDevice = GetUEAudioDevice(DeviceId.GetValue());
+	}
+	else
+	{
+		AudioDevice = GetUEAudioDevice();
+	}
+	
 	if (AudioDevice == nullptr) return nullptr;
 
-	MainAudioDevice->RegisterSubmixBufferListener(this, Submix);
-	AudioDevice = MainAudioDevice;
+	AudioDevice->RegisterSubmixBufferListener(this, Submix);
 
 	CreateRtcSourceTrack();
 
@@ -128,6 +133,11 @@ AudioGameCapturer::~AudioGameCapturer()
 void AudioGameCapturer::SetAudioSubmix(USoundSubmix* InSubmix)
 {
 	Submix = InSubmix;
+}
+
+void AudioGameCapturer::SetAudioDeviceId(Audio::FDeviceId Id)
+{
+	DeviceId = Id;
 }
 
 void AudioGameCapturer::OnNewSubmixBuffer(const USoundSubmix* OwningSubmix, float* AudioData, int32 NumSamples, int32 NumChannels, const int32 SampleRate, double AudioClock)
@@ -180,9 +190,37 @@ void AudioDeviceCapture::StopCapture()
 	}
 }
 
-void AudioDeviceCapture::SetAudioCaptureinfo(int32 InDeviceIndex)
+void AudioDeviceCapture::SetAudioCaptureDevice(int32 InDeviceIndex)
 {
 	DeviceIndex = InDeviceIndex;
+}
+
+void AudioDeviceCapture::SetAudioCaptureDeviceById(FStringView Id)
+{
+	GetCaptureDevicesAvailable();
+
+	// Find index the given device id
+	auto it = CaptureDevices.IndexOfByPredicate([&Id](const auto& e) { return Id == e.DeviceId; });
+
+	// if it exists
+	if (it != INDEX_NONE)
+	{
+		SetAudioCaptureDevice(it);
+	}
+}
+
+void AudioDeviceCapture::SetAudioCaptureDeviceByName(FStringView Name)
+{
+	GetCaptureDevicesAvailable();
+
+	// Find index the given device id
+	auto it = CaptureDevices.IndexOfByPredicate([&Name](const auto& e) { return Name == e.DeviceName; });
+
+	// if it exists
+	if (it != INDEX_NONE)
+	{
+		SetAudioCaptureDevice(it);
+	}
 }
 
 TArray<Audio::FCaptureDeviceInfo>& AudioDeviceCapture::GetCaptureDevicesAvailable()
