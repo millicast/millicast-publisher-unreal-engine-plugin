@@ -12,8 +12,7 @@ public:
 	FTexture2DVideoSourceAdapter() noexcept = default;
 	~FTexture2DVideoSourceAdapter() = default;
 
-	void OnFrameReady(const FTexture2DRHIRef& FrameBuffer);
-	// void OnFrameReady(const FTextureReferenceRHIRef& FrameBuffer);
+	void OnFrameReady(const FTexture2DRHIRef& FrameBuffer, bool ReadColor = false);
 
 	webrtc::MediaSourceInterface::SourceState state() const override;
 	absl::optional<bool> needs_denoising() const override { return false; }

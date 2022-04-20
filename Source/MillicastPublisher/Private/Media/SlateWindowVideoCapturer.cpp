@@ -66,7 +66,7 @@ void SlateWindowVideoCapturer::OnBackBufferReadyToPresent(SWindow& SlateWindow, 
 		check(IsInRenderingThread());
 
 		// Create and send webrtc video frame
-		RtcVideoSource->OnFrameReady(Buffer);
+		RtcVideoSource->OnFrameReady(Buffer, true);
 	}
 }
 

@@ -28,9 +28,63 @@ class FTexture2DFrameBuffer : public webrtc::VideoFrameBuffer
 
 	rtc::scoped_refptr<webrtc::I420Buffer> Buffer;
 
+	FTexture2DRHIRef TextureFrame;
+	FCriticalSection CriticalSection;
+	uint8* TextureData;
+
 public:
 
 	explicit FTexture2DFrameBuffer(FTexture2DRHIRef SourceTexture) noexcept
+	{
+		/* Get video farme height and  width */
+		Width = SourceTexture->GetSizeX();
+		Height = SourceTexture->GetSizeY();
+		TextureFrame = SourceTexture;
+
+		/* Create an I420 buffer */
+		Buffer = webrtc::I420Buffer::Create(Width, Height);
+
+		uint32 stride;
+		TextureData = (uint8*)GDynamicRHI->RHILockTexture2D(TextureFrame, 0, EResourceLockMode::RLM_ReadOnly, stride, true);
+
+		GDynamicRHI->RHIUnlockTexture2D(TextureFrame, 0, true);
+	}
+	
+	/** Get video frame width */
+	int width() const override { return Width; }
+
+	/** Get video frame height */
+	int height() const override { return Height; }
+
+	/** Get buffer type */
+	Type type() const override { return Type::kNative; }
+
+	/** Get the I420 buffer */
+	rtc::scoped_refptr<webrtc::I420BufferInterface> ToI420() override
+	{
+		uint8* DataY = Buffer->MutableDataY();
+		uint8* DataU = Buffer->MutableDataU();
+		uint8* DataV = Buffer->MutableDataV();
+
+		const auto STRIDES = Width * 4;
+		libyuv::ARGBToI420(TextureData, STRIDES,
+			DataY, Buffer->StrideY(), DataU, Buffer->StrideU(), DataV, Buffer->StrideV(),
+			Width, Height);
+
+		return Buffer;
+	}
+};
+
+class FColorTexture2DFrameBuffer : public webrtc::VideoFrameBuffer
+{
+	int Width;
+	int Height;
+
+	rtc::scoped_refptr<webrtc::I420Buffer> Buffer;
+
+public:
+
+	explicit FColorTexture2DFrameBuffer(FTexture2DRHIRef SourceTexture) noexcept
 	{
 		/* Get video farme height and  width */
 		Width = SourceTexture->GetSizeX();
@@ -39,6 +93,7 @@ public:
 		/* Create an I420 buffer */
 		Buffer = webrtc::I420Buffer::Create(Width, Height);
 
+
 		/* Convert the texture2d frame to YUV pixel format */
 		FRHICommandListImmediate& RHICommandList = FRHICommandListExecutor::GetImmediateCommandList();
 
@@ -46,7 +101,7 @@ public:
 		FIntRect Rect(0, 0, Width, Height);
 		TArray<FColor> ColorData;
 		uint8* TextureData = new uint8[ARGB_BUFFER_SIZE];
-			
+
 		FReadSurfaceDataFlags ReadSurfaceData{};
 		ReadSurfaceData.SetMip(0);
 
@@ -72,7 +127,7 @@ public:
 
 		delete[] TextureData;
 	}
-	
+
 	/** Get video frame width */
 	int width() const override { return Width; }
 

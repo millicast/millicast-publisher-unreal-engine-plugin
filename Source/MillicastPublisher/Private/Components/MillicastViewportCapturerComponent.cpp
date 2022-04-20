@@ -84,7 +84,6 @@ void UMillicastViewportCapturerComponent::Deactivate()
 
 void UMillicastViewportCapturerComponent::UpdateTexture()
 {
-	UE_LOG(LogMillicastPublisher, Display, TEXT("UpdateTexture"));
 	if (UWorld* WorldContext = UActorComponent::GetWorld())
 	{
 		float TimeSeconds      = WorldContext->GetTimeSeconds();
