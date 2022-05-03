@@ -331,6 +331,13 @@ bool UMillicastPublisherComponent::PublishToMillicast()
 	PeerConnection->OaOptions.offer_to_receive_video = false;
 	PeerConnection->OaOptions.offer_to_receive_audio = false;
 
+	// Maximum bitrate
+	if (MaximumBitrate.IsSet()) {
+		webrtc::PeerConnectionInterface::BitrateParameters bitrateParameters;
+		bitrateParameters.max_bitrate_bps = *MaximumBitrate;
+		(*PeerConnection)->SetBitrate(bitrateParameters);
+	}
+
 	UE_LOG(LogMillicastPublisher, Log, TEXT("Create offer"));
 	PeerConnection->CreateOffer();
 
@@ -432,4 +439,9 @@ void UMillicastPublisherComponent::CaptureAndAddTracks()
 				result.error().message());
 		}
 	});
+}
+
+void UMillicastPublisherComponent::SetMaximumBitrate(int Bps)
+{
+	MaximumBitrate = Bps;
 }

@@ -76,6 +76,13 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "MillicastPublisher", META = (DisplayName = "IsPublishing"))
 	bool IsPublishing() const;
 
+	/**
+	* Set the maximum bitrate for the peerconnection
+	* Have to be called before Publish
+	*/
+	UFUNCTION(BlueprintCallable, Category = "MillicastPublisher", META = (DisplayName = "SetMaximumBitrate"))
+	void SetMaximumBitrate(int Bps);
+
 public:
 	/** Called when the response from the Publisher api is successfull */
 	UPROPERTY(BlueprintAssignable, Category = "Components|Activation")
@@ -132,4 +139,5 @@ private:
 
 	/** Publisher */
 	bool bIsPublishing;
+	TOptional<int> MaximumBitrate; // in bps
 };
