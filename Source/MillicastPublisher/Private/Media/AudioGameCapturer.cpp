@@ -1,6 +1,7 @@
 // Copyright Millicast 2022. All Rights Reserved.
 
 #include "AudioGameCapturer.h"
+#include "MillicastPublisherPrivate.h"
 #include "WebRTC/PeerConnection.h"
 
 #include "Util.h"

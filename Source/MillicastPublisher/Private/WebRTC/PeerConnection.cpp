@@ -1,6 +1,7 @@
 // Copyright Millicast 2022. All Rights Reserved.
 
 #include "PeerConnection.h"
+#include "MillicastPublisherPrivate.h"
 
 #include <sstream>
 

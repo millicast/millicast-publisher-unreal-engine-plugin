@@ -1,6 +1,7 @@
 // Copyright Millicast 2022. All Rights Reserved.
 
 #include "MillicastViewportCapturerComponent.h"
+#include "MillicastPublisherPrivate.h"
 
 #include <EngineModule.h>
 #include <LegacyScreenPercentageDriver.h>
