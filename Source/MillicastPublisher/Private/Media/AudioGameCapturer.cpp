@@ -146,10 +146,8 @@ void AudioGameCapturer::OnNewSubmixBuffer(const USoundSubmix* OwningSubmix, floa
 	Adm->SendAudioData(AudioData, NumSamples, NumChannels, SampleRate);
 }
 
-AudioDeviceCapture::AudioDeviceCapture() noexcept
-{
-
-}
+AudioDeviceCapture::AudioDeviceCapture() noexcept : VolumeMultiplier(0.f)
+{}
 
 AudioDeviceCapture::FStreamTrackInterface AudioDeviceCapture::StartCapture()
 {
@@ -157,10 +155,22 @@ AudioDeviceCapture::FStreamTrackInterface AudioDeviceCapture::StartCapture()
 
 	Audio::FOnCaptureFunction OnCapture = [this](const float* AudioData, int32 NumFrames, int32 NumChannels, int32 SampleRate, double StreamTime, bool bOverFlow)
 	{
-		int32 NumSamples = NumChannels * NumFrames;
+		int32 NumSamples = NumFrames * NumChannels;
+
+		// UE_LOG(LogMillicastPublisher, Display, 
+		// 	TEXT("%d %d %d %d %f"), NumFrames, NumChannels, SampleRate, NumSamples, StreamTime);
+
+		float* MutableAudioData = new float[NumSamples];
+
+		for (int i = 0; i < NumSamples; ++i) {
+			const float factor = pow(10.0f, VolumeMultiplier / 20.f);
+			MutableAudioData[i] = FMath::Clamp(AudioData[i] * factor, -1.f, 1.f);
+		}
 
 		auto Adm = FWebRTCPeerConnection::GetAudioDeviceModule();
-		Adm->SendAudioData(AudioData, NumSamples, NumChannels, SampleRate);
+		Adm->SendAudioData(MutableAudioData, NumSamples, NumChannels, SampleRate);
+
+		delete[] MutableAudioData;
 	};
 
 	Audio::FAudioCaptureDeviceParams Params = Audio::FAudioCaptureDeviceParams();

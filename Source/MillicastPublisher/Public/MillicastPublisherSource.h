@@ -77,6 +77,10 @@ public:
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = Audio, AssetRegistrySearchable)
 	int32 CaptureDeviceIndex UMETA(ArrayClamp = "CaptureDevicesName");
 
+	/** Apply a volume multiplier for the recorded data in dB */
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = Audio, AssetRegistrySearchable)
+	float VolumeMultiplier = 20.f;
+
 public:
 	/** Mute the video stream */
 	UFUNCTION(BlueprintCallable, Category = "MillicastPublisher", META = (DisplayName = "MuteVideo"))
@@ -102,6 +106,10 @@ public:
 	/** Refresh the audio capture devices list */
 	UFUNCTION(BlueprintCallable, Category = "MillicastPublisher", META = (DisplayName = "RefreshAudioDevicesList"))
 	void RefreshAudioDevicesList();
+
+	/** Apply a volume multiplier for the recorded data in dB */
+	UFUNCTION(BlueprintCallable, Category = "MillicastPublisher", META = (DisplayName = "SetVolumeMultiplier"))
+	void SetVolumeMultiplier(float f);
 
 public:
 	//~ IMediaOptions interface

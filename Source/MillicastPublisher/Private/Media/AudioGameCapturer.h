@@ -51,6 +51,8 @@ class AudioDeviceCapture : public AudioCapturerBase
 	int32                     DeviceIndex;
 	Audio::FAudioCapture      AudioCapture;
 
+	float VolumeMultiplier; // dB
+
 public:
 	AudioDeviceCapture() noexcept;
 
@@ -72,6 +74,8 @@ public:
 	* Set the audio device by its name
 	*/
 	void SetAudioCaptureDeviceByName(FStringView name);
+
+	void SetVolumeMultiplier(float f) noexcept { VolumeMultiplier = f;  }
 
 	static TArray<Audio::FCaptureDeviceInfo>& GetCaptureDevicesAvailable();
 };

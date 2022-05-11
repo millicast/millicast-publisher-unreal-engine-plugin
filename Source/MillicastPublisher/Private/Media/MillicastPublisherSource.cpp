@@ -113,6 +113,16 @@ void UMillicastPublisherSource::RefreshAudioDevicesList()
 	}
 }
 
+void UMillicastPublisherSource::SetVolumeMultiplier(float f) 
+{
+	VolumeMultiplier = f;
+	if (AudioSource) 
+	{
+		auto* src = static_cast<AudioDeviceCapture*>(AudioSource.Get());
+		src->SetVolumeMultiplier(f);
+	}
+}
+
 FString UMillicastPublisherSource::GetMediaOption(const FName& Key, const FString& DefaultValue) const
 {
 	if (Key == MillicastPublisherOption::StreamName)
@@ -183,6 +193,7 @@ void UMillicastPublisherSource::StartCapture(TFunction<void(IMillicastSource::FS
 		{
 			auto source = static_cast<AudioDeviceCapture*>(AudioSource.Get());
 			source->SetAudioCaptureDevice(CaptureDeviceIndex);
+			source->SetVolumeMultiplier(VolumeMultiplier);
 		}
 		else if (AudioCaptureType == AudioCapturerType::SUBMIX)
 		{
@@ -250,6 +261,10 @@ bool UMillicastPublisherSource::CanEditChange(const FProperty* InProperty) const
 	if (Name == MillicastPublisherOption::AudioCaptureType.ToString())
 	{
 		return CaptureAudio;
+	}
+	if (Name == MillicastPublisherOption::VolumeMultiplier.ToString())
+	{
+		return  CaptureAudio && AudioCaptureType == AudioCapturerType::DEVICE;
 	}
 
 	return Super::CanEditChange(InProperty);

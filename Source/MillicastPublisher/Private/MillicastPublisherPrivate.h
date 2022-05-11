@@ -16,4 +16,5 @@ namespace MillicastPublisherOption
 	static const FName Submix("Submix");
 	static const FName CaptureDeviceIndex("CaptureDeviceIndex");
 	static const FName AudioCaptureType("AudioCaptureType");
+	static const FName VolumeMultiplier("VolumeMultiplier");
 }
