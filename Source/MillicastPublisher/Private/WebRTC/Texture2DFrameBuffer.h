@@ -34,15 +34,14 @@ class FTexture2DFrameBuffer : public webrtc::VideoFrameBuffer
 
 public:
 
-	explicit FTexture2DFrameBuffer(FTexture2DRHIRef SourceTexture) noexcept
+	explicit FTexture2DFrameBuffer(FTexture2DRHIRef SourceTexture) noexcept : TextureData(nullptr)
 	{
 		/* Get video farme height and  width */
+		FScopeLock Lock(&CriticalSection);
+
 		Width = SourceTexture->GetSizeX();
 		Height = SourceTexture->GetSizeY();
 		TextureFrame = SourceTexture;
-
-		/* Create an I420 buffer */
-		Buffer = webrtc::I420Buffer::Create(Width, Height);
 
 		uint32 stride;
 		TextureData = (uint8*)GDynamicRHI->RHILockTexture2D(TextureFrame, 0, EResourceLockMode::RLM_ReadOnly, stride, true);
@@ -62,14 +61,22 @@ public:
 	/** Get the I420 buffer */
 	rtc::scoped_refptr<webrtc::I420BufferInterface> ToI420() override
 	{
+		/* Create an I420 buffer */
+		FScopeLock Lock(&CriticalSection);
+
+		Buffer = webrtc::I420Buffer::Create(Width, Height);
+
 		uint8* DataY = Buffer->MutableDataY();
 		uint8* DataU = Buffer->MutableDataU();
 		uint8* DataV = Buffer->MutableDataV();
 
 		const auto STRIDES = Width * 4;
-		libyuv::ARGBToI420(TextureData, STRIDES,
-			DataY, Buffer->StrideY(), DataU, Buffer->StrideU(), DataV, Buffer->StrideV(),
-			Width, Height);
+
+		if (TextureData) {
+			libyuv::ARGBToI420(TextureData, STRIDES,
+				DataY, Buffer->StrideY(), DataU, Buffer->StrideU(), DataV, Buffer->StrideV(),
+				Width, Height);
+		}
 
 		return Buffer;
 	}
