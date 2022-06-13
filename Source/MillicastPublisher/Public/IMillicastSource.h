@@ -54,8 +54,9 @@ public:
 UENUM(BlueprintType)
 enum AudioCapturerType
 {
-	SUBMIX UMETA(DisplayName = "Submix"),
-	DEVICE UMETA(DisplayName = "Device")
+	SUBMIX   UMETA(DisplayName = "Submix"),
+	DEVICE   UMETA(DisplayName = "Device"),
+	LOOPBACK UMETA(DisplayName = "Loopback")
 };
 
 /**

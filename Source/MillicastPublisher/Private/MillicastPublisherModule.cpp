@@ -7,6 +7,7 @@
 #include "Interfaces/IPluginManager.h"
 #include "Modules/ModuleManager.h"
 #include "Styling/SlateStyle.h"
+#include "Media/AudioGameCapturer.h"
 
 DEFINE_LOG_CATEGORY(LogMillicastPublisher);
 
@@ -29,10 +30,14 @@ public:
 	//~ IModuleInterface interface
 	virtual void StartupModule() override
 	{
+		WasapiDeviceCapture::ColdInit();
 		CreateStyle();
 	}
 
-	virtual void ShutdownModule() override {}
+	virtual void ShutdownModule() override 
+	{
+		WasapiDeviceCapture::ColdExit();
+	}
 
 private:
 	void CreateStyle()

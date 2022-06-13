@@ -48,7 +48,8 @@ namespace UnrealBuildTool.Rules
 					"HeadMountedDisplay",
 					"CinematicCamera",
 					"InputCore",
-		});
+					"AudioPlatformConfiguration"
+				});
 
 			PrivateIncludePathModuleNames.AddRange(
 				new string[] {
