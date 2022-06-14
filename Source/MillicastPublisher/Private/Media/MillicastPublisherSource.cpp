@@ -200,10 +200,6 @@ void UMillicastPublisherSource::StartCapture(TFunction<void(IMillicastSource::FS
 			auto source = static_cast<AudioGameCapturer*>(AudioSource.Get());
 			source->SetAudioSubmix(Submix);
 		}
-		else if (AudioCaptureType == AudioCapturerType::LOOPBACK)
-		{
-			// auto source = static_cast<
-		}
 
 		// Start the capture and notify observers
 		if (AudioSource && Callback)

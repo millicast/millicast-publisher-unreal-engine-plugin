@@ -4,8 +4,6 @@
 #include "MillicastPublisherPrivate.h"
 #include "WebRTC/PeerConnection.h"
 
-// #include "libresample.h"
-
 #include "Util.h"
 
 TArray<Audio::FCaptureDeviceInfo> AudioDeviceCapture::CaptureDevices;
@@ -16,7 +14,7 @@ IMillicastAudioSource* IMillicastAudioSource::Create(AudioCapturerType CapturerT
 	{
 	case AudioCapturerType::SUBMIX: return new AudioGameCapturer;
 	case AudioCapturerType::DEVICE: return new AudioDeviceCapture;
-	case AudioCapturerType::LOOPBACK: return new WasapiDeviceCapture(100, true);
+	case AudioCapturerType::LOOPBACK: return new WasapiDeviceCapture(10, true);
 	}
 
 	return nullptr;
@@ -33,19 +31,14 @@ void AudioCapturerBase::CreateRtcSourceTrack()
 	// Disable WebRTC processing
 	cricket::AudioOptions options;
 	options.echo_cancellation.emplace(false);
-	options.auto_gain_control.emplace(false);
+	options.auto_gain_control.emplace(true);
 	options.noise_suppression.emplace(false);
-	options.highpass_filter.emplace(false);
+	options.highpass_filter.emplace(true);
 	options.stereo_swapping.emplace(false);
 	options.typing_detection.emplace(false);
 	options.experimental_agc.emplace(false);
 	options.experimental_ns.emplace(false);
 	options.residual_echo_detector.emplace(false);
-
-	options.audio_jitter_buffer_max_packets = 1000;
-	options.audio_jitter_buffer_fast_accelerate = false;
-	options.audio_jitter_buffer_min_delay_ms = 0;
-	options.audio_jitter_buffer_enable_rtx_handling = false;
 
 	RtcAudioSource = peerConnectionFactory->CreateAudioSource(options);
 	RtcAudioTrack  = peerConnectionFactory->CreateAudioTrack(to_string(TrackId.Get("audio")), RtcAudioSource);
@@ -160,9 +153,6 @@ AudioDeviceCapture::FStreamTrackInterface AudioDeviceCapture::StartCapture()
 	Audio::FOnCaptureFunction OnCapture = [this](const float* AudioData, int32 NumFrames, int32 NumChannels, int32 SampleRate, double StreamTime, bool bOverFlow)
 	{
 		int32 NumSamples = NumFrames * NumChannels;
-
-		// UE_LOG(LogMillicastPublisher, Display, 
-		// 	TEXT("%d %d %d %d %f"), NumFrames, NumChannels, SampleRate, NumSamples, StreamTime);
 
 		float* MutableAudioData = new float[NumSamples];
 
@@ -883,7 +873,7 @@ WasapiDeviceCapture::FStreamTrackInterface WasapiDeviceCapture::StartCapture()
 
 	LogicalEP lep = numChans_ == 2 ? LogicalEP::InputMusic : LogicalEP::InputVoice;
 
-	auto period = static_cast<UINT>(1000.f / float(tickRate_));
+	auto period = UINT(Tmin / 10000);
 	BOOL success = CreateTimerQueueTimer(&sWcore.timer_, NULL, (WAITORTIMERCALLBACK)coreCallback, this, period / 2, period / 2, NULL);
 
 	sWcore.StartTickingStream(this, lep, UINT(Tmin / 10000));
