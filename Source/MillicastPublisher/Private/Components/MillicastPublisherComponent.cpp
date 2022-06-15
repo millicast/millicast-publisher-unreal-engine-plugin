@@ -259,12 +259,23 @@ bool UMillicastPublisherComponent::PublishToMillicast()
 	auto * RemoteDescriptionObserver = PeerConnection->GetRemoteDescriptionObserver();
 
 	CreateSessionDescriptionObserver->SetOnSuccessCallback([this](const std::string& type, const std::string& sdp) {
-		UE_LOG(LogMillicastPublisher, Display, TEXT("pc.createOffer() | sucess\nsdp : %s"), *ToString(sdp));
-		PeerConnection->SetLocalDescription(sdp, type);
+		UE_LOG(LogMillicastPublisher, Display, TEXT("pc.createOffer() | sucess\nsdp : %s"), sdp.c_str());
+
+		const std::string s = "minptime=10;useinbandfec=1";
+		std::string sdp_non_const = sdp;
+		std::ostringstream oss;
+		oss << s << "; stereo=1";
+
+		auto pos = sdp.find(s);
+		if (pos != std::string::npos) {
+			sdp_non_const.replace(sdp.find(s), s.size(), oss.str());
+		}
+
+		PeerConnection->SetLocalDescription(sdp_non_const, type);
 	});
 
 	CreateSessionDescriptionObserver->SetOnFailureCallback([this](const std::string& err) {
-		UE_LOG(LogMillicastPublisher, Error, TEXT("pc.createOffer() | Error: %s"), *ToString(err));
+		UE_LOG(LogMillicastPublisher, Error, TEXT("pc.createOffer() | Error: %s"), err.c_str());
 		OnPublishingError.Broadcast(TEXT("Could not create offer"));
 	});
 
