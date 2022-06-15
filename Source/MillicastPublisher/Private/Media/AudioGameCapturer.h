@@ -81,6 +81,8 @@ public:
 	static TArray<Audio::FCaptureDeviceInfo>& GetCaptureDevicesAvailable();
 };
 
+#ifdef PLATFORM_WINDOWS
+
 #include <windows.h>
 #include <mmreg.h>
 
@@ -166,3 +168,5 @@ public:
 	static bool ColdInit();
 	static void ColdExit();
 };
+
+#endif

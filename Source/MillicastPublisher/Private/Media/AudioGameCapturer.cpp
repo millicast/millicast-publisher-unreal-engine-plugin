@@ -14,7 +14,11 @@ IMillicastAudioSource* IMillicastAudioSource::Create(AudioCapturerType CapturerT
 	{
 	case AudioCapturerType::SUBMIX: return new AudioGameCapturer;
 	case AudioCapturerType::DEVICE: return new AudioDeviceCapture;
+#ifdef PLATFORM_WINDOWS
 	case AudioCapturerType::LOOPBACK: return new WasapiDeviceCapture(10, true);
+#else
+	case AudioCapturerType::LOOPBACK: return nullptr;
+#endif
 	}
 
 	return nullptr;
@@ -236,6 +240,8 @@ TArray<Audio::FCaptureDeviceInfo>& AudioDeviceCapture::GetCaptureDevicesAvailabl
 
 	return CaptureDevices;
 }
+
+#ifdef PLATFORM_WINDOWS
 
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------
 /** @file WasapiDeviceCapture.cpp
@@ -1052,3 +1058,5 @@ void WasapiDeviceCapture::ColdExit()
 {
 	sWcore.ColdExit();
 }
+
+#endif

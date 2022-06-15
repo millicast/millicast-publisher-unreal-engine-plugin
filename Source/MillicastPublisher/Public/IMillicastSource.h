@@ -56,7 +56,7 @@ enum AudioCapturerType
 {
 	SUBMIX   UMETA(DisplayName = "Submix"),
 	DEVICE   UMETA(DisplayName = "Device"),
-	LOOPBACK UMETA(DisplayName = "Loopback")
+	LOOPBACK UMETA(DisplayName = "Loopback (windows only)"),
 };
 
 /**
