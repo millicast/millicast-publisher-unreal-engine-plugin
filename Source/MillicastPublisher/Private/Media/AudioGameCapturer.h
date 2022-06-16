@@ -81,7 +81,7 @@ public:
 	static TArray<Audio::FCaptureDeviceInfo>& GetCaptureDevicesAvailable();
 };
 
-#ifdef PLATFORM_WINDOWS
+#if PLATFORM_WINDOWS
 
 #include <windows.h>
 #include <mmreg.h>
