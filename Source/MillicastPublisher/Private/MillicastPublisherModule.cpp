@@ -30,13 +30,17 @@ public:
 	//~ IModuleInterface interface
 	virtual void StartupModule() override
 	{
+#if PLATFORM_WINDOWS
 		WasapiDeviceCapture::ColdInit();
+#endif
 		CreateStyle();
 	}
 
 	virtual void ShutdownModule() override 
 	{
+#if PLATFORM_WINDOWS
 		WasapiDeviceCapture::ColdExit();
+#endif
 	}
 
 private:
