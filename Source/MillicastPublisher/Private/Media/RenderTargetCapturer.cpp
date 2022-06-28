@@ -87,7 +87,7 @@ void RenderTargetCapturer::OnEndFrameRenderThread()
 	if (RtcVideoSource)
 	{
 		// Read the render target resource texture 2D
-		auto texture = RenderTarget->Resource->GetTexture2DRHI();
+		auto texture = RenderTarget->GetResource()->GetTexture2DRHI();
 
 		// Convert it to WebRTC video frame
 		if (texture)

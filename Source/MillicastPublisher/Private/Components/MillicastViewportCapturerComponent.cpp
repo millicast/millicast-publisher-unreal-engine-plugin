@@ -9,7 +9,7 @@
 UMillicastViewportCapturerComponent::UMillicastViewportCapturerComponent(const FObjectInitializer& ObjectInitializer) :
 	EngineShowFlags(ESFIM_Game), ViewState(), ViewportWidget(nullptr), SceneViewport(nullptr), bIsInitialized(false)
 {
-	ViewState.Allocate();
+	ViewState.Allocate(ERHIFeatureLevel::ES3_1);
 
 	bWantsInitializeComponent = true;
 
@@ -35,7 +35,7 @@ void UMillicastViewportCapturerComponent::InitializeComponent()
 	ViewportWidget->SetViewportInterface(SceneViewport.ToSharedRef());
 
 	// Create Renderable texture
-	FRHIResourceCreateInfo CreateInfo = { FClearValueBinding(FLinearColor(0.0f, 0.0f, 0.0f)) };
+	FRHIResourceCreateInfo CreateInfo(TEXT("CreateINfo"), FClearValueBinding(FLinearColor(0.0f, 0.0f, 0.0f)));
 
 	FTexture2DRHIRef ReferenceTexture = RHICreateTexture2D(TargetSize.X, TargetSize.Y, EPixelFormat::PF_B8G8R8A8, 1,
 		1, TexCreate_CPUReadback, CreateInfo);
@@ -87,15 +87,13 @@ void UMillicastViewportCapturerComponent::UpdateTexture()
 {
 	if (UWorld* WorldContext = UActorComponent::GetWorld())
 	{
-		float TimeSeconds      = WorldContext->GetTimeSeconds();
-		float RealTimeSeconds  = WorldContext->GetRealTimeSeconds();
-		float DeltaTimeSeconds = WorldContext->GetDeltaSeconds();
+		auto Time = WorldContext->GetTime();
 
 		FScopeLock Lock(&UpdateRenderContext);
 
 		if (ViewFamily != nullptr && View != nullptr)
 		{
-			GetCameraView(DeltaTimeSeconds, ViewInfo);
+			GetCameraView(Time.GetDeltaRealTimeSeconds(), ViewInfo);
 
 			View->UpdateProjectionMatrix(ViewInfo.CalculateProjectionMatrix());
 
@@ -111,24 +109,21 @@ void UMillicastViewportCapturerComponent::UpdateTexture()
 			if (RenderTarget)
 			{
 				// Create the canvas for rendering the view family
-				FCanvas Canvas(this, nullptr, RealTimeSeconds, DeltaTimeSeconds, TimeSeconds,
-					GMaxRHIFeatureLevel);
+				FCanvas Canvas(this, nullptr, Time, GMaxRHIFeatureLevel);
 
 				ViewFamily->ViewExtensions.Empty();
 
 				// Update the ViewFamily time
-				ViewFamily->CurrentRealTime  = RealTimeSeconds;
-				ViewFamily->CurrentWorldTime = TimeSeconds;
-				ViewFamily->DeltaWorldTime   = DeltaTimeSeconds;
+				ViewFamily->Time = Time;
 
 				// Start Rendering the ViewFamily
 				
 				GetRendererModule().BeginRenderingViewFamily(&Canvas, ViewFamily);
 
-				if (RenderTarget->Resource->TextureRHI != RenderableTexture ||
-					RenderTarget->Resource->TextureRHI->GetSizeXYZ() != RenderableTexture->GetSizeXYZ())
+				if (RenderTarget->GetResource()->TextureRHI != RenderableTexture ||
+					RenderTarget->GetResource()->TextureRHI->GetSizeXYZ() != RenderableTexture->GetSizeXYZ())
 				{
-					RenderTarget->Resource->TextureRHI = (FTexture2DRHIRef&)RenderableTexture;
+					RenderTarget->GetResource()->TextureRHI = (FTexture2DRHIRef&)RenderableTexture;
 				}
 			}
 		}
@@ -155,7 +150,7 @@ void UMillicastViewportCapturerComponent::SetupView()
 
 		// Construct the ViewFamily we need to render
 		ViewFamily = new FSceneViewFamilyContext(FSceneViewFamily::ConstructionValues(this, GetScene(), EngineShowFlags)
-			.SetWorldTimes(0.0f, 0.0f, 0.0f)
+			.SetTime(FGameTime::CreateDilated(0.f, 0.f, 0.f, 0.f))
 			.SetRealtimeUpdate(false));
 
 		// Update the ViewFamily with the properties we want to see in the capture
@@ -175,7 +170,7 @@ void UMillicastViewportCapturerComponent::SetupView()
 		ViewInitOptions.BackgroundColor = FLinearColor(0, 0, 0, 0);
 		ViewInitOptions.ViewFamily = ViewFamily;
 		ViewInitOptions.SceneViewStateInterface = ViewState.GetReference();
-		ViewInitOptions.StereoPass = eSSP_FULL;
+		ViewInitOptions.StereoPass = EStereoscopicPass::eSSP_FULL;
 		ViewInitOptions.bUseFieldOfViewForLOD = ViewInfo.bUseFieldOfViewForLOD;
 		ViewInitOptions.FOV = ViewInfo.FOV;
 		ViewInitOptions.OverrideFarClippingPlaneDistance = 100000.0f;
