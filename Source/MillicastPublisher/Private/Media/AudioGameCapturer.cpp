@@ -873,7 +873,7 @@ WasapiDeviceCapture::FStreamTrackInterface WasapiDeviceCapture::StartCapture()
 
 	if (FAILED(client_->GetDevicePeriod(&Tdef, &Tmin)))
 	{
-		UE_LOG(LogMillicastPublisher, Error, TEXT("AudioDriver::StartStream( %s ): Failed to get device period!"), numChans_ == 2 ? "music input" : "voice input");
+		UE_LOG(LogMillicastPublisher, Error, TEXT("AudioDriver::StartStream( %S ): Failed to get device period!"), numChans_ == 2 ? "music input" : "voice input");
 		return nullptr;
 	}
 
@@ -885,10 +885,10 @@ WasapiDeviceCapture::FStreamTrackInterface WasapiDeviceCapture::StartCapture()
 	sWcore.StartTickingStream(this, lep, UINT(Tmin / 10000));
 
 	if (FAILED(client_->Start())) {
-		UE_LOG(LogMillicastPublisher, Error, TEXT("AudioDriver::StartStream( %s ): could not start!"),numChans_ == 2 ? "music input" : "voice input");
+		UE_LOG(LogMillicastPublisher, Error, TEXT("AudioDriver::StartStream( %S ): could not start!"),numChans_ == 2 ? "music input" : "voice input");
 	}
 	else {
-		UE_LOG(LogMillicastPublisher, Log, TEXT("AudioDriver::StartStream( %s ): SUCCESS"), numChans_ == 2 ? "music input" : "voice input");
+		UE_LOG(LogMillicastPublisher, Log, TEXT("AudioDriver::StartStream( %S ): SUCCESS"), numChans_ == 2 ? "music input" : "voice input");
 	}
 
 	CreateRtcSourceTrack();
@@ -1033,8 +1033,25 @@ void WasapiDeviceCapture::OnTick()
 		BYTE* pData;
 		DWORD flags;
 
-		if (FAILED(capture_->GetBuffer(&pData, &numFramesAvailable, &flags, nullptr, nullptr)))
+		if (auto ret = FAILED(capture_->GetBuffer(&pData, &numFramesAvailable, &flags, nullptr, nullptr)))
 		{
+			FString ErrorMsg;
+			switch (ret) 
+			{
+			case AUDCLNT_S_BUFFER_EMPTY: ErrorMsg = "no capture data is available to be read."; break;
+			case AUDCLNT_E_BUFFER_ERROR: ErrorMsg = "GetBuffer failed to retrieve a data buffer"; break;
+			case AUDCLNT_E_OUT_OF_ORDER: ErrorMsg = "A previous GetBuffer call is still in effect."; break;
+			case AUDCLNT_E_DEVICE_INVALIDATED: 
+				ErrorMsg = "The audio endpoint device has been unplugged, or the audio hardware or " 
+					"associated hardware resources have been reconfigured, disabled, removed, or "
+					"otherwise made unavailable for use."; 
+				break;
+			case AUDCLNT_E_BUFFER_OPERATION_PENDING: ErrorMsg = "Buffer cannot be accessed because a stream reset is in progress."; break;
+			case AUDCLNT_E_SERVICE_NOT_RUNNING: ErrorMsg = "	The Windows audio service is not running."; break;
+			case E_POINTER: ErrorMsg = "Parameter is NULL"; break;
+			default: ErrorMsg = "Unknown reason";
+			}
+
 			UE_LOG(LogMillicastPublisher, Error, TEXT("Couldn't get capture buffer!"));
 			break;
 		}

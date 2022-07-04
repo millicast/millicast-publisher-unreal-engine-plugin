@@ -110,7 +110,7 @@ void UMillicastPublisherComponent::SetupIceServersFromJson(TArray<TSharedPtr<FJs
 void UMillicastPublisherComponent::ParseDirectorResponse(FHttpResponsePtr Response)
 {
 	FString ResponseDataString = Response->GetContentAsString();
-	UE_LOG(LogMillicastPublisher, Log, TEXT("Director response : \n %s \n"), *ResponseDataString);
+	UE_LOG(LogMillicastPublisher, Log, TEXT("Director response : \n %S \n"), *ResponseDataString);
 
 	TSharedPtr<FJsonObject> ResponseDataJson;
 	auto JsonReader = TJsonReaderFactory<>::Create(ResponseDataString);
@@ -128,7 +128,7 @@ void UMillicastPublisherComponent::ParseDirectorResponse(FHttpResponsePtr Respon
 		FString WsUrl;
 		WebSocketUrlField->TryGetString(WsUrl);
 
-		UE_LOG(LogMillicastPublisher, Log, TEXT("WsUrl : %s \njwt : %s"),
+		UE_LOG(LogMillicastPublisher, Log, TEXT("WsUrl : %S \njwt : %S"),
 			*WsUrl, *Jwt);
 
 		SetupIceServersFromJson(IceServersField);
@@ -178,7 +178,7 @@ bool UMillicastPublisherComponent::Publish()
 		}
 		else 
 		{
-			UE_LOG(LogMillicastPublisher, Error, TEXT("Director HTTP request failed %d %s"), Response->GetResponseCode(), *Response->GetContentType());
+			UE_LOG(LogMillicastPublisher, Error, TEXT("Director HTTP request failed %d %S"), Response->GetResponseCode(), *Response->GetContentType());
 			FString ErrorMsg = Response->GetContentAsString();
 			OnAuthenticationFailure.Broadcast(Response->GetResponseCode(), ErrorMsg);
 		}
@@ -259,7 +259,7 @@ bool UMillicastPublisherComponent::PublishToMillicast()
 	auto * RemoteDescriptionObserver = PeerConnection->GetRemoteDescriptionObserver();
 
 	CreateSessionDescriptionObserver->SetOnSuccessCallback([this](const std::string& type, const std::string& sdp) {
-		UE_LOG(LogMillicastPublisher, Display, TEXT("pc.createOffer() | sucess\nsdp : %s"), sdp.c_str());
+		UE_LOG(LogMillicastPublisher, Display, TEXT("pc.createOffer() | sucess\nsdp : %S"), sdp.c_str());
 
 		const std::string s = "minptime=10;useinbandfec=1";
 		std::string sdp_non_const = sdp;
@@ -275,7 +275,7 @@ bool UMillicastPublisherComponent::PublishToMillicast()
 	});
 
 	CreateSessionDescriptionObserver->SetOnFailureCallback([this](const std::string& err) {
-		UE_LOG(LogMillicastPublisher, Error, TEXT("pc.createOffer() | Error: %s"), err.c_str());
+		UE_LOG(LogMillicastPublisher, Error, TEXT("pc.createOffer() | Error: %S"), err.c_str());
 		OnPublishingError.Broadcast(TEXT("Could not create offer"));
 	});
 
@@ -318,11 +318,11 @@ bool UMillicastPublisherComponent::PublishToMillicast()
 
 		WS->Send(StringStream);
 
-		UE_LOG(LogMillicastPublisher, Log, TEXT("WebSocket publish payload : %s"), *StringStream);
+		UE_LOG(LogMillicastPublisher, Log, TEXT("WebSocket publish payload : %S"), *StringStream);
 	});
 
 	LocalDescriptionObserver->SetOnFailureCallback([this](const std::string& err) {
-		UE_LOG(LogMillicastPublisher, Error, TEXT("Set local description failed : %s"), *ToString(err));
+		UE_LOG(LogMillicastPublisher, Error, TEXT("Set local description failed : %S"), *ToString(err));
 		OnPublishingError.Broadcast(TEXT("Could not set local description"));
 	});
 
@@ -334,7 +334,7 @@ bool UMillicastPublisherComponent::PublishToMillicast()
 		OnPublishing.Broadcast();
 	});
 	RemoteDescriptionObserver->SetOnFailureCallback([this](const std::string& err) {
-		UE_LOG(LogMillicastPublisher, Error, TEXT("Set remote description failed : %s"), *ToString(err));
+		UE_LOG(LogMillicastPublisher, Error, TEXT("Set remote description failed : %S"), *ToString(err));
 		OnPublishingError.Broadcast(TEXT("Could not set remote description"));
 	});
 
