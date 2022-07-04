@@ -1052,7 +1052,7 @@ void WasapiDeviceCapture::OnTick()
 			default: ErrorMsg = "Unknown reason";
 			}
 
-			UE_LOG(LogMillicastPublisher, Error, TEXT("Couldn't get capture buffer!"));
+			UE_LOG(LogMillicastPublisher, Error, TEXT("Couldn't get capture buffer : %S"), *ErrorMsg);
 			break;
 		}
 
