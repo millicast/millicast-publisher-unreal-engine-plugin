@@ -48,6 +48,7 @@ namespace UnrealBuildTool.Rules
 					"HeadMountedDisplay",
 					"CinematicCamera",
 					"InputCore",
+					"libOpus",
 					"AudioPlatformConfiguration"
 				});
 
