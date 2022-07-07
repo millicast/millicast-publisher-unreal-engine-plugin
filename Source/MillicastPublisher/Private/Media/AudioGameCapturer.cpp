@@ -1033,10 +1033,11 @@ void WasapiDeviceCapture::OnTick()
 		BYTE* pData;
 		DWORD flags;
 
-		if (auto ret = FAILED(capture_->GetBuffer(&pData, &numFramesAvailable, &flags, nullptr, nullptr)))
+		auto getBufferRet = FAILED(capture_->GetBuffer(&pData, &numFramesAvailable, &flags, nullptr, nullptr));
+		if (FAILED(getBufferRet))
 		{
 			FString ErrorMsg;
-			switch (ret) 
+			switch (getBufferRet) 
 			{
 			case AUDCLNT_S_BUFFER_EMPTY: ErrorMsg = "no capture data is available to be read."; break;
 			case AUDCLNT_E_BUFFER_ERROR: ErrorMsg = "GetBuffer failed to retrieve a data buffer"; break;
