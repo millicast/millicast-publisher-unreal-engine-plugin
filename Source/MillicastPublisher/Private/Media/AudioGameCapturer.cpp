@@ -1033,7 +1033,7 @@ void WasapiDeviceCapture::OnTick()
 		BYTE* pData;
 		DWORD flags;
 
-		HRESULT getBufferRet = FAILED(capture_->GetBuffer(&pData, &numFramesAvailable, &flags, nullptr, nullptr));
+		HRESULT getBufferRet = capture_->GetBuffer(&pData, &numFramesAvailable, &flags, nullptr, nullptr);
 		if (FAILED(getBufferRet))
 		{
 			FString ErrorMsg;
