@@ -18,7 +18,6 @@ UMillicastViewportCapturerComponent::UMillicastViewportCapturerComponent(const F
 
 void UMillicastViewportCapturerComponent::InitializeComponent()
 {
-	UE_LOG(LogMillicastPublisher, Log, TEXT("Initialize component"));
 	Super::InitializeComponent();
 
 	// Create viewport widget with gamma correction
@@ -87,8 +86,8 @@ void UMillicastViewportCapturerComponent::UpdateTexture()
 {
 	if (UWorld* WorldContext = UActorComponent::GetWorld())
 	{
-		float TimeSeconds      = WorldContext->GetTimeSeconds();
-		float RealTimeSeconds  = WorldContext->GetRealTimeSeconds();
+		float TimeSeconds = WorldContext->GetTimeSeconds();
+		float RealTimeSeconds = WorldContext->GetRealTimeSeconds();
 		float DeltaTimeSeconds = WorldContext->GetDeltaSeconds();
 
 		FScopeLock Lock(&UpdateRenderContext);
@@ -117,18 +116,26 @@ void UMillicastViewportCapturerComponent::UpdateTexture()
 				ViewFamily->ViewExtensions.Empty();
 
 				// Update the ViewFamily time
-				ViewFamily->CurrentRealTime  = RealTimeSeconds;
+				ViewFamily->CurrentRealTime = RealTimeSeconds;
 				ViewFamily->CurrentWorldTime = TimeSeconds;
-				ViewFamily->DeltaWorldTime   = DeltaTimeSeconds;
+				ViewFamily->DeltaWorldTime = DeltaTimeSeconds;
 
 				// Start Rendering the ViewFamily
-				
+
 				GetRendererModule().BeginRenderingViewFamily(&Canvas, ViewFamily);
 
 				if (RenderTarget->Resource->TextureRHI != RenderableTexture ||
 					RenderTarget->Resource->TextureRHI->GetSizeXYZ() != RenderableTexture->GetSizeXYZ())
 				{
 					RenderTarget->Resource->TextureRHI = (FTexture2DRHIRef&)RenderableTexture;
+					//RP_CHANGE_BEGIN - nbabin - missing texture ref update
+					ENQUEUE_RENDER_COMMAND(FMillicastViewportCaptureViewFamily)
+						([&](FRHICommandListImmediate& RHICmdList) {
+						// ensure that the texture reference is the same as the renderable texture
+						RHIUpdateTextureReference(RenderTarget->TextureReference.TextureReferenceRHI,
+							RenderTarget->Resource->TextureRHI);
+							});
+					//RP_CHANGE_END
 				}
 			}
 		}
@@ -208,7 +215,7 @@ void UMillicastViewportCapturerComponent::SetupView()
 			GetRendererModule().CreateAndInitSingleView(RHICmdList, ViewFamily, &ViewInitOptions);
 
 			View = const_cast<FSceneView*>(ViewFamily->Views[0]);
-		});
+				});
 	}
 }
 
