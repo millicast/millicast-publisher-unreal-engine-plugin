@@ -18,7 +18,6 @@ UMillicastViewportCapturerComponent::UMillicastViewportCapturerComponent(const F
 
 void UMillicastViewportCapturerComponent::InitializeComponent()
 {
-	UE_LOG(LogMillicastPublisher, Log, TEXT("Initialize component"));
 	Super::InitializeComponent();
 
 	// Create viewport widget with gamma correction
@@ -117,13 +116,21 @@ void UMillicastViewportCapturerComponent::UpdateTexture()
 				ViewFamily->Time = Time;
 
 				// Start Rendering the ViewFamily
-				
+
 				GetRendererModule().BeginRenderingViewFamily(&Canvas, ViewFamily);
 
 				if (RenderTarget->GetResource()->TextureRHI != RenderableTexture ||
 					RenderTarget->GetResource()->TextureRHI->GetSizeXYZ() != RenderableTexture->GetSizeXYZ())
 				{
-					RenderTarget->GetResource()->TextureRHI = (FTexture2DRHIRef&)RenderableTexture;
+					RenderTarget->Resource->TextureRHI = (FTexture2DRHIRef&)RenderableTexture;
+					//RP_CHANGE_BEGIN - nbabin - missing texture ref update
+					ENQUEUE_RENDER_COMMAND(FMillicastViewportCaptureViewFamily)
+						([&](FRHICommandListImmediate& RHICmdList) {
+						// ensure that the texture reference is the same as the renderable texture
+						RHIUpdateTextureReference(RenderTarget->TextureReference.TextureReferenceRHI,
+							RenderTarget->Resource->TextureRHI);
+							});
+					//RP_CHANGE_END
 				}
 			}
 		}
@@ -203,7 +210,7 @@ void UMillicastViewportCapturerComponent::SetupView()
 			GetRendererModule().CreateAndInitSingleView(RHICmdList, ViewFamily, &ViewInitOptions);
 
 			View = const_cast<FSceneView*>(ViewFamily->Views[0]);
-		});
+				});
 	}
 }
 
