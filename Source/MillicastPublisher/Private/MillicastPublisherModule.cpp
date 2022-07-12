@@ -33,6 +33,12 @@ public:
 #if PLATFORM_WINDOWS
 		WasapiDeviceCapture::ColdInit();
 #endif
+
+		if (GDynamicRHI)
+		{
+			UE_LOG(LogMillicastPublisher, Log, TEXT("Using graphic driver : %s"), GDynamicRHI->GetName());
+		}
+
 		CreateStyle();
 	}
 

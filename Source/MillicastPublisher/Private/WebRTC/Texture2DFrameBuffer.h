@@ -3,6 +3,7 @@
 #pragma once
 
 #include "WebRTCInc.h"
+#include "RHIGPUReadback.h"
 #include "RHI.h"
 
 namespace libyuv {
@@ -30,25 +31,60 @@ class FTexture2DFrameBuffer : public webrtc::VideoFrameBuffer
 
 	FTexture2DRHIRef TextureFrame;
 	FCriticalSection CriticalSection;
-	uint8* TextureData;
+	void* TextureData;
+
+	TUniquePtr<FRHIGPUTextureReadback> Readback;
 
 public:
 
 	explicit FTexture2DFrameBuffer(FTexture2DRHIRef SourceTexture) noexcept : TextureData(nullptr)
 	{
 		/* Get video farme height and  width */
-		FScopeLock Lock(&CriticalSection);
-
 		Width = SourceTexture->GetSizeX();
 		Height = SourceTexture->GetSizeY();
 		TextureFrame = SourceTexture;
 
-		uint32 stride;
-		TextureData = (uint8*)GDynamicRHI->RHILockTexture2D(TextureFrame, 0, EResourceLockMode::RLM_ReadOnly, stride, true);
+		ENQUEUE_RENDER_COMMAND(ReadSurfaceCommand)(
+			[this](FRHICommandListImmediate& RHICmdList)
+			{
+				FScopeLock Lock(&CriticalSection);
 
-		GDynamicRHI->RHIUnlockTexture2D(TextureFrame, 0, true);
+				if (GDynamicRHI && GDynamicRHI->GetName() == FString(TEXT("D3D12")))
+				{
+					ReadTextureDX12(RHICmdList);
+				}
+				else
+				{
+					ReadTexture(RHICmdList);
+				}
+			});
+
+		// FlushRenderingCommands();
 	}
-	
+
+	void ReadTextureDX12(FRHICommandListImmediate& RHICmdList)
+	{
+		if (!Readback.IsValid())
+		{
+			Readback = MakeUnique<FRHIGPUTextureReadback>(TEXT("CaptureReadback"));
+		}
+
+		Readback->EnqueueCopy(RHICmdList, TextureFrame, FResolveRect(0, 0, Width, Height));
+		RHICmdList.BlockUntilGPUIdle();
+		check(Readback->IsReady());
+
+		TextureData = Readback->Lock(Width * Height * 4);
+		Readback->Unlock();
+	}
+
+	void ReadTexture(FRHICommandListImmediate& RHICmdList)
+	{
+		uint32 stride;
+		TextureData = (uint8*)RHICmdList.LockTexture2D(TextureFrame, 0, EResourceLockMode::RLM_ReadOnly, stride, true);
+
+		RHICmdList.UnlockTexture2D(TextureFrame, 0, true);
+	}
+
 	/** Get video frame width */
 	int width() const override { return Width; }
 
@@ -73,7 +109,7 @@ public:
 		const auto STRIDES = Width * 4;
 
 		if (TextureData) {
-			libyuv::ARGBToI420(TextureData, STRIDES,
+			libyuv::ARGBToI420((uint8_t*)TextureData, STRIDES,
 				DataY, Buffer->StrideY(), DataU, Buffer->StrideU(), DataV, Buffer->StrideV(),
 				Width, Height);
 		}
