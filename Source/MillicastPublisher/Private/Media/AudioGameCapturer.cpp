@@ -991,6 +991,8 @@ void WasapiDeviceCapture::SendAudioData(const float* pinf, size_t numFramesAvail
 {
 	auto adm = FWebRTCPeerConnection::GetAudioDeviceModule();
 
+	if (!adm->Recording()) return;
+
 	if (kOpusSampleRate != format_->nSamplesPerSec)
 	{
 		ResamplingParameters.InputBuffer.Append(pinf, numFramesAvailable * numCaptureChannels);
