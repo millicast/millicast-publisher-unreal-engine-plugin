@@ -1,6 +1,6 @@
-# MillicastPublisher plugin for Unreal Engine 4
+# MillicastPublisher plugin for Unreal Engine 5
 
-* Supported UE version 4.27
+* Supported UE version >= 5.0
 * Supported on Windows and Linux
 
 This plugin enable to publish game audio and video content to Millicast.
