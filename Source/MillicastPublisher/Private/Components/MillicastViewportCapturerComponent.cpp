@@ -122,13 +122,13 @@ void UMillicastViewportCapturerComponent::UpdateTexture()
 				if (RenderTarget->GetResource()->TextureRHI != RenderableTexture ||
 					RenderTarget->GetResource()->TextureRHI->GetSizeXYZ() != RenderableTexture->GetSizeXYZ())
 				{
-					RenderTarget->Resource->TextureRHI = (FTexture2DRHIRef&)RenderableTexture;
+					RenderTarget->GetResource()->TextureRHI = (FTexture2DRHIRef&)RenderableTexture;
 					//RP_CHANGE_BEGIN - nbabin - missing texture ref update
 					ENQUEUE_RENDER_COMMAND(FMillicastViewportCaptureViewFamily)
 						([&](FRHICommandListImmediate& RHICmdList) {
 						// ensure that the texture reference is the same as the renderable texture
 						RHIUpdateTextureReference(RenderTarget->TextureReference.TextureReferenceRHI,
-							RenderTarget->Resource->TextureRHI);
+							RenderTarget->GetResource()->TextureRHI);
 							});
 					//RP_CHANGE_END
 				}
