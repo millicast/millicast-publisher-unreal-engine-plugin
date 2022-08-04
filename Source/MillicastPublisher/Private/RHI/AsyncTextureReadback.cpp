@@ -4,6 +4,12 @@
 #include "GlobalShader.h"
 #include "ScreenRendering.h"
 #include "Runtime/Renderer/Private/ScreenPass.h"
+#include "Modules/ModuleManager.h"
+#include "RHI.h"
+#include "RHIGPUReadback.h"
+#include "RenderGraphBuilder.h"
+#include "RenderGraphUtils.h"
+
 
 FAsyncTextureReadback::~FAsyncTextureReadback()
 {

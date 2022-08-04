@@ -5,22 +5,7 @@
 #include "WebRTCInc.h"
 #include "RHI.h"
 #include "RHIGPUReadback.h"
-
-namespace libyuv {
-	extern "C" {
-		/** libyuv header can't be included here, so just declare this function to convert the frames. */
-		int ARGBToI420(const uint8_t* src_bgra,
-			int src_stride_bgra,
-			uint8_t* dst_y,
-			int dst_stride_y,
-			uint8_t* dst_u,
-			int dst_stride_u,
-			uint8_t* dst_v,
-			int dst_stride_v,
-			int width,
-			int height);
-	}
-}
+#include "libyuv/convert.h"
 
 class FB8G8R8A8ToI420FrameBuffer : public webrtc::VideoFrameBuffer
 {

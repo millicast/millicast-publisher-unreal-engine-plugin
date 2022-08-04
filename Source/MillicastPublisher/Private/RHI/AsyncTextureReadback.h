@@ -2,8 +2,10 @@
 
 #pragma once
 
-#include "RHIResources.h"
 #include "GenericPlatform/GenericPlatformMisc.h"
+#include "Templates/SharedPointer.h"
+#include "Rendering/SlateRenderer.h"
+
 
 /*
 * A mechanism to read a UE texture from GPU to CPU

@@ -10,6 +10,7 @@
 #include "Dom/JsonValue.h"
 #include "Dom/JsonObject.h"
 
+#include "Serialization/JsonSerializer.h"
 #include "Serialization/JsonReader.h"
 #include "Serialization/JsonWriter.h"
 

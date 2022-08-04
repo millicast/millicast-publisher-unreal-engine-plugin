@@ -2,7 +2,7 @@
 
 #include "MillicastViewportCapturerComponent.h"
 #include "MillicastPublisherPrivate.h"
-
+#include "CanvasTypes.h"
 #include <EngineModule.h>
 #include <LegacyScreenPercentageDriver.h>
 

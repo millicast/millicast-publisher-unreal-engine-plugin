@@ -3,10 +3,10 @@
 #pragma once
 
 #include <CoreMinimal.h>
+#include "GameFramework/Actor.h"
+#include "MillicastCameraActor.generated.h"
 
 class UMillicastViewportCapturerComponent;
-
-#include "MillicastCameraActor.generated.h"
 
 /**
 	Capture the scene from the perspective of a camera that starts broadcasting the viewport.
