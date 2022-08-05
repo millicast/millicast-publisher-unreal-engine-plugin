@@ -75,11 +75,11 @@ public:
 	bool IsPublishing() const;
 
 	/**
-	* Set the maximum bitrate for the peerconnection
-	* Have to be called before Publish
+	* Set the operating bitrates (in kilobits) for the stream.
+	* Note: This has to be called before Publish otherwise it has no effect.
 	*/
-	UFUNCTION(BlueprintCallable, Category = "MillicastPublisher", META = (DisplayName = "SetMaximumBitrate"))
-	void SetMaximumBitrate(int Bps);
+	UFUNCTION(BlueprintCallable, Category = "MillicastPublisher", META = (DisplayName = "SetBitrates"))
+	void SetBitrates(int StartKbps = 1000, int MinKbps = 100, int MaxKbps = 10000);
 
 public:
 	/** Called when the response from the Publisher api is successfull */
@@ -134,8 +134,8 @@ private:
 	/** WebRTC */
 	FWebRTCPeerConnection* PeerConnection;
 	webrtc::PeerConnectionInterface::RTCConfiguration PeerConnectionConfig;
+	TSharedPtr<webrtc::PeerConnectionInterface::BitrateParameters> Bitrates;
 
 	/** Publisher */
 	bool bIsPublishing;
-	TOptional<int> MaximumBitrate; // in bps
 };

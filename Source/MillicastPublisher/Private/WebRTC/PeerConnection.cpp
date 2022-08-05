@@ -197,17 +197,54 @@ webrtc::SessionDescriptionInterface* FWebRTCPeerConnection::CreateDescription(co
 	return SessionDescription;
 }
 
+void FWebRTCPeerConnection::SetBitrates(TSharedPtr<webrtc::PeerConnectionInterface::BitrateParameters> InBitrates)
+{
+	Bitrates = InBitrates;
+	PeerConnection->SetBitrate(*Bitrates);
+}
+
+void FWebRTCPeerConnection::ApplyBitrates(cricket::SessionDescription* Sdp)
+{
+	if(!Bitrates.IsValid())
+	{
+		return;
+	}
+
+	std::vector<cricket::ContentInfo>& ContentInfos = Sdp->contents();
+
+	// Set the start, min, and max bitrate accordingly.
+	for (cricket::ContentInfo& Content : ContentInfos)
+	{
+		cricket::MediaContentDescription* MediaDescription = Content.media_description();
+		if (MediaDescription->type() == cricket::MediaType::MEDIA_TYPE_VIDEO)
+		{
+			cricket::VideoContentDescription* VideoDescription = MediaDescription->as_video();
+			std::vector<cricket::VideoCodec> CodecsCopy = VideoDescription->codecs();
+			for (cricket::VideoCodec& Codec : CodecsCopy)
+			{
+				// Note: These codec params are in kilobits, not bits!
+				Codec.SetParam(cricket::kCodecParamMinBitrate, Bitrates->min_bitrate_bps.value());
+				Codec.SetParam(cricket::kCodecParamStartBitrate, Bitrates->current_bitrate_bps.value());
+				Codec.SetParam(cricket::kCodecParamMaxBitrate, Bitrates->max_bitrate_bps.value());
+			}
+			VideoDescription->set_codecs(CodecsCopy);
+		}
+	}
+}
+
 void FWebRTCPeerConnection::SetLocalDescription(const std::string& Sdp,
 												const std::string& Type)
 {
-	  auto * SessionDescription = CreateDescription(Type,
-													 Sdp,
-													 std::ref(LocalSessionDescription->OnFailureCallback));
+	auto * SessionDescription = CreateDescription(Type,
+													Sdp,
+													std::ref(LocalSessionDescription->OnFailureCallback));
 
-	  if(!SessionDescription) return;
+	if(!SessionDescription) return;
 
-	  PeerConnection->SetLocalDescription(LocalSessionDescription.Release(),
-										  SessionDescription);
+	ApplyBitrates(SessionDescription->description());
+
+	PeerConnection->SetLocalDescription(LocalSessionDescription.Release(),
+										SessionDescription);
 }
 
 void FWebRTCPeerConnection::SetRemoteDescription(const std::string& Sdp,
@@ -218,6 +255,8 @@ void FWebRTCPeerConnection::SetRemoteDescription(const std::string& Sdp,
 												  std::ref(RemoteSessionDescription->OnFailureCallback));
 
 	if(!SessionDescription) return;
+
+	ApplyBitrates(SessionDescription->description());
 
 	PeerConnection->SetRemoteDescription(RemoteSessionDescription.Release(), SessionDescription);
 }
