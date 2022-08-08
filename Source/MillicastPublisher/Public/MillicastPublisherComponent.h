@@ -3,10 +3,8 @@
 #pragma once
 
 #include <CoreMinimal.h>
-
 #include <Components/ActorComponent.h>
 #include "MillicastPublisherSource.h"
-
 #include "MillicastPublisherComponent.generated.h"
 
 // Forward declarations
