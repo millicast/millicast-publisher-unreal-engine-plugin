@@ -32,3 +32,4 @@ If that is the case, create an empty C++ class in your project. This will force 
 ## Documentation
 
 You can find the documentation for the plugin here: [https://docs.millicast.com/docs/millicast-publisher-plugin](https://docs.millicast.com/docs/millicast-publisher-plugin)
+
