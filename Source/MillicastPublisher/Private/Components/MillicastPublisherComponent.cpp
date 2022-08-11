@@ -41,7 +41,7 @@ UMillicastPublisherComponent::UMillicastPublisherComponent(const FObjectInitiali
 	Bitrates = MakeShared<webrtc::PeerConnectionInterface::BitrateParameters>();
 	
 	// Default bitrates
-	Bitrates->max_bitrate_bps = 5'000'000; // 5 megabit (it will ramp to this if it network permits)
+	Bitrates->max_bitrate_bps = 2'500'000; // 2.5 megabit (this is the default in WebRTC anyway)
 	Bitrates->min_bitrate_bps = 100'000; // 100 kilobit
 	Bitrates->current_bitrate_bps = 1'000'000; // 1 megabit
 
