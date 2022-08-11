@@ -114,11 +114,17 @@ IMillicastSource::FStreamTrackInterface AudioGameCapturer::StartCapture()
 
 void AudioGameCapturer::StopCapture()
 {
-	if(RtcAudioTrack) 
+	if(!RtcAudioTrack)
 	{
-		RtcAudioTrack = nullptr;
-		RtcAudioSource = nullptr;
+		return;
+	}
 
+	RtcAudioTrack = nullptr;
+	RtcAudioSource = nullptr;
+
+	// If engine exit requested then audio device is already destroyed.
+	if(!IsEngineExitRequested())
+	{
 		AudioDevice->UnregisterSubmixBufferListener(this, Submix);
 	}
 }

@@ -4,6 +4,7 @@
 
 #include "Misc/Optional.h"
 #include "api/media_stream_interface.h"
+#include "Templates/SharedPointer.h"
 
 /** Interface to start a capture a write data to WebRTC buffers in order to publish audio/video to Millicast */
 class IMillicastSource
@@ -46,7 +47,7 @@ public:
 	using FVideoTrackInterface = rtc::scoped_refptr<webrtc::VideoTrackInterface>;
 
 	/** Creates VideoSource with SlateWindow Capture */
-	static IMillicastVideoSource* Create();
+	static TSharedPtr<IMillicastVideoSource> Create();
 	/** Creates VideoSource and capture from a RenderTarget */
 	static IMillicastVideoSource* Create(UTextureRenderTarget2D* RenderTarget);
 };

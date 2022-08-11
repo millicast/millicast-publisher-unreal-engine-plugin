@@ -5,9 +5,7 @@
 #include "Materials/MaterialInstanceDynamic.h"
 #include "StreamMediaSource.h"
 #include "IMillicastSource.h"
-
 #include "AudioCaptureDeviceInterface.h"
-
 #include "MillicastPublisherSource.generated.h"
 
 USTRUCT(BlueprintType)
@@ -148,6 +146,6 @@ public:
 	void StopCapture();
 
 private:
-	TUniquePtr<IMillicastVideoSource> VideoSource;
-	TUniquePtr<IMillicastAudioSource> AudioSource;
+	TSharedPtr<IMillicastVideoSource> VideoSource;
+	TSharedPtr<IMillicastAudioSource> AudioSource;
 };

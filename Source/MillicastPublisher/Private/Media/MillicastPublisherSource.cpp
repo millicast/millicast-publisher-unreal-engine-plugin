@@ -171,11 +171,11 @@ void UMillicastPublisherSource::StartCapture(TFunction<void(IMillicastSource::FS
 		// If a render target has been set, create a Render Target capturer
 		if (RenderTarget != nullptr)
 		{
-			VideoSource = TUniquePtr<IMillicastVideoSource>(IMillicastVideoSource::Create(RenderTarget));
+			VideoSource = TSharedPtr<IMillicastVideoSource>(IMillicastVideoSource::Create(RenderTarget));
 		}
 		else
 		{
-			VideoSource = TUniquePtr<IMillicastVideoSource>(IMillicastVideoSource::Create());
+			VideoSource = IMillicastVideoSource::Create();
 		}
 
 		// Starts the capture and notify observers
@@ -187,7 +187,7 @@ void UMillicastPublisherSource::StartCapture(TFunction<void(IMillicastSource::FS
 	// If audio is enabled, create audio capturer
 	if (CaptureAudio)
 	{
-		AudioSource = TUniquePtr<IMillicastAudioSource>(IMillicastAudioSource::Create(AudioCaptureType));
+		AudioSource = TSharedPtr<IMillicastAudioSource>(IMillicastAudioSource::Create(AudioCaptureType));
 
 		if (AudioCaptureType == AudioCapturerType::DEVICE)
 		{
