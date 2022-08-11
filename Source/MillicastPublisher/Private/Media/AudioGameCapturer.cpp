@@ -255,6 +255,10 @@ TArray<Audio::FCaptureDeviceInfo>& AudioDeviceCapture::GetCaptureDevicesAvailabl
  */
  //-------------------------------------------------------------------------------------------------------------------------------------------------------------
 
+// When including Windows headers with Unreal Engine code the PreWindowsApi.h and PostWindowsApi.h headers should wrap the includes.
+#include "Windows/AllowWindowsPlatformTypes.h"
+#include "Windows/PreWindowsApi.h"
+
 #include "mmeapi.h"
 #include <codecvt>
 #include <locale>
@@ -1085,4 +1089,9 @@ void WasapiDeviceCapture::ColdExit()
 	sWcore.ColdExit();
 }
 
-#endif
+// This undefines some Windows code so UE code that clashes can compile without issue.
+#include "Windows/PostWindowsApi.h"
+#include "Windows/HideWindowsPlatformTypes.h"
+
+#endif // PLATFORM_WINDOWS
+

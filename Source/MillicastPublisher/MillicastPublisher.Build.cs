@@ -11,7 +11,6 @@ namespace UnrealBuildTool.Rules
 		public MillicastPublisher(ReadOnlyTargetRules Target) : base(Target)
 		{
 			PCHUsage = PCHUsageMode.UseExplicitOrSharedPCHs;
-			PrivatePCHHeaderFile = "Private/PCH.h";
 
 
 			DynamicallyLoadedModuleNames.AddRange(
@@ -21,35 +20,36 @@ namespace UnrealBuildTool.Rules
 
 			PublicDependencyModuleNames.AddRange(
 				new string[] {
+					"AudioCaptureCore",
 					"Core",
 					"CoreUObject",
+					"Engine",
 					"MediaAssets",
 					"OpenSSL",
+					"RenderCore",
 					"TimeManagement",
 					"WebRTC",
-					"RenderCore",
-					"AudioCaptureCore"
 				});
 
 			PrivateDependencyModuleNames.AddRange(
 				new string[] {
-					"Engine",
+					"AudioPlatformConfiguration",
+					"AudioMixer",
+					"CinematicCamera",
+					"HeadMountedDisplay",
+					"HTTP",
+					"InputCore",
+					"Json",
+					"libOpus",
 					"MediaUtils",
 					"MediaIOCore",
 					"Projects",
 					"Slate",
 					"SlateCore",
-					"AudioMixer",
-					"WebSockets",
-					"HTTP",
-					"Json",
-					"SSL",
+					"Renderer",
 					"RHI",
-					"HeadMountedDisplay",
-					"CinematicCamera",
-					"InputCore",
-					"libOpus",
-					"AudioPlatformConfiguration"
+					"SSL",
+					"WebSockets",
 				});
 
 			PrivateIncludePathModuleNames.AddRange(
@@ -60,6 +60,7 @@ namespace UnrealBuildTool.Rules
 			PrivateIncludePaths.AddRange(
 				new string[] {
 					"MillicastPublisher/Private",
+					Path.Combine(Path.GetFullPath(Target.RelativeEnginePath), "Source/ThirdParty/WebRTC/4147/Include/third_party/libyuv/include"), // for libyuv headers
 				});
 		}
 	}

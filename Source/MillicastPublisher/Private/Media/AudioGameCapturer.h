@@ -2,9 +2,10 @@
 #pragma once
 
 #include "IMillicastSource.h"
-
 #include <AudioCaptureCore.h>
+#include "AudioDevice.h"
 #include <AudioResampler.h>
+#include "Sound/SoundSubmix.h"
 
 class AudioCapturerBase : public IMillicastAudioSource
 {
@@ -82,6 +83,10 @@ public:
 };
 
 #if PLATFORM_WINDOWS
+
+// When including Windows headers with Unreal Engine code the PreWindowsApi.h and PostWindowsApi.h headers should wrap the includes.
+#include "Windows/AllowWindowsPlatformTypes.h"
+#include "Windows/PreWindowsApi.h"
 
 #include <windows.h>
 #include <mmreg.h>
@@ -169,4 +174,8 @@ public:
 	static void ColdExit();
 };
 
-#endif
+// This undefines some Windows code so UE code that clashes can compile without issue.
+#include "Windows/PostWindowsApi.h"
+#include "Windows/HideWindowsPlatformTypes.h"
+
+#endif // PLATFORM_WINDOWS

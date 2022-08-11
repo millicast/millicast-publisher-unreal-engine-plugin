@@ -5,7 +5,9 @@
 #include "Materials/MaterialInstanceDynamic.h"
 #include "StreamMediaSource.h"
 #include "IMillicastSource.h"
+#include "Sound/SoundSubmix.h"
 #include "AudioCaptureDeviceInterface.h"
+#include "Engine/TextureRenderTarget2D.h"
 #include "MillicastPublisherSource.generated.h"
 
 USTRUCT(BlueprintType)
