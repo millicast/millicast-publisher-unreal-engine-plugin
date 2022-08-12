@@ -3,33 +3,33 @@
 
 #include "Texture2DVideoSourceAdapter.h"
 #include "Texture2DFrameBuffer.h"
-
 #include "MillicastPublisherPrivate.h"
 
-void FTexture2DVideoSourceAdapter::OnFrameReady(const FTexture2DRHIRef& FrameBuffer, bool ReadColor)
+FTexture2DVideoSourceAdapter::FTexture2DVideoSourceAdapter() noexcept
+	: AsyncTextureReadback(MakeShared<FAsyncTextureReadback>())
+{
+
+}
+
+void FTexture2DVideoSourceAdapter::OnFrameReady(const FTexture2DRHIRef& FrameBuffer)
 {
 	const int64 Timestamp = rtc::TimeMicros();
 
 	if (!AdaptVideoFrame(Timestamp, FrameBuffer->GetSizeXY())) return;
 
-	rtc::scoped_refptr<webrtc::VideoFrameBuffer> Buffer; 
-	
-	if (ReadColor)
-	{
-		Buffer = new rtc::RefCountedObject<FColorTexture2DFrameBuffer>(FrameBuffer);
-	}
-	else
-	{
-		Buffer = new rtc::RefCountedObject<FTexture2DFrameBuffer>(FrameBuffer);
-	}
+	AsyncTextureReadback->ReadbackAsync_RenderThread(FrameBuffer, [this, Timestamp](uint8* B8G8R8A8Pixels, int Width, int Height, int Stride) {
 
-	webrtc::VideoFrame Frame = webrtc::VideoFrame::Builder()
-		.set_video_frame_buffer(Buffer)
-		.set_timestamp_us(Timestamp)
-		.set_rotation(webrtc::VideoRotation::kVideoRotation_0)
-		.build();
+		rtc::scoped_refptr<webrtc::VideoFrameBuffer> Buffer = new rtc::RefCountedObject<FB8G8R8A8ToI420FrameBuffer>(B8G8R8A8Pixels, Width, Height, Stride);
+		
+		webrtc::VideoFrame Frame = webrtc::VideoFrame::Builder()
+			.set_video_frame_buffer(Buffer)
+			.set_timestamp_us(Timestamp)
+			.set_rotation(webrtc::VideoRotation::kVideoRotation_0)
+			.build();
 
-	rtc::AdaptedVideoTrackSource::OnFrame(Frame);
+		rtc::AdaptedVideoTrackSource::OnFrame(Frame);
+
+	});
 }
 
 webrtc::MediaSourceInterface::SourceState FTexture2DVideoSourceAdapter::state() const
