@@ -148,6 +148,6 @@ public:
 	void StopCapture();
 
 private:
-	TUniquePtr<IMillicastVideoSource> VideoSource;
-	TUniquePtr<IMillicastAudioSource> AudioSource;
+	TSharedPtr<IMillicastVideoSource> VideoSource;
+	TSharedPtr<IMillicastAudioSource> AudioSource;
 };
