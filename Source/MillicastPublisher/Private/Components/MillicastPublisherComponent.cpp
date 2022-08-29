@@ -38,6 +38,13 @@ UMillicastPublisherComponent::UMillicastPublisherComponent(const FObjectInitiali
 	WS = nullptr;
 	bIsPublishing = false;
 
+	Bitrates = MakeShared<webrtc::PeerConnectionInterface::BitrateParameters>();
+	
+	// Default bitrates
+	Bitrates->max_bitrate_bps = 2'500'000; // 2.5 megabit (this is the default in WebRTC anyway)
+	Bitrates->min_bitrate_bps = 100'000; // 100 kilobit
+	Bitrates->current_bitrate_bps = 1'000'000; // 1 megabit
+
 	// Event received from websocket signaling
 	EventBroadcaster.Emplace("active", MakeBroadcastEvent(OnActive));
 	EventBroadcaster.Emplace("inactive", MakeBroadcastEvent(OnInactive));
@@ -185,7 +192,7 @@ bool UMillicastPublisherComponent::Publish()
 		}
 	});
 
-	return PostHttpRequest->ProcessRequest();	    
+	return PostHttpRequest->ProcessRequest();
 }
 
 bool UMillicastPublisherComponent::PublishWithWsAndJwt(const FString& WsUrl, const FString& Jwt)
@@ -247,8 +254,8 @@ bool UMillicastPublisherComponent::StartWebSocketConnection(const FString& Url,
 
 bool UMillicastPublisherComponent::PublishToMillicast()
 {
-	PeerConnection =
-		FWebRTCPeerConnection::Create(PeerConnectionConfig);
+	PeerConnection = FWebRTCPeerConnection::Create(PeerConnectionConfig);
+	PeerConnection->SetBitrates(Bitrates);
 
 	// Starts the capture first and add track to the peerconnection
 	// TODO: add a boolean to let choose autoplay or not
@@ -342,13 +349,6 @@ bool UMillicastPublisherComponent::PublishToMillicast()
 	// Send only
 	PeerConnection->OaOptions.offer_to_receive_video = false;
 	PeerConnection->OaOptions.offer_to_receive_audio = false;
-
-	// Maximum bitrate
-	if (MaximumBitrate.IsSet()) {
-		webrtc::PeerConnectionInterface::BitrateParameters bitrateParameters;
-		bitrateParameters.max_bitrate_bps = *MaximumBitrate;
-		(*PeerConnection)->SetBitrate(bitrateParameters);
-	}
 
 	UE_LOG(LogMillicastPublisher, Log, TEXT("Create offer"));
 	PeerConnection->CreateOffer();
@@ -453,7 +453,9 @@ void UMillicastPublisherComponent::CaptureAndAddTracks()
 	});
 }
 
-void UMillicastPublisherComponent::SetMaximumBitrate(int Bps)
+void UMillicastPublisherComponent::SetBitrates(int InStartKbps, int InMinKbps, int InMaxKbps)
 {
-	MaximumBitrate = Bps;
+	Bitrates->max_bitrate_bps = InMaxKbps * 1000;
+	Bitrates->min_bitrate_bps = InMinKbps * 1000;
+	Bitrates->current_bitrate_bps = InStartKbps * 1000;
 }
