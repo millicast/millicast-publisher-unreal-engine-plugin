@@ -24,17 +24,12 @@ class FAudioDeviceModule : public webrtc::AudioDeviceModule
 	static constexpr size_t kNumberBytesPerSample = sizeof(Sample) * kNumberOfChannels;
 	static constexpr size_t kBytesPerBuffer = kNumberBytesPerSample * kNumberSamples;
 
-	static const char kTimerQueueName[];
-
 public:
-	explicit FAudioDeviceModule(webrtc::TaskQueueFactory * QueueFactory) noexcept;
+	explicit FAudioDeviceModule() noexcept;
 
 	~FAudioDeviceModule() = default;
 
-	static rtc::scoped_refptr<FAudioDeviceModule> Create(webrtc::TaskQueueFactory * queue_factory);
-
-public:
-	void SendAudioData(const float* AudioData, int32 NumSamples, int32 NumChannels, const int32 SampleRate);
+	static rtc::scoped_refptr<FAudioDeviceModule> Create();
 
 public:
 	// webrtc::AudioDeviceModule interface
@@ -184,21 +179,4 @@ public:
 	{
 		return -1;
 	}
-
-private:
-	void Send();
-
-private:
-	bool bIsRecording;    // True when audio is being pulled by the instance.
-	bool bIsRecordingInitialized;  // True when the instance is ready to pull audio.
-
-	bool bIsStarted;
-	int64_t NextFrameTime;
-
-	rtc::TaskQueue TaskQueue;
-
-	TArray<Sample> AudioBuffer;
-	webrtc::AudioTransport * AudioTransport;
-
-	FCriticalSection CriticalSection;
 };

@@ -76,4 +76,6 @@ public:
 
 	/** Create audio source to capture audio from the main audio device */
 	static IMillicastAudioSource* Create(AudioCapturerType CapturerType);
+
+	virtual ~IMillicastAudioSource() override = default;
 };

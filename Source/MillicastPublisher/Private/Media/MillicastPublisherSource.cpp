@@ -2,8 +2,11 @@
 
 #include "MillicastPublisherSource.h"
 #include "MillicastPublisherPrivate.h"
+
 #include "RenderTargetCapturer.h"
-#include "AudioGameCapturer.h"
+
+#include "AudioSubmixCapturer.h"
+#include "AudioDeviceCapturer.h"
 
 #include <RenderTargetPool.h>
 
@@ -105,7 +108,7 @@ void UMillicastPublisherSource::SetAudioDeviceByName(FString Name)
 void UMillicastPublisherSource::RefreshAudioDevicesList()
 {
 	CaptureDevicesName.Empty();
-	auto& CaptureDevices = AudioDeviceCapture::GetCaptureDevicesAvailable();
+	auto& CaptureDevices = AudioDeviceCapturer::GetCaptureDevicesAvailable();
 
 	for (auto& elt : CaptureDevices)
 	{
@@ -118,7 +121,7 @@ void UMillicastPublisherSource::SetVolumeMultiplier(float f)
 	VolumeMultiplier = f;
 	if (AudioSource) 
 	{
-		auto* src = static_cast<AudioDeviceCapture*>(AudioSource.Get());
+		auto* src = static_cast<AudioDeviceCapturer*>(AudioSource.Get());
 		src->SetVolumeMultiplier(f);
 	}
 }
@@ -191,13 +194,13 @@ void UMillicastPublisherSource::StartCapture(TFunction<void(IMillicastSource::FS
 
 		if (AudioCaptureType == AudioCapturerType::DEVICE)
 		{
-			auto source = static_cast<AudioDeviceCapture*>(AudioSource.Get());
+			auto source = static_cast<AudioDeviceCapturer*>(AudioSource.Get());
 			source->SetAudioCaptureDevice(CaptureDeviceIndex);
 			source->SetVolumeMultiplier(VolumeMultiplier);
 		}
 		else if (AudioCaptureType == AudioCapturerType::SUBMIX)
 		{
-			auto source = static_cast<AudioGameCapturer*>(AudioSource.Get());
+			auto source = static_cast<AudioSubmixCapturer*>(AudioSource.Get());
 			source->SetAudioSubmix(Submix);
 		}
 

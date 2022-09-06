@@ -9,7 +9,9 @@
 UMillicastViewportCapturerComponent::UMillicastViewportCapturerComponent(const FObjectInitializer& ObjectInitializer) :
 	EngineShowFlags(ESFIM_Game), ViewState(), ViewportWidget(nullptr), SceneViewport(nullptr), bIsInitialized(false)
 {
-	ViewState.Allocate(ERHIFeatureLevel::ES3_1);
+	AsyncTask(ENamedThreads::ActualRenderingThread, [this] {
+		ViewState.Allocate(ERHIFeatureLevel::ES3_1);
+		});
 
 	bWantsInitializeComponent = true;
 

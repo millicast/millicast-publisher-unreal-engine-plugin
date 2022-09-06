@@ -23,7 +23,7 @@ void FWebRTCPeerConnection::CreatePeerConnectionFactory()
 	SignalingThread->Start();
 
 	TaskQueueFactory = webrtc::CreateDefaultTaskQueueFactory();
-	AudioDeviceModule = FAudioDeviceModule::Create(TaskQueueFactory.get());
+	AudioDeviceModule = FAudioDeviceModule::Create();
 
 	webrtc::AudioProcessing* AudioProcessingModule = webrtc::AudioProcessingBuilder().Create();
 	webrtc::AudioProcessing::Config ApmConfig;
