@@ -6,7 +6,7 @@
 #include "MillicastPublisherPrivate.h"
 
 FTexture2DVideoSourceAdapter::FTexture2DVideoSourceAdapter() noexcept
-	: AsyncTextureReadback(MakeShared<FAsyncTextureReadback>())
+	: AsyncTextureReadback(MakeShared<FAsyncTextureReadback>()), State(webrtc::MediaSourceInterface::SourceState::kLive)
 {
 
 }
@@ -18,6 +18,12 @@ void FTexture2DVideoSourceAdapter::OnFrameReady(const FTexture2DRHIRef& FrameBuf
 	if (!AdaptVideoFrame(Timestamp, FrameBuffer->GetSizeXY())) return;
 
 	AsyncTextureReadback->ReadbackAsync_RenderThread(FrameBuffer, [this, Timestamp](uint8* B8G8R8A8Pixels, int Width, int Height, int Stride) {
+		FScopeLock Lock(&CriticalSection);
+
+		if (State != webrtc::MediaSourceInterface::SourceState::kLive)
+		{
+			return;
+		}
 
 		rtc::scoped_refptr<webrtc::VideoFrameBuffer> Buffer = new rtc::RefCountedObject<FB8G8R8A8ToI420FrameBuffer>(B8G8R8A8Pixels, Width, Height, Stride);
 		
@@ -28,13 +34,19 @@ void FTexture2DVideoSourceAdapter::OnFrameReady(const FTexture2DRHIRef& FrameBuf
 			.build();
 
 		rtc::AdaptedVideoTrackSource::OnFrame(Frame);
-
 	});
 }
 
 webrtc::MediaSourceInterface::SourceState FTexture2DVideoSourceAdapter::state() const
 {
-	return webrtc::MediaSourceInterface::SourceState::kLive;
+	FScopeLock Lock(&CriticalSection);
+	return State;
+}
+
+void FTexture2DVideoSourceAdapter::End()
+{
+	FScopeLock Lock(&CriticalSection);
+	State = webrtc::MediaSourceInterface::SourceState::kEnded;
 }
 
 bool FTexture2DVideoSourceAdapter::AdaptVideoFrame(int64 TimestampUs, FIntPoint Resolution)

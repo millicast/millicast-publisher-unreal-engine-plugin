@@ -20,9 +20,12 @@ public:
 	bool is_screencast() const override { return false; }
 	bool remote() const override { return false; }
 
+	void End();
+
 private:
 	bool AdaptVideoFrame(int64 TimestampUs, FIntPoint Resolution);
 
-	FCriticalSection CriticalSection;
+	mutable FCriticalSection CriticalSection;
 	TSharedPtr<FAsyncTextureReadback> AsyncTextureReadback;
+	webrtc::MediaSourceInterface::SourceState State;
 };

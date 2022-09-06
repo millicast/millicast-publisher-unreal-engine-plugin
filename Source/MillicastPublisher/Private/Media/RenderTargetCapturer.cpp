@@ -61,6 +61,8 @@ void RenderTargetCapturer::StopCapture()
 {
 	FScopeLock Lock(&CriticalSection);
 
+	RtcVideoSource->End();
+
 	RtcVideoTrack = nullptr;
 	RtcVideoSource = nullptr;
 
