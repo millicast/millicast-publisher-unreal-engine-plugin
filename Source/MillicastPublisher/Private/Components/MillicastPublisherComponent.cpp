@@ -48,6 +48,7 @@ UMillicastPublisherComponent::UMillicastPublisherComponent(const FObjectInitiali
 	// Event received from websocket signaling
 	EventBroadcaster.Emplace("active", MakeBroadcastEvent(OnActive));
 	EventBroadcaster.Emplace("inactive", MakeBroadcastEvent(OnInactive));
+	EventBroadcaster.Emplace("viewercount", MakeBroadcastEvent(OnViewerCount));
 
 	PeerConnectionConfig = FWebRTCPeerConnection::GetDefaultConfig();
 }
