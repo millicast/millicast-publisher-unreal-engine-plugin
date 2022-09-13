@@ -12,6 +12,11 @@ class IWebSocket;
 class FWebRTCPeerConnection;
 class IHttpResponse;
 
+namespace webrtc
+{
+	struct RtpTransceiverInit;
+}
+
 // Event declaration
 DECLARE_DYNAMIC_MULTICAST_SPARSE_DELEGATE(FMillicastPublisherComponentAuthenticated, UMillicastPublisherComponent, OnAuthenticated);
 DECLARE_DYNAMIC_MULTICAST_SPARSE_DELEGATE_TwoParams(FMillicastPublisherComponentAuthenticationFailure, UMillicastPublisherComponent, OnAuthenticationFailure, int, Code, const FString&, Msg);
@@ -125,6 +130,8 @@ private:
 
 	template<typename TransceiverType, cricket::MediaType T>
 	void SetCodecPreference(TransceiverType Transceiver);
+
+	void SetSimulcast(webrtc::RtpTransceiverInit& TransceiverInit);
 
 private:
 	/** WebSocket Connection */

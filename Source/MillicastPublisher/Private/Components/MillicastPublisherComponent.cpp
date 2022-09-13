@@ -463,6 +463,27 @@ void UMillicastPublisherComponent::SetCodecPreference(TransceiverType Transceive
 	}
 }
 
+void UMillicastPublisherComponent::SetSimulcast(webrtc::RtpTransceiverInit& TransceiverInit)
+{
+	webrtc::RtpEncodingParameters params;
+	params.active = true;
+	params.max_bitrate_bps = Bitrates->max_bitrate_bps.value_or(4'000'000);
+	params.rid = "h";
+	TransceiverInit.send_encodings.push_back(params);
+
+	params.max_bitrate_bps = Bitrates->max_bitrate_bps.value_or(4'000'000) / 2;
+	params.active = true;
+	params.rid = "m";
+	params.scale_resolution_down_by = 2;
+	TransceiverInit.send_encodings.push_back(params);
+
+	params.max_bitrate_bps = Bitrates->max_bitrate_bps.value_or(4'000'000) / 4;
+	params.active = true;
+	params.rid = "l";
+	params.scale_resolution_down_by = 4;
+	TransceiverInit.send_encodings.push_back(params);
+}
+
 void UMillicastPublisherComponent::CaptureAndAddTracks()
 {
 	// Starts audio and video capture
@@ -471,6 +492,11 @@ void UMillicastPublisherComponent::CaptureAndAddTracks()
 		webrtc::RtpTransceiverInit init;
 		init.direction = webrtc::RtpTransceiverDirection::kSendOnly;
 		init.stream_ids = { "unrealstream" };
+
+		if (MillicastMediaSource->Simulcast)
+		{
+			SetSimulcast(init);
+		}
 
 		auto result = (*PeerConnection)->AddTransceiver(Track, init);
 

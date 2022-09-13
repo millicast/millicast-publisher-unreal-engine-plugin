@@ -63,6 +63,10 @@ public:
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = Video, AssetRegistrySearchable)
 	TEnumAsByte<EMillicastVideoCodecs> VideoCodec;
 
+	/** Whether to enable simulcast */
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = Video, AssetRegistrySearchable)
+	bool Simulcast = false;
+
 	/** Whether we should capture game audio or not */
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = Audio, AssetRegistrySearchable)
 	bool CaptureAudio = true;
