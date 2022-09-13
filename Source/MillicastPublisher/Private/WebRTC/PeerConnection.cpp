@@ -2,6 +2,7 @@
 
 #include "PeerConnection.h"
 #include "MillicastPublisherPrivate.h"
+#include "RtcCodecsConstants.h"
 
 #include <sstream>
 
@@ -86,6 +87,11 @@ rtc::scoped_refptr<FAudioDeviceModule> FWebRTCPeerConnection::GetAudioDeviceModu
 	return AudioDeviceModule;
 }
 
+TArray<FString> FWebRTCPeerConnection::GetSupportedVideoCodecs()
+{
+	return GetSupportedCodecs<cricket::MediaType::MEDIA_TYPE_VIDEO>();
+}
+
 webrtc::PeerConnectionInterface::RTCConfiguration FWebRTCPeerConnection::GetDefaultConfig()
 {
 	FRTCConfig Config(webrtc::PeerConnectionInterface::RTCConfigurationType::kAggressive);
@@ -121,6 +127,11 @@ FWebRTCPeerConnection* FWebRTCPeerConnection::Create(const FRTCConfig& Config)
 			MakeUnique<FSetSessionDescriptionObserver>();
 
 	return PeerConnectionInstance;
+}
+
+TArray<FString> FWebRTCPeerConnection::GetSupportedAudioCodecs()
+{
+	return GetSupportedCodecs<cricket::MediaType::MEDIA_TYPE_AUDIO>();
 }
 
 FWebRTCPeerConnection::FSetSessionDescriptionObserver*
@@ -195,6 +206,33 @@ webrtc::SessionDescriptionInterface* FWebRTCPeerConnection::CreateDescription(co
 	}
 
 	return SessionDescription;
+}
+
+template<cricket::MediaType T>
+TArray<FString> FWebRTCPeerConnection::GetSupportedCodecs()
+{
+	TArray<FString> codecs;
+
+	auto senderCapabilities = GetPeerConnectionFactory()->GetRtpSenderCapabilities(T);
+
+	// remove rtx red ulpfec from the list
+	senderCapabilities.codecs.erase(std::remove_if(senderCapabilities.codecs.begin(), 
+			senderCapabilities.codecs.end(),
+			[](auto& c) { return c.name == cricket::kRtxCodecName || c.name == cricket::kUlpfecCodecName || c.name == cricket::kUlpfecCodecName; }),
+		senderCapabilities.codecs.end()
+	);
+
+	// remove any duplicates
+	auto it = std::unique(senderCapabilities.codecs.begin(), senderCapabilities.codecs.end(),
+		[](auto& c1, auto& c2) { return c1.name == c2.name; });
+	senderCapabilities.codecs.erase(it, senderCapabilities.codecs.end());
+
+	for (auto& c : senderCapabilities.codecs)
+	{
+		codecs.Add(ToString(c.name));
+	}
+
+	return codecs;
 }
 
 void FWebRTCPeerConnection::SetBitrates(TSharedPtr<webrtc::PeerConnectionInterface::BitrateParameters> InBitrates)

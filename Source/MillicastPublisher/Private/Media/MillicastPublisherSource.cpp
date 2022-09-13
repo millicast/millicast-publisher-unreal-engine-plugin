@@ -5,6 +5,8 @@
 
 #include "RenderTargetCapturer.h"
 
+#include "WebRTC/PeerConnection.h"
+
 #include "AudioSubmixCapturer.h"
 #include "AudioDeviceCapturer.h"
 
@@ -124,6 +126,34 @@ void UMillicastPublisherSource::SetVolumeMultiplier(float f)
 		auto* src = static_cast<AudioDeviceCapturer*>(AudioSource.Get());
 		src->SetVolumeMultiplier(f);
 	}
+}
+
+FString UMillicastPublisherSource::GetVideoCodec() const
+{
+	FString codecName;
+	
+	switch (VideoCodec)
+	{
+	case EMillicastVideoCodecs::Av1:  codecName = cricket::kAv1CodecName;  break;
+	case EMillicastVideoCodecs::H264: codecName = cricket::kH264CodecName; break;
+	case EMillicastVideoCodecs::Vp9:  codecName = cricket::kVp9CodecName;  break;
+	case EMillicastVideoCodecs::Vp8:  codecName = cricket::kVp8CodecName;  break;
+	}
+
+	return codecName;
+}
+
+FString UMillicastPublisherSource::GetAudioCodec() const
+{
+	FString codecName;
+
+	switch (AudioCodec)
+	{
+	case EMillicastAudioCodecs::Opus:      codecName = cricket::kOpusCodecName;  break;
+	case EMillicastAudioCodecs::Multiopus: codecName = "multiopus"; break;
+	}
+
+	return codecName;
 }
 
 FString UMillicastPublisherSource::GetMediaOption(const FName& Key, const FString& DefaultValue) const
@@ -273,12 +303,46 @@ bool UMillicastPublisherSource::CanEditChange(const FProperty* InProperty) const
 	return Super::CanEditChange(InProperty);
 }
 
+bool UMillicastPublisherSource::IsCodecSupported(EMillicastVideoCodecs Selection)
+{
+	FString codecName = GetVideoCodec();
+
+	TArray<FString> Codecs = FWebRTCPeerConnection::GetSupportedVideoCodecs();
+
+	return Codecs.Contains(codecName);
+}
+
+bool UMillicastPublisherSource::IsCodecSupported(EMillicastAudioCodecs Selection)
+{
+	FString codecName= GetAudioCodec();
+
+	TArray<FString> Codecs = FWebRTCPeerConnection::GetSupportedAudioCodecs();
+
+	return Codecs.Contains(codecName);
+}
+
 void UMillicastPublisherSource::PostEditChangeChainProperty(struct FPropertyChangedChainEvent& InPropertyChangedEvent)
 {
 	Super::PostEditChangeChainProperty(InPropertyChangedEvent);
 
 	FName PropertyName = InPropertyChangedEvent.GetPropertyName();
-	UE_LOG(LogMillicastPublisher, Log, TEXT("Edit : %s"), *PropertyName.ToString());
+
+	if (*PropertyName.ToString() == FString("AudioCodec"))
+	{
+		if (!IsCodecSupported(AudioCodec))
+		{
+			UE_LOG(LogMillicastPublisher, Warning, TEXT("Selected audio codec is not supported, falling back to opus"));
+			AudioCodec = EMillicastAudioCodecs::Opus;
+		}
+	}
+	else if (*PropertyName.ToString() == FString("VideoCodec"))
+	{
+		if (!IsCodecSupported(VideoCodec))
+		{
+			UE_LOG(LogMillicastPublisher, Warning, TEXT("Selected video codec is not supported, falling back to vp8"));
+			VideoCodec = EMillicastVideoCodecs::Vp8;
+		}
+	}
 }
 
 #endif //WITH_EDITOR

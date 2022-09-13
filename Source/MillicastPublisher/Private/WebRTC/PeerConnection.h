@@ -44,6 +44,9 @@ class FWebRTCPeerConnection : public webrtc::PeerConnectionObserver
 	static rtc::scoped_refptr<webrtc::PeerConnectionFactoryInterface> PeerConnectionFactory;
 	static void CreatePeerConnectionFactory();
   
+	template<cricket::MediaType T>
+	static TArray<FString> GetSupportedCodecs();
+
 public:
 	using FRTCConfig = webrtc::PeerConnectionInterface::RTCConfiguration;
 
@@ -60,6 +63,10 @@ public:
 	static rtc::scoped_refptr<webrtc::PeerConnectionFactoryInterface> GetPeerConnectionFactory();
 	/** Get the audio device module */
 	static rtc::scoped_refptr<FAudioDeviceModule> GetAudioDeviceModule();
+	/** Get the supported video codecs */
+	static TArray<FString> GetSupportedVideoCodecs();
+	/** Get the supported audio codecs */
+	static TArray<FString> GetSupportedAudioCodecs();
 
 	/** Get local description observer to set callback for set local description success or failure */
 	FSetSessionDescriptionObserver* GetLocalDescriptionObserver();

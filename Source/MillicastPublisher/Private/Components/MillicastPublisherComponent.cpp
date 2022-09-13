@@ -269,6 +269,7 @@ bool UMillicastPublisherComponent::PublishToMillicast()
 	CreateSessionDescriptionObserver->SetOnSuccessCallback([this](const std::string& type, const std::string& sdp) {
 		UE_LOG(LogMillicastPublisher, Display, TEXT("pc.createOffer() | sucess\nsdp : %S"), sdp.c_str());
 
+		// Search for this expression and add the stereo flag to enable stereo
 		const std::string s = "minptime=10;useinbandfec=1";
 		std::string sdp_non_const = sdp;
 		std::ostringstream oss;
@@ -279,6 +280,7 @@ bool UMillicastPublisherComponent::PublishToMillicast()
 			sdp_non_const.replace(sdp.find(s), s.size(), oss.str());
 		}
 
+		// Set local description
 		PeerConnection->SetLocalDescription(sdp_non_const, type);
 	});
 
@@ -306,6 +308,7 @@ bool UMillicastPublisherComponent::PublishToMillicast()
 		auto DataJson = MakeShared<FJsonObject>();
 		DataJson->SetStringField("name", MillicastMediaSource->StreamName);
 		DataJson->SetStringField("sdp", ToString(sdp));
+		DataJson->SetStringField("codec", MillicastMediaSource->GetVideoCodec().ToLower());
 		DataJson->SetArrayField("events", eventsJson);
 
 		// If multisource feature
@@ -350,6 +353,7 @@ bool UMillicastPublisherComponent::PublishToMillicast()
 	PeerConnection->OaOptions.offer_to_receive_video = false;
 	PeerConnection->OaOptions.offer_to_receive_audio = false;
 
+	// Create offer
 	UE_LOG(LogMillicastPublisher, Log, TEXT("Create offer"));
 	PeerConnection->CreateOffer();
 
@@ -427,6 +431,38 @@ void UMillicastPublisherComponent::OnMessage(const FString& Msg)
 	}
 }
 
+template<typename TransceiverType, cricket::MediaType T>
+void UMillicastPublisherComponent::SetCodecPreference(TransceiverType Transceiver)
+{
+	auto senderCapabilities = FWebRTCPeerConnection::GetPeerConnectionFactory()->GetRtpSenderCapabilities(T);
+
+	std::vector<webrtc::RtpCodecCapability> codecs;
+	auto predicate = [this](const auto& c) -> bool
+	{
+		if constexpr (T == cricket::MediaType::MEDIA_TYPE_VIDEO) {
+			return (c.name.c_str() == MillicastMediaSource->GetVideoCodec() || c.name == cricket::kRtxCodecName || c.name == cricket::kUlpfecCodecName || c.name == cricket::kRedCodecName);
+		}
+		else {
+			return c.name.c_str() == MillicastMediaSource->GetAudioCodec();
+		}
+	};
+
+	std::copy_if(senderCapabilities.codecs.begin(), senderCapabilities.codecs.end(),
+		std::back_inserter(codecs), predicate);
+
+	if (codecs.empty())
+	{
+		UE_LOG(LogMillicastPublisher, Warning, TEXT("Could not find specified codec"));
+		return;
+	}
+
+	auto err = Transceiver->SetCodecPreferences(codecs);
+	if (!err.ok())
+	{
+		UE_LOG(LogMillicastPublisher, Error, TEXT("%s"), err.message());
+	}
+}
+
 void UMillicastPublisherComponent::CaptureAndAddTracks()
 {
 	// Starts audio and video capture
@@ -442,6 +478,10 @@ void UMillicastPublisherComponent::CaptureAndAddTracks()
 		{
 			UE_LOG(LogMillicastPublisher, Log, TEXT("Add transceiver for %s track : %s"), 
 				Track->kind().c_str(), Track->id().c_str());
+
+			auto transceiver = result.value();
+			SetCodecPreference<decltype(transceiver), cricket::MediaType::MEDIA_TYPE_VIDEO>(transceiver);
+			SetCodecPreference<decltype(transceiver), cricket::MediaType::MEDIA_TYPE_AUDIO>(transceiver);
 		}
 		else
 		{

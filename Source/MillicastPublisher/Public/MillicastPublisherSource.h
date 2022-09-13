@@ -8,6 +8,8 @@
 #include "Sound/SoundSubmix.h"
 #include "AudioCaptureDeviceInterface.h"
 #include "Engine/TextureRenderTarget2D.h"
+#include "RtcCodecsConstants.h"
+
 #include "MillicastPublisherSource.generated.h"
 
 USTRUCT(BlueprintType)
@@ -57,6 +59,10 @@ public:
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = Video, AssetRegistrySearchable)
 	UTextureRenderTarget2D* RenderTarget = nullptr;
 
+	/** Video Codecs */
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = Video, AssetRegistrySearchable)
+	TEnumAsByte<EMillicastVideoCodecs> VideoCodec;
+
 	/** Whether we should capture game audio or not */
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = Audio, AssetRegistrySearchable)
 	bool CaptureAudio = true;
@@ -80,6 +86,10 @@ public:
 	/** Apply a volume multiplier for the recorded data in dB */
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = Audio, AssetRegistrySearchable)
 	float VolumeMultiplier = 20.f;
+
+	/** Audio Codecs */
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = Audio, AssetRegistrySearchable)
+	TEnumAsByte<EMillicastAudioCodecs> AudioCodec;
 
 public:
 	/** Mute the video stream */
@@ -110,6 +120,14 @@ public:
 	/** Apply a volume multiplier for the recorded data in dB */
 	UFUNCTION(BlueprintCallable, Category = "MillicastPublisher", META = (DisplayName = "SetVolumeMultiplier"))
 	void SetVolumeMultiplier(float f);
+
+	/** Get the selected video codec */
+	UFUNCTION(BlueprintCallable, Category = "MillicastPublisher", META = (DisplayName = "GetVideoCodec"))
+	FString GetVideoCodec() const;
+
+	/** Get the selected audio codec */
+	UFUNCTION(BlueprintCallable, Category = "MillicastPublisher", META = (DisplayName = "GetAudioCodec"))
+	FString GetAudioCodec() const;
 
 public:
 	//~ IMediaOptions interface
@@ -146,6 +164,10 @@ public:
 
 	/** Stop the capture and destroy all capturers */
 	void StopCapture();
+
+private:
+	bool IsCodecSupported(EMillicastVideoCodecs Selection);
+	bool IsCodecSupported(EMillicastAudioCodecs Selection);
 
 private:
 	TSharedPtr<IMillicastVideoSource> VideoSource;
