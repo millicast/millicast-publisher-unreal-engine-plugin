@@ -482,6 +482,7 @@ void UMillicastPublisherComponent::SetMinimumBitrate(int Bps)
 void UMillicastPublisherComponent::SetMaximumBitrate(int Bps)
 {
 	MaximumBitrate = Bps;
+	StartingBitrate = Bps; // TEMP
 }
 
 void UMillicastPublisherComponent::SetStartingBitrate(int Bps)
