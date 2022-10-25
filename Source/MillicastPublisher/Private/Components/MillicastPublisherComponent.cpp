@@ -231,7 +231,11 @@ bool UMillicastPublisherComponent::StartWebSocketConnection(const FString& Url,
 		FModuleManager::Get().LoadModule("WebSockets");
 	}
 
-	WS = FWebSocketsModule::Get().CreateWebSocket(Url + "?token=" + Jwt);
+	const TMap<FString, FString> Headers {
+		{"user-agent", "MillicastPublisher"}
+	};
+
+	WS = FWebSocketsModule::Get().CreateWebSocket(Url + "?token=" + Jwt, FString(), Headers);
 
 	// Attach callback
 	OnConnectedHandle = WS->OnConnected().AddLambda([this]() { OnConnected(); });
