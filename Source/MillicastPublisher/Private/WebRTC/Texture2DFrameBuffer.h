@@ -5,6 +5,7 @@
 #include "WebRTCInc.h"
 #include "RHI.h"
 #include "RHIGPUReadback.h"
+#include "Stats.h"
 
 namespace libyuv {
 	extern "C" {
@@ -100,6 +101,8 @@ public:
 		/* Create an I420 buffer */
 		FScopeLock Lock(&CriticalSection);
 
+		FPublisherStats::Get().TextureReadbackStart();
+
 		Buffer = webrtc::I420Buffer::Create(Width, Height);
 
 		uint8* DataY = Buffer->MutableDataY();
@@ -113,6 +116,8 @@ public:
 				DataY, Buffer->StrideY(), DataU, Buffer->StrideU(), DataV, Buffer->StrideV(),
 				Width, Height);
 		}
+
+		FPublisherStats::Get().TextureReadbackEnd();
 
 		return Buffer;
 	}
@@ -129,6 +134,8 @@ public:
 
 	explicit FColorTexture2DFrameBuffer(FTexture2DRHIRef SourceTexture) noexcept
 	{
+		FPublisherStats::Get().TextureReadbackStart();
+
 		/* Get video farme height and  width */
 		Width = SourceTexture->GetSizeX();
 		Height = SourceTexture->GetSizeY();
@@ -169,6 +176,8 @@ public:
 			Width, Height);
 
 		delete[] TextureData;
+
+		FPublisherStats::Get().TextureReadbackEnd();
 	}
 
 	/** Get video frame width */
