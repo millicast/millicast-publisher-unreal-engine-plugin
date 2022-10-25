@@ -54,6 +54,19 @@ void FPublisherStats::Tick(float DeltaTime)
 		return;
 	}
 
+	if (!bRegisterEngineStats)
+	{
+		RegisterEngineHooks();
+	}
+}
+
+bool FPublisherStats::OnToggleStats(UWorld* World, FCommonViewportClient* ViewportClient, const TCHAR* Stream)
+{
+	return true;
+}
+
+int32 FPublisherStats::OnRenderStats(UWorld* World, FViewport* Viewport, FCanvas* Canvas, int32 X, int32 Y, const FVector* ViewLocation, const FRotator* ViewRotation)
+{
 	int MessageKey = 100;
 
 	int i = 0;
@@ -72,15 +85,19 @@ void FPublisherStats::Tick(float DeltaTime)
 		++i;
 	}
 
-	GEngine->AddOnScreenDebugMessage(MessageKey++, 0.0f, FColor::Green, FString::Printf(TEXT("SubmitFPS = %.2f s"), SubmitFPS), true);
+	GEngine->AddOnScreenDebugMessage(MessageKey++, 0.0f, FColor::Green, FString::Printf(TEXT("SubmitFPS = %.2f"), SubmitFPS), true);
 	GEngine->AddOnScreenDebugMessage(MessageKey++, 0.0f, FColor::Green, FString::Printf(TEXT("TextureReadTime = %.6f s"), TextureReadbackAvg), true);
-
 	GEngine->AddOnScreenDebugMessage(MessageKey++, 0.0f, FColor::Green, FString::Printf(TEXT("Encode Latency = %.2f ms"), EncoderLatencyMs), true);
 	GEngine->AddOnScreenDebugMessage(MessageKey++, 0.0f, FColor::Green, FString::Printf(TEXT("Encode Bitrate = %.2f Mbps"), EncoderBitrateMbps), true);
 	GEngine->AddOnScreenDebugMessage(MessageKey++, 0.0f, FColor::Green, FString::Printf(TEXT("Encode QP = %.0f"), EncoderQP), true);
 
-	//UE_LOG(LogMillicastPublisher, Log, TEXT("SubmitFPS = %.2f s"), SubmitFPS);
+	//UE_LOG(LogMillicastPublisher, Log, TEXT("SubmitFPS = %.2f"), SubmitFPS);
 	//UE_LOG(LogMillicastPublisher, Log, TEXT("TextureReadTime = %.2f s"), TextureReadbackAvg);
+	//UE_LOG(LogMillicastPublisher, Log, TEXT("Encode Latency = %.2f ms"), EncoderLatencyMs);
+	//UE_LOG(LogMillicastPublisher, Log, TEXT("Encode Bitrate = %.2f Mbps"), EncoderBitrateMbps);
+	//UE_LOG(LogMillicastPublisher, Log, TEXT("Encode QP = %.0f"), EncoderQP);
+
+	return Y;
 }
 
 void FPublisherStats::RegisterStatsCollector(FRTCStatsCollector* Connection)
@@ -91,6 +108,18 @@ void FPublisherStats::RegisterStatsCollector(FRTCStatsCollector* Connection)
 void FPublisherStats::UnregisterStatsCollector(FRTCStatsCollector* Connection)
 {
 	StatsCollectors.Remove(Connection);
+}
+
+void FPublisherStats::RegisterEngineHooks()
+{
+	const FName StatName("STAT_Millicast");
+	const FName StatCategory("STATCAT_Millicast");
+	const FText StatDescription(FText::FromString("Millicast streaming stats."));
+	UEngine::FEngineStatRender RenderStatFunc = UEngine::FEngineStatRender::CreateRaw(this, &FPublisherStats::OnRenderStats);
+	UEngine::FEngineStatToggle ToggleStatFunc = UEngine::FEngineStatToggle::CreateRaw(this, &FPublisherStats::OnToggleStats);
+	GEngine->AddEngineStat(StatName, StatCategory, StatDescription, RenderStatFunc, ToggleStatFunc, false);
+
+	bRegisterEngineStats = true;
 }
 
 /*

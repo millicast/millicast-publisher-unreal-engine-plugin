@@ -60,6 +60,12 @@ private:
 	double EncoderBitrateMbps = 0;
 	double EncoderQP = 0;
 
+	bool bRegisterEngineStats = false;
+
+	bool OnToggleStats(UWorld* World, FCommonViewportClient* ViewportClient, const TCHAR* Stream);
+	int32 OnRenderStats(UWorld* World, FViewport* Viewport, FCanvas* Canvas, int32 X, int32 Y, const FVector* ViewLocation, const FRotator* ViewRotation);
+	void RegisterEngineHooks();
+
 public:
 	static FPublisherStats& Get() { return Instance; }
 
