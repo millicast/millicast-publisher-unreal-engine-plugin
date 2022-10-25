@@ -24,6 +24,14 @@ DECLARE_DYNAMIC_MULTICAST_SPARSE_DELEGATE_OneParam(FMillicastPublisherComponentP
 DECLARE_DYNAMIC_MULTICAST_SPARSE_DELEGATE(FMillicastPublisherComponentActive, UMillicastPublisherComponent, OnActive);
 DECLARE_DYNAMIC_MULTICAST_SPARSE_DELEGATE(FMillicastPublisherComponentInactive, UMillicastPublisherComponent, OnInactive);
 
+UENUM()
+enum class EMillicastCodec : uint8
+{
+	MC_VP8 UMETA(DisplayName="VP8"),
+	MC_VP9 UMETA(DisplayName="VP9"),
+	MC_H264 UMETA(DisplayName="H264"),
+};
+
 /**
 	A component used to publish audio, video feed to millicast.
 */
@@ -41,6 +49,9 @@ private:
 			  META = (DisplayName = "Millicast Publisher Source", AllowPrivateAccess = true))
 	UMillicastPublisherSource* MillicastMediaSource = nullptr;
 
+	UPROPERTY(EditDefaultsOnly, Category = "Properties", META = (DisplayName = "Video Codec"))
+	EMillicastCodec SelectedCodec;
+	
 public:
 	~UMillicastPublisherComponent();
 

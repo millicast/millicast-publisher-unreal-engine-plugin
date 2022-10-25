@@ -49,7 +49,9 @@ namespace UnrealBuildTool.Rules
 					"CinematicCamera",
 					"InputCore",
 					"libOpus",
-					"AudioPlatformConfiguration"
+					"AudioPlatformConfiguration",
+					"AVEncoder",
+					"RHICore",
 				});
 
 			PrivateIncludePathModuleNames.AddRange(
@@ -61,6 +63,42 @@ namespace UnrealBuildTool.Rules
 				new string[] {
 					"MillicastPublisher/Private",
 				});
+
+			var EngineDir = Path.GetFullPath(Target.RelativeEnginePath);
+
+			AddEngineThirdPartyPrivateStaticDependencies(Target, "Vulkan");
+
+			// required for casting UE4 BackBuffer to Vulkan Texture2D for NvEnc
+			PrivateDependencyModuleNames.AddRange(new string[] { "CUDA", "VulkanRHI", "nvEncode" });
+
+			AddEngineThirdPartyPrivateStaticDependencies(Target, "NVAftermath");
+			
+			PrivateIncludePathModuleNames.Add("VulkanRHI");
+			PrivateIncludePaths.Add(Path.Combine(EngineDir, "Source/Runtime/VulkanRHI/Private"));
+			AddEngineThirdPartyPrivateStaticDependencies(Target, "Vulkan");
+
+			if (Target.IsInPlatformGroup(UnrealPlatformGroup.Windows))
+			{
+				PublicDependencyModuleNames.Add("D3D11RHI");
+				PublicDependencyModuleNames.Add("D3D12RHI");
+				PrivateIncludePaths.AddRange(
+					new string[]{
+						Path.Combine(EngineDir, "Source/Runtime/D3D12RHI/Private"),
+						Path.Combine(EngineDir, "Source/Runtime/D3D12RHI/Private/Windows")
+					});
+
+				AddEngineThirdPartyPrivateStaticDependencies(Target, "DX12");
+				PublicSystemLibraries.AddRange(new string[] {
+					"DXGI.lib",
+					"d3d11.lib",
+				});
+
+				PrivateIncludePaths.Add(Path.Combine(EngineDir, "Source/Runtime/VulkanRHI/Private/Windows"));
+			}
+			else if (Target.IsInPlatformGroup(UnrealPlatformGroup.Linux))
+			{
+				PrivateIncludePaths.Add(Path.Combine(EngineDir, "Source/Runtime/VulkanRHI/Private/Linux"));
+			}
 		}
 	}
 }

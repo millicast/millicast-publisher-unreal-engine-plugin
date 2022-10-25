@@ -4,6 +4,7 @@
 
 #include "WebRTCInc.h"
 #include "RHI.h"
+#include "AVEncoderContext.h"
 
 /** Video Source adapter to create webrtc video frame from a Texture 2D and push it into webrtc pipelines */
 class FTexture2DVideoSourceAdapter : public rtc::AdaptedVideoTrackSource
@@ -22,5 +23,5 @@ public:
 private:
 	bool AdaptVideoFrame(int64 TimestampUs, FIntPoint Resolution);
 
-	FCriticalSection CriticalSection;
+	TUniquePtr<FAVEncoderContext> CaptureContext;
 };
