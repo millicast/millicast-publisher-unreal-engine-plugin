@@ -3,7 +3,7 @@
 
 #include "Texture2DVideoSourceAdapter.h"
 #include "Texture2DFrameBuffer.h"
-
+#include "Stats.h"
 #include "MillicastPublisherPrivate.h"
 
 void FTexture2DVideoSourceAdapter::OnFrameReady(const FTexture2DRHIRef& FrameBuffer, bool ReadColor)
@@ -30,6 +30,8 @@ void FTexture2DVideoSourceAdapter::OnFrameReady(const FTexture2DRHIRef& FrameBuf
 		.build();
 
 	rtc::AdaptedVideoTrackSource::OnFrame(Frame);
+
+	FPublisherStats::Get().FrameRendered();
 }
 
 webrtc::MediaSourceInterface::SourceState FTexture2DVideoSourceAdapter::state() const

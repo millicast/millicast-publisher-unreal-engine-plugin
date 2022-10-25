@@ -6,11 +6,17 @@
 #include <sstream>
 
 #include "AudioDeviceModule.h"
+#include "Stats.h"
 
 rtc::scoped_refptr<webrtc::PeerConnectionFactoryInterface> FWebRTCPeerConnection::PeerConnectionFactory = nullptr;
 TUniquePtr<rtc::Thread> FWebRTCPeerConnection::SignalingThread = nullptr;
 rtc::scoped_refptr<FAudioDeviceModule> FWebRTCPeerConnection::AudioDeviceModule = nullptr;
 std::unique_ptr<webrtc::TaskQueueFactory> FWebRTCPeerConnection::TaskQueueFactory = nullptr;
+
+FWebRTCPeerConnection::FWebRTCPeerConnection()
+{
+	RTCStatsCollector = MakeUnique<FRTCStatsCollector>(this);
+}
 
 void FWebRTCPeerConnection::CreatePeerConnectionFactory()
 {
@@ -258,3 +264,19 @@ void FWebRTCPeerConnection::OnIceCandidate(const webrtc::IceCandidateInterface*)
 
 void FWebRTCPeerConnection::OnIceConnectionReceivingChange(bool)
 {}
+
+
+void FWebRTCPeerConnection::PollStats()
+{
+	if (PeerConnection)
+	{
+		std::vector<rtc::scoped_refptr<webrtc::RtpTransceiverInterface>> Transceivers = PeerConnection->GetTransceivers();
+		for (rtc::scoped_refptr<webrtc::RtpTransceiverInterface> Transceiver : Transceivers)
+		{
+			if (Transceiver->media_type() == cricket::MediaType::MEDIA_TYPE_VIDEO)
+			{
+				PeerConnection->GetStats(Transceiver->sender(), RTCStatsCollector.Get());
+			}
+		}
+	}
+}
