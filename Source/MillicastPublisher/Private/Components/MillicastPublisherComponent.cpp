@@ -20,6 +20,9 @@
 
 #include "Util.h"
 
+#include "Interfaces/IPluginManager.h"
+#include "Kismet/GameplayStatics.h"
+
 constexpr auto HTTP_OK = 200;
 
 // lambda check if the event is bound before broadcasting.
@@ -240,7 +243,15 @@ bool UMillicastPublisherComponent::StartWebSocketConnection(const FString& Url,
 		FModuleManager::Get().LoadModule("WebSockets");
 	}
 
-	WS = FWebSocketsModule::Get().CreateWebSocket(Url + "?token=" + Jwt);
+	TSharedPtr<IPlugin> Plugin = IPluginManager::Get().FindPlugin("MillicastPublisher");
+	const FString OSName = UGameplayStatics::GetPlatformName();
+	const FString PluginVersion = Plugin ? Plugin->GetDescriptor().VersionName : "Unknown";
+
+	const TMap<FString, FString> Headers {
+		{"user-agent", FString::Printf(TEXT("MillicastPublisher/%s/%s"), *OSName, *PluginVersion)}
+	};
+
+	WS = FWebSocketsModule::Get().CreateWebSocket(Url + "?token=" + Jwt, FString(), Headers);
 
 	// Attach callback
 	OnConnectedHandle = WS->OnConnected().AddLambda([this]() { OnConnected(); });
