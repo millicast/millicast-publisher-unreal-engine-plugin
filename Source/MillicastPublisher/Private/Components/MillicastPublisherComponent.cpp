@@ -342,12 +342,17 @@ bool UMillicastPublisherComponent::PublishToMillicast()
 	PeerConnection->OaOptions.offer_to_receive_video = false;
 	PeerConnection->OaOptions.offer_to_receive_audio = false;
 
-	// Maximum bitrate
-	if (MaximumBitrate.IsSet()) {
-		webrtc::PeerConnectionInterface::BitrateParameters bitrateParameters;
-		bitrateParameters.max_bitrate_bps = *MaximumBitrate;
-		(*PeerConnection)->SetBitrate(bitrateParameters);
+	webrtc::PeerConnectionInterface::BitrateParameters bitrateParameters;
+	if (MinimumBitrate.IsSet()) {
+		bitrateParameters.min_bitrate_bps = *MinimumBitrate;
 	}
+	if (MaximumBitrate.IsSet()) {
+		bitrateParameters.max_bitrate_bps = *MaximumBitrate;
+	}
+	if (StartingBitrate.IsSet()) {
+		bitrateParameters.current_bitrate_bps = *StartingBitrate;
+	}
+	(*PeerConnection)->SetBitrate(bitrateParameters);
 
 	UE_LOG(LogMillicastPublisher, Log, TEXT("Create offer"));
 	PeerConnection->CreateOffer();
@@ -435,6 +440,17 @@ void UMillicastPublisherComponent::CaptureAndAddTracks()
 		init.direction = webrtc::RtpTransceiverDirection::kSendOnly;
 		init.stream_ids = { "unrealstream" };
 
+		webrtc::RTPEncodingParameters Encoding;
+		if (MinimumBitrate.IsSet()) {
+			Encoding.min_bitrate_bps = *MinimumBitrate;
+		}
+		if (MaximumBitrate.IsSet()) {
+			Encoding.max_bitrate_bps = *MaximumBitrate;
+		}
+		Encoding.max_framerate = 60;
+		Encoding.network_priority = webrtc::Priority::kHigh;
+		init.send_encodings.push_back(Encoding);
+
 		auto result = (*PeerConnection)->AddTransceiver(Track, init);
 
 		if (result.ok())
@@ -452,7 +468,17 @@ void UMillicastPublisherComponent::CaptureAndAddTracks()
 	});
 }
 
+void UMillicastPublisherComponent::SetMinimumBitrate(int Bps)
+{
+	MinimumBitrate = Bps;
+}
+
 void UMillicastPublisherComponent::SetMaximumBitrate(int Bps)
 {
 	MaximumBitrate = Bps;
+}
+
+void UMillicastPublisherComponent::SetStartingBitrate(int Bps)
+{
+	StartingBitrate = Bps;
 }

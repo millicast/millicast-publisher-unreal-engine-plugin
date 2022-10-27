@@ -80,8 +80,22 @@ public:
 	* Set the maximum bitrate for the peerconnection
 	* Have to be called before Publish
 	*/
+	UFUNCTION(BlueprintCallable, Category = "MillicastPublisher", META = (DisplayName = "SetMinimumBitrate"))
+	void SetMinimumBitrate(int Bps);
+
+	/**
+	* Set the maximum bitrate for the peerconnection
+	* Have to be called before Publish
+	*/
 	UFUNCTION(BlueprintCallable, Category = "MillicastPublisher", META = (DisplayName = "SetMaximumBitrate"))
 	void SetMaximumBitrate(int Bps);
+
+	/**
+	* Set the maximum bitrate for the peerconnection
+	* Have to be called before Publish
+	*/
+	UFUNCTION(BlueprintCallable, Category = "MillicastPublisher", META = (DisplayName = "SetStartingBitrate"))
+	void SetStartingBitrate(int Bps);
 
 public:
 	/** Called when the response from the Publisher api is successfull */
@@ -139,5 +153,7 @@ private:
 
 	/** Publisher */
 	bool bIsPublishing;
+	TOptional<int> MinimumBitrate; // in bps
 	TOptional<int> MaximumBitrate; // in bps
+	TOptional<int> StartingBitrate; // in bps
 };
