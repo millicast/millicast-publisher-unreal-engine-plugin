@@ -440,7 +440,7 @@ void UMillicastPublisherComponent::CaptureAndAddTracks()
 		init.direction = webrtc::RtpTransceiverDirection::kSendOnly;
 		init.stream_ids = { "unrealstream" };
 
-		webrtc::RTPEncodingParameters Encoding;
+		webrtc::RtpEncodingParameters Encoding;
 		if (MinimumBitrate.IsSet()) {
 			Encoding.min_bitrate_bps = *MinimumBitrate;
 		}
