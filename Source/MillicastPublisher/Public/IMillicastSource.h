@@ -2,11 +2,14 @@
 
 #pragma once
 
+#include "Containers/UnrealString.h"
+#include "Engine/TextureRenderTarget2D.h"
 #include "Misc/Optional.h"
-#include "api/media_stream_interface.h"
+#include "Templates/SharedPointer.h"
+#include "MillicastWebRTCInc.h"
 
 /** Interface to start a capture a write data to WebRTC buffers in order to publish audio/video to Millicast */
-class IMillicastSource
+class MILLICASTPUBLISHER_API IMillicastSource
 {
 public:
 	/** 
@@ -40,13 +43,13 @@ public:
 * Read data from a RenderTarget. This allow to capture a scene from a virtual camera.
 * TODO: maybe add webcam capture
 */
-class IMillicastVideoSource : public IMillicastSource
+class MILLICASTPUBLISHER_API IMillicastVideoSource : public IMillicastSource
 {	
 public:
 	using FVideoTrackInterface = rtc::scoped_refptr<webrtc::VideoTrackInterface>;
 
 	/** Creates VideoSource with SlateWindow Capture */
-	static IMillicastVideoSource* Create();
+	static TSharedPtr<IMillicastVideoSource> Create();
 	/** Creates VideoSource and capture from a RenderTarget */
 	static IMillicastVideoSource* Create(UTextureRenderTarget2D* RenderTarget);
 };
@@ -66,11 +69,13 @@ enum AudioCapturerType
 * TODO: See if there is a way to attach a specific audio source, like RenderTarget for video
 * TODO: See if we can use mic or other input devices using webrtc api.
 */
-class IMillicastAudioSource : public IMillicastSource
+class MILLICASTPUBLISHER_API IMillicastAudioSource : public IMillicastSource
 {
 public:
 	using FAudioTrackInterface = rtc::scoped_refptr<webrtc::AudioTrackInterface>;
 
 	/** Create audio source to capture audio from the main audio device */
 	static IMillicastAudioSource* Create(AudioCapturerType CapturerType);
+
+	virtual ~IMillicastAudioSource() override = default;
 };

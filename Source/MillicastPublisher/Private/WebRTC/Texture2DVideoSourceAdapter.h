@@ -4,15 +4,16 @@
 
 #include "WebRTCInc.h"
 #include "RHI.h"
+#include "AVEncoderContext.h"
 
 /** Video Source adapter to create webrtc video frame from a Texture 2D and push it into webrtc pipelines */
 class FTexture2DVideoSourceAdapter : public rtc::AdaptedVideoTrackSource
 {
 public:
-	FTexture2DVideoSourceAdapter() noexcept = default;
+	FTexture2DVideoSourceAdapter() = default;
 	~FTexture2DVideoSourceAdapter() = default;
 
-	void OnFrameReady(const FTexture2DRHIRef& FrameBuffer, bool ReadColor = false);
+	void OnFrameReady(const FTexture2DRHIRef& FrameBuffer);
 
 	webrtc::MediaSourceInterface::SourceState state() const override;
 	absl::optional<bool> needs_denoising() const override { return false; }
@@ -22,5 +23,5 @@ public:
 private:
 	bool AdaptVideoFrame(int64 TimestampUs, FIntPoint Resolution);
 
-	FCriticalSection CriticalSection;
+	TUniquePtr<FAVEncoderContext> CaptureContext;
 };

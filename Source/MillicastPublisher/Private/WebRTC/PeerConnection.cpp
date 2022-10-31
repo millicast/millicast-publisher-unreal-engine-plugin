@@ -2,6 +2,9 @@
 
 #include "PeerConnection.h"
 #include "MillicastPublisherPrivate.h"
+#include "AudioDeviceModule.h"
+#include "VideoEncoderFactory.h"
+#include "MillicastVideoEncoderFactory.h"
 
 #include <sstream>
 
@@ -29,7 +32,7 @@ void FWebRTCPeerConnection::CreatePeerConnectionFactory()
 	SignalingThread->Start();
 
 	TaskQueueFactory = webrtc::CreateDefaultTaskQueueFactory();
-	AudioDeviceModule = FAudioDeviceModule::Create(TaskQueueFactory.get());
+	AudioDeviceModule = FAudioDeviceModule::Create();
 
 	webrtc::AudioProcessing* AudioProcessingModule = webrtc::AudioProcessingBuilder().Create();
 	webrtc::AudioProcessing::Config ApmConfig;
@@ -55,7 +58,7 @@ void FWebRTCPeerConnection::CreatePeerConnectionFactory()
 				nullptr, nullptr, SignalingThread.Get(), AudioDeviceModule,
 				webrtc::CreateAudioEncoderFactory<webrtc::AudioEncoderOpus>(),
 				webrtc::CreateAudioDecoderFactory<webrtc::AudioDecoderOpus>(),
-				webrtc::CreateBuiltinVideoEncoderFactory(),
+				std::make_unique<FMillicastVideoEncoderFactory>(),
 				webrtc::CreateBuiltinVideoDecoderFactory(),
 				nullptr, AudioProcessingModule
 	  ).release();
@@ -90,6 +93,11 @@ rtc::scoped_refptr<FAudioDeviceModule> FWebRTCPeerConnection::GetAudioDeviceModu
 	}
 
 	return AudioDeviceModule;
+}
+
+TArray<FString> FWebRTCPeerConnection::GetSupportedVideoCodecs()
+{
+	return GetSupportedCodecs<cricket::MediaType::MEDIA_TYPE_VIDEO>();
 }
 
 webrtc::PeerConnectionInterface::RTCConfiguration FWebRTCPeerConnection::GetDefaultConfig()
@@ -127,6 +135,11 @@ FWebRTCPeerConnection* FWebRTCPeerConnection::Create(const FRTCConfig& Config)
 			MakeUnique<FSetSessionDescriptionObserver>();
 
 	return PeerConnectionInstance;
+}
+
+TArray<FString> FWebRTCPeerConnection::GetSupportedAudioCodecs()
+{
+	return GetSupportedCodecs<cricket::MediaType::MEDIA_TYPE_AUDIO>();
 }
 
 FWebRTCPeerConnection::FSetSessionDescriptionObserver*
@@ -203,17 +216,81 @@ webrtc::SessionDescriptionInterface* FWebRTCPeerConnection::CreateDescription(co
 	return SessionDescription;
 }
 
+template<cricket::MediaType T>
+TArray<FString> FWebRTCPeerConnection::GetSupportedCodecs()
+{
+	TArray<FString> codecs;
+
+	auto senderCapabilities = GetPeerConnectionFactory()->GetRtpSenderCapabilities(T);
+
+	// remove rtx red ulpfec from the list
+	senderCapabilities.codecs.erase(std::remove_if(senderCapabilities.codecs.begin(), 
+			senderCapabilities.codecs.end(),
+			[](auto& c) { return c.name == cricket::kRtxCodecName || c.name == cricket::kUlpfecCodecName || c.name == cricket::kUlpfecCodecName; }),
+		senderCapabilities.codecs.end()
+	);
+
+	// remove any duplicates
+	auto it = std::unique(senderCapabilities.codecs.begin(), senderCapabilities.codecs.end(),
+		[](auto& c1, auto& c2) { return c1.name == c2.name; });
+	senderCapabilities.codecs.erase(it, senderCapabilities.codecs.end());
+
+	for (auto& c : senderCapabilities.codecs)
+	{
+		codecs.Add(ToString(c.name));
+	}
+
+	return codecs;
+}
+
+void FWebRTCPeerConnection::SetBitrates(TSharedPtr<webrtc::PeerConnectionInterface::BitrateParameters> InBitrates)
+{
+	Bitrates = InBitrates;
+	PeerConnection->SetBitrate(*Bitrates);
+}
+
+void FWebRTCPeerConnection::ApplyBitrates(cricket::SessionDescription* Sdp)
+{
+	if(!Bitrates.IsValid())
+	{
+		return;
+	}
+
+	std::vector<cricket::ContentInfo>& ContentInfos = Sdp->contents();
+
+	// Set the start, min, and max bitrate accordingly.
+	for (cricket::ContentInfo& Content : ContentInfos)
+	{
+		cricket::MediaContentDescription* MediaDescription = Content.media_description();
+		if (MediaDescription->type() == cricket::MediaType::MEDIA_TYPE_VIDEO)
+		{
+			cricket::VideoContentDescription* VideoDescription = MediaDescription->as_video();
+			std::vector<cricket::VideoCodec> CodecsCopy = VideoDescription->codecs();
+			for (cricket::VideoCodec& Codec : CodecsCopy)
+			{
+				// Note: These codec params are in kilobits, not bits!
+				Codec.SetParam(cricket::kCodecParamMinBitrate, Bitrates->min_bitrate_bps.value());
+				Codec.SetParam(cricket::kCodecParamStartBitrate, Bitrates->current_bitrate_bps.value());
+				Codec.SetParam(cricket::kCodecParamMaxBitrate, Bitrates->max_bitrate_bps.value());
+			}
+			VideoDescription->set_codecs(CodecsCopy);
+		}
+	}
+}
+
 void FWebRTCPeerConnection::SetLocalDescription(const std::string& Sdp,
 												const std::string& Type)
 {
-	  auto * SessionDescription = CreateDescription(Type,
-													 Sdp,
-													 std::ref(LocalSessionDescription->OnFailureCallback));
+	auto * SessionDescription = CreateDescription(Type,
+													Sdp,
+													std::ref(LocalSessionDescription->OnFailureCallback));
 
-	  if(!SessionDescription) return;
+	if(!SessionDescription) return;
 
-	  PeerConnection->SetLocalDescription(LocalSessionDescription.Release(),
-										  SessionDescription);
+	ApplyBitrates(SessionDescription->description());
+
+	PeerConnection->SetLocalDescription(LocalSessionDescription.Release(),
+										SessionDescription);
 }
 
 void FWebRTCPeerConnection::SetRemoteDescription(const std::string& Sdp,
@@ -224,6 +301,8 @@ void FWebRTCPeerConnection::SetRemoteDescription(const std::string& Sdp,
 												  std::ref(RemoteSessionDescription->OnFailureCallback));
 
 	if(!SessionDescription) return;
+
+	ApplyBitrates(SessionDescription->description());
 
 	PeerConnection->SetRemoteDescription(RemoteSessionDescription.Release(), SessionDescription);
 }

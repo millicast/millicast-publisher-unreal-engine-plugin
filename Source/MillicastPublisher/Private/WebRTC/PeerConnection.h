@@ -35,6 +35,8 @@ class FWebRTCPeerConnection : public webrtc::PeerConnectionObserver
 	TUniquePtr<FSetSessionDescriptionObserver>    RemoteSessionDescription;
 	TUniquePtr<class FRTCStatsCollector>          RTCStatsCollector;
 
+	TSharedPtr<webrtc::PeerConnectionInterface::BitrateParameters> Bitrates;
+
 	template<typename Callback>
 	webrtc::SessionDescriptionInterface* CreateDescription(const std::string&,
 														   const std::string&,
@@ -43,6 +45,9 @@ class FWebRTCPeerConnection : public webrtc::PeerConnectionObserver
 	static rtc::scoped_refptr<webrtc::PeerConnectionFactoryInterface> PeerConnectionFactory;
 	static void CreatePeerConnectionFactory();
   
+	template<cricket::MediaType T>
+	static TArray<FString> GetSupportedCodecs();
+
 public:
 	using FRTCConfig = webrtc::PeerConnectionInterface::RTCConfiguration;
 
@@ -59,6 +64,10 @@ public:
 	static rtc::scoped_refptr<webrtc::PeerConnectionFactoryInterface> GetPeerConnectionFactory();
 	/** Get the audio device module */
 	static rtc::scoped_refptr<FAudioDeviceModule> GetAudioDeviceModule();
+	/** Get the supported video codecs */
+	static TArray<FString> GetSupportedVideoCodecs();
+	/** Get the supported audio codecs */
+	static TArray<FString> GetSupportedAudioCodecs();
 
 	/** Get local description observer to set callback for set local description success or failure */
 	FSetSessionDescriptionObserver* GetLocalDescriptionObserver();
@@ -100,4 +109,9 @@ public:
 	{
 		return PeerConnection.get();
 	}
+
+	void SetBitrates(TSharedPtr<webrtc::PeerConnectionInterface::BitrateParameters> InBitrates);
+
+	/* Give a session description ensure we are setting the our operating bitrates for video. */
+	void ApplyBitrates(cricket::SessionDescription* Sdp);
 };

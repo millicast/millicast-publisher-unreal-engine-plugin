@@ -13,7 +13,7 @@ class IMediaPlayer;
 /**
  * Interface Millicast publisher module
  */
-class IMillicastPublisherModule : public IModuleInterface
+class MILLICASTPUBLISHER_API IMillicastPublisherModule : public IModuleInterface
 {
 public:
 

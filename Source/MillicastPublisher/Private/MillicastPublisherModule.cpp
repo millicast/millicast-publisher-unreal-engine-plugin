@@ -7,7 +7,14 @@
 #include "Interfaces/IPluginManager.h"
 #include "Modules/ModuleManager.h"
 #include "Styling/SlateStyle.h"
+
 #include "Media/AudioGameCapturer.h"
+#include "WebRTC/WebRTCLog.h"
+
+#if PLATFORM_WINDOWS
+#include "Media/WasapiDeviceCapturer.h"
+#endif
+
 
 DEFINE_LOG_CATEGORY(LogMillicastPublisher);
 
@@ -31,15 +38,17 @@ public:
 	virtual void StartupModule() override
 	{
 #if PLATFORM_WINDOWS
-		WasapiDeviceCapture::ColdInit();
+		WasapiDeviceCapturer::ColdInit();
 #endif
 		CreateStyle();
+
+		RedirectWebRtcLogsToUnreal(rtc::LoggingSeverity::LS_VERBOSE);
 	}
 
 	virtual void ShutdownModule() override 
 	{
 #if PLATFORM_WINDOWS
-		WasapiDeviceCapture::ColdExit();
+		WasapiDeviceCapturer::ColdExit();
 #endif
 	}
 

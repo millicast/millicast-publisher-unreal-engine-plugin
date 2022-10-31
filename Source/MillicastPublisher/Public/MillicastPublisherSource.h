@@ -5,8 +5,10 @@
 #include "Materials/MaterialInstanceDynamic.h"
 #include "StreamMediaSource.h"
 #include "IMillicastSource.h"
-
+#include "Sound/SoundSubmix.h"
 #include "AudioCaptureDeviceInterface.h"
+#include "Engine/TextureRenderTarget2D.h"
+#include "RtcCodecsConstants.h"
 
 #include "MillicastPublisherSource.generated.h"
 
@@ -57,6 +59,10 @@ public:
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = Video, AssetRegistrySearchable)
 	UTextureRenderTarget2D* RenderTarget = nullptr;
 
+	/** Whether to enable simulcast */
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = Video, AssetRegistrySearchable)
+	bool Simulcast = false;
+
 	/** Whether we should capture game audio or not */
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = Audio, AssetRegistrySearchable)
 	bool CaptureAudio = true;
@@ -80,6 +86,10 @@ public:
 	/** Apply a volume multiplier for the recorded data in dB */
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = Audio, AssetRegistrySearchable)
 	float VolumeMultiplier = 20.f;
+
+	/** Audio Codecs */
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = Audio, AssetRegistrySearchable)
+	TEnumAsByte<EMillicastAudioCodecs> AudioCodec;
 
 public:
 	/** Mute the video stream */
@@ -110,6 +120,10 @@ public:
 	/** Apply a volume multiplier for the recorded data in dB */
 	UFUNCTION(BlueprintCallable, Category = "MillicastPublisher", META = (DisplayName = "SetVolumeMultiplier"))
 	void SetVolumeMultiplier(float f);
+
+	/** Get the selected audio codec */
+	UFUNCTION(BlueprintCallable, Category = "MillicastPublisher", META = (DisplayName = "GetAudioCodec"))
+	FString GetAudioCodec() const;
 
 public:
 	//~ IMediaOptions interface
@@ -148,6 +162,9 @@ public:
 	void StopCapture();
 
 private:
-	TUniquePtr<IMillicastVideoSource> VideoSource;
-	TUniquePtr<IMillicastAudioSource> AudioSource;
+	bool IsCodecSupported(EMillicastAudioCodecs Selection);
+
+private:
+	TSharedPtr<IMillicastVideoSource> VideoSource;
+	TSharedPtr<IMillicastAudioSource> AudioSource;
 };

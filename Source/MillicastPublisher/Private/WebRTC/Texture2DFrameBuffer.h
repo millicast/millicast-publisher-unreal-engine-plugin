@@ -125,14 +125,10 @@ public:
 
 class FColorTexture2DFrameBuffer : public webrtc::VideoFrameBuffer
 {
-	int Width;
-	int Height;
-
-	rtc::scoped_refptr<webrtc::I420Buffer> Buffer;
-
 public:
-
-	explicit FColorTexture2DFrameBuffer(FTexture2DRHIRef SourceTexture) noexcept
+	explicit FB8G8R8A8ToI420FrameBuffer(uint8* B8G8R8A8Pixels, int InWidth, int InHeight, int InStride) noexcept
+		: Width(InWidth)
+		, Height(InHeight)
 	{
 		FPublisherStats::Get().TextureReadbackStart();
 
@@ -142,28 +138,6 @@ public:
 
 		/* Create an I420 buffer */
 		Buffer = webrtc::I420Buffer::Create(Width, Height);
-
-
-		/* Convert the texture2d frame to YUV pixel format */
-		FRHICommandListImmediate& RHICommandList = FRHICommandListExecutor::GetImmediateCommandList();
-
-		const auto ARGB_BUFFER_SIZE = Width * Height * 4;
-		FIntRect Rect(0, 0, Width, Height);
-		TArray<FColor> ColorData;
-		uint8* TextureData = new uint8[ARGB_BUFFER_SIZE];
-
-		FReadSurfaceDataFlags ReadSurfaceData{};
-		ReadSurfaceData.SetMip(0);
-
-		RHICommandList.ReadSurfaceData(SourceTexture, Rect, ColorData, ReadSurfaceData);
-
-		for (uint64 i = 0; i < Width * Height; ++i) {
-			const int64 ind = i * 4;
-			TextureData[ind] = ColorData[i].B;
-			TextureData[ind + 1] = ColorData[i].G;
-			TextureData[ind + 2] = ColorData[i].R;
-			TextureData[ind + 3] = ColorData[i].A;
-		}
 
 		uint8* DataY = Buffer->MutableDataY();
 		uint8* DataU = Buffer->MutableDataU();
@@ -194,4 +168,9 @@ public:
 	{
 		return Buffer;
 	}
+
+private:
+	int Width;
+	int Height;
+	rtc::scoped_refptr<webrtc::I420Buffer> Buffer;
 };

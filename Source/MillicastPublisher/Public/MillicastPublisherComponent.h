@@ -3,16 +3,19 @@
 #pragma once
 
 #include <CoreMinimal.h>
-
 #include <Components/ActorComponent.h>
 #include "MillicastPublisherSource.h"
-
 #include "MillicastPublisherComponent.generated.h"
 
 // Forward declarations
 class IWebSocket;
 class FWebRTCPeerConnection;
 class IHttpResponse;
+
+namespace webrtc
+{
+	struct RtpTransceiverInit;
+}
 
 // Event declaration
 DECLARE_DYNAMIC_MULTICAST_SPARSE_DELEGATE(FMillicastPublisherComponentAuthenticated, UMillicastPublisherComponent, OnAuthenticated);
@@ -23,6 +26,15 @@ DECLARE_DYNAMIC_MULTICAST_SPARSE_DELEGATE_OneParam(FMillicastPublisherComponentP
 
 DECLARE_DYNAMIC_MULTICAST_SPARSE_DELEGATE(FMillicastPublisherComponentActive, UMillicastPublisherComponent, OnActive);
 DECLARE_DYNAMIC_MULTICAST_SPARSE_DELEGATE(FMillicastPublisherComponentInactive, UMillicastPublisherComponent, OnInactive);
+DECLARE_DYNAMIC_MULTICAST_SPARSE_DELEGATE(FMillicastPublisherComponentViewerCount, UMillicastPublisherComponent, OnViewerCount);
+
+UENUM()
+enum class EMillicastCodec : uint8
+{
+	MC_VP8 UMETA(DisplayName="VP8"),
+	MC_VP9 UMETA(DisplayName="VP9"),
+	MC_H264 UMETA(DisplayName="H264"),
+};
 
 /**
 	A component used to publish audio, video feed to millicast.
@@ -41,6 +53,9 @@ private:
 			  META = (DisplayName = "Millicast Publisher Source", AllowPrivateAccess = true))
 	UMillicastPublisherSource* MillicastMediaSource = nullptr;
 
+	UPROPERTY(EditDefaultsOnly, Category = "Properties", META = (DisplayName = "Video Codec"))
+	EMillicastCodec SelectedCodec;
+	
 public:
 	~UMillicastPublisherComponent();
 
@@ -77,11 +92,25 @@ public:
 	bool IsPublishing() const;
 
 	/**
-	* Set the maximum bitrate for the peerconnection
+	* Set the minimum bitrate for the peerconnection
 	* Have to be called before Publish
 	*/
+	UFUNCTION(BlueprintCallable, Category = "MillicastPublisher", META = (DisplayName = "SetMinimumBitrate"))
+	void SetMinimumBitrate(int Bps);
+
+	/**
+	* Set the maximum bitrate for the peerconnection
+	* Have to be called before Publish
+  */
 	UFUNCTION(BlueprintCallable, Category = "MillicastPublisher", META = (DisplayName = "SetMaximumBitrate"))
 	void SetMaximumBitrate(int Bps);
+
+	/**
+	* Set the starting bitrate for the peerconnection
+	* Have to be called before Publish
+	*/
+	UFUNCTION(BlueprintCallable, Category = "MillicastPublisher", META = (DisplayName = "SetStartingBitrate"))
+	void SetStartingBitrate(int Bps);
 
 public:
 	/** Called when the response from the Publisher api is successfull */
@@ -108,6 +137,10 @@ public:
 	UPROPERTY(BlueprintAssignable, Category = "Components|Activation")
 	FMillicastPublisherComponentInactive OnInactive;
 
+	/** Called when the number of viewer watching the stream is updated */
+	UPROPERTY(BlueprintAssignable, Category = "Components|Activation")
+	FMillicastPublisherComponentViewerCount OnViewerCount;
+
 private:
 	/** Websocket callback */
 	bool StartWebSocketConnection(const FString& url, const FString& jwt);
@@ -125,6 +158,11 @@ private:
 	void ParseDirectorResponse(TSharedPtr<IHttpResponse, ESPMode::ThreadSafe> Response);
 	void SetupIceServersFromJson(TArray<TSharedPtr<FJsonValue>> IceServersField);
 
+	template<typename TransceiverType, cricket::MediaType T>
+	void SetCodecPreference(TransceiverType Transceiver);
+
+	void SetSimulcast(webrtc::RtpTransceiverInit& TransceiverInit);
+
 private:
 	/** WebSocket Connection */
 	TSharedPtr<IWebSocket> WS;
@@ -136,8 +174,11 @@ private:
 	/** WebRTC */
 	FWebRTCPeerConnection* PeerConnection;
 	webrtc::PeerConnectionInterface::RTCConfiguration PeerConnectionConfig;
+	TSharedPtr<webrtc::PeerConnectionInterface::BitrateParameters> Bitrates;
 
 	/** Publisher */
 	bool bIsPublishing;
+	TOptional<int> MinimumBitrate; // in bps
 	TOptional<int> MaximumBitrate; // in bps
+	TOptional<int> StartingBitrate; // in bps
 };
