@@ -8,9 +8,13 @@
 #include "Modules/ModuleManager.h"
 #include "Styling/SlateStyle.h"
 
+#include "Media/AudioGameCapturer.h"
+#include "WebRTC/WebRTCLog.h"
+
 #if PLATFORM_WINDOWS
 #include "Media/WasapiDeviceCapturer.h"
 #endif
+
 
 DEFINE_LOG_CATEGORY(LogMillicastPublisher);
 
@@ -37,6 +41,8 @@ public:
 		WasapiDeviceCapturer::ColdInit();
 #endif
 		CreateStyle();
+
+		RedirectWebRtcLogsToUnreal(rtc::LoggingSeverity::LS_VERBOSE);
 	}
 
 	virtual void ShutdownModule() override 
