@@ -1,16 +1,38 @@
 #include "SlateWindowVideoCapturer.h"
-
 #include "Framework/Application/SlateApplication.h"
-
 #include "WebRTC/PeerConnection.h"
 #include "MillicastPublisherPrivate.h"
-
 #include "Util.h"
 
-// Maybe return a TUniquePtr or Shared or somehting less ... raw
-IMillicastVideoSource* IMillicastVideoSource::Create()
+TSharedPtr<IMillicastVideoSource> IMillicastVideoSource::Create()
 {
-	return new SlateWindowVideoCapturer;
+	return SlateWindowVideoCapturer::CreateCapturer();
+}
+
+TSharedPtr<SlateWindowVideoCapturer> SlateWindowVideoCapturer::CreateCapturer()
+{
+	TSharedPtr<SlateWindowVideoCapturer> Capturer = TSharedPtr<SlateWindowVideoCapturer>(new SlateWindowVideoCapturer());
+	
+	// We create TWeakPtr here because we don't want gamethread keeping this alive if it is deleted before this async task happens.
+	TWeakPtr<SlateWindowVideoCapturer> WeakSelf = TWeakPtr<SlateWindowVideoCapturer>(Capturer);
+	AsyncTask(ENamedThreads::GameThread, [WeakSelf](){
+		TSharedPtr<SlateWindowVideoCapturer> Capturer = WeakSelf.Pin();
+		if(Capturer)
+		{
+			// We set the target window to the window with game viewport in it.
+			// Note: Calls to `FSlateApplication::Get()` have to on the GameThread, hence the AsyncTask.
+			FSlateApplication& SlateApp = FSlateApplication::Get();
+			TSharedPtr<SViewport> GameViewport = SlateApp.GetGameViewport();
+			Capturer->SetTargetWindow(SlateApp.FindWidgetWindow(GameViewport.ToSharedRef()));
+		}
+	});
+
+	return Capturer;
+}
+
+void SlateWindowVideoCapturer::SetTargetWindow(TSharedPtr<SWindow> InTargetWindow)
+{
+	TargetWindow = InTargetWindow;
 }
 
 IMillicastSource::FStreamTrackInterface SlateWindowVideoCapturer::StartCapture()
@@ -19,7 +41,7 @@ IMillicastSource::FStreamTrackInterface SlateWindowVideoCapturer::StartCapture()
 	RtcVideoSource = new rtc::RefCountedObject<FTexture2DVideoSourceAdapter>();
 
 	// Attach the callback to the Slate window renderer
-	FSlateApplication::Get().GetRenderer()->OnBackBufferReadyToPresent().AddRaw(this, 
+	OnBackBufferHandle = FSlateApplication::Get().GetRenderer()->OnBackBufferReadyToPresent().AddSP(this, 
 		&SlateWindowVideoCapturer::OnBackBufferReadyToPresent);
 
 	// Get the peerconnection factory to create the video track
@@ -44,8 +66,12 @@ void SlateWindowVideoCapturer::StopCapture()
 {
 	FScopeLock lock(&CriticalSection);
 
-	// Remove the callback to stop receiving new buffers
-	FSlateApplication::Get().GetRenderer()->OnBackBufferReadyToPresent().RemoveAll(this);
+	// We don't bother remove this callback on engine exit because renderer is already destroyed 
+	if (!IsEngineExitRequested())
+	{
+		// Remove the callback to stop receiving new buffers
+		FSlateApplication::Get().GetRenderer()->OnBackBufferReadyToPresent().Remove(OnBackBufferHandle);
+	}
 
 	// Destroy track and source
 	RtcVideoSource = nullptr;
@@ -59,14 +85,29 @@ SlateWindowVideoCapturer::FStreamTrackInterface SlateWindowVideoCapturer::GetTra
 
 void SlateWindowVideoCapturer::OnBackBufferReadyToPresent(SWindow& SlateWindow, const FTexture2DRHIRef& Buffer)
 {
+	checkf(IsInRenderingThread(), TEXT("Window capture must happen on the render thread."));
+
 	FScopeLock lock(&CriticalSection);
 
-	if (RtcVideoSource)
+	if(!RtcVideoSource)
 	{
-		check(IsInRenderingThread());
-
-		// Create and send webrtc video frame
-		RtcVideoSource->OnFrameReady(Buffer, true);
+		UE_LOG(LogMillicastPublisher, Warning, TEXT("FSlateWindowCapturer will skip capturing when video source has not been set."));
+		return;
 	}
+
+	if(!TargetWindow)
+	{
+		UE_LOG(LogMillicastPublisher, Warning, TEXT("FSlateWindowCapturer cannot capture a window when no target window has been set."));
+		return;
+	}
+
+	if(&SlateWindow != TargetWindow.Get())
+	{
+		// This is not our target window so skip it.
+		return;
+	}
+
+	// Create and send webrtc video frame
+	RtcVideoSource->OnFrameReady(Buffer);
 }
 

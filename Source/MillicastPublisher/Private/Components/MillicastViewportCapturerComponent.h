@@ -9,7 +9,8 @@
 #include <Misc/FrameRate.h>
 #include <Slate/SceneViewport.h>
 #include <Widgets/SViewport.h>
-
+#include "ShowFlags.h"
+#include "SceneView.h"
 #include "MillicastViewportCapturerComponent.generated.h"
 
 /** A component used to capture viewport from a Millicast Camera Actor */

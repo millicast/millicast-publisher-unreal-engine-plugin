@@ -2,8 +2,13 @@
 
 #include "MillicastPublisherSource.h"
 #include "MillicastPublisherPrivate.h"
+
 #include "RenderTargetCapturer.h"
-#include "AudioGameCapturer.h"
+
+#include "WebRTC/PeerConnection.h"
+
+#include "AudioSubmixCapturer.h"
+#include "AudioDeviceCapturer.h"
 
 #include <RenderTargetPool.h>
 
@@ -105,7 +110,7 @@ void UMillicastPublisherSource::SetAudioDeviceByName(FString Name)
 void UMillicastPublisherSource::RefreshAudioDevicesList()
 {
 	CaptureDevicesName.Empty();
-	auto& CaptureDevices = AudioDeviceCapture::GetCaptureDevicesAvailable();
+	auto& CaptureDevices = AudioDeviceCapturer::GetCaptureDevicesAvailable();
 
 	for (auto& elt : CaptureDevices)
 	{
@@ -118,9 +123,22 @@ void UMillicastPublisherSource::SetVolumeMultiplier(float f)
 	VolumeMultiplier = f;
 	if (AudioSource) 
 	{
-		auto* src = static_cast<AudioDeviceCapture*>(AudioSource.Get());
+		auto* src = static_cast<AudioDeviceCapturer*>(AudioSource.Get());
 		src->SetVolumeMultiplier(f);
 	}
+}
+
+FString UMillicastPublisherSource::GetAudioCodec() const
+{
+	FString codecName;
+
+	switch (AudioCodec)
+	{
+	case EMillicastAudioCodecs::Opus:      codecName = cricket::kOpusCodecName;  break;
+	case EMillicastAudioCodecs::Multiopus: codecName = "multiopus"; break;
+	}
+
+	return codecName;
 }
 
 FString UMillicastPublisherSource::GetMediaOption(const FName& Key, const FString& DefaultValue) const
@@ -171,11 +189,11 @@ void UMillicastPublisherSource::StartCapture(TFunction<void(IMillicastSource::FS
 		// If a render target has been set, create a Render Target capturer
 		if (RenderTarget != nullptr)
 		{
-			VideoSource = TUniquePtr<IMillicastVideoSource>(IMillicastVideoSource::Create(RenderTarget));
+			VideoSource = TSharedPtr<IMillicastVideoSource>(IMillicastVideoSource::Create(RenderTarget));
 		}
 		else
 		{
-			VideoSource = TUniquePtr<IMillicastVideoSource>(IMillicastVideoSource::Create());
+			VideoSource = IMillicastVideoSource::Create();
 		}
 
 		// Starts the capture and notify observers
@@ -187,17 +205,17 @@ void UMillicastPublisherSource::StartCapture(TFunction<void(IMillicastSource::FS
 	// If audio is enabled, create audio capturer
 	if (CaptureAudio)
 	{
-		AudioSource = TUniquePtr<IMillicastAudioSource>(IMillicastAudioSource::Create(AudioCaptureType));
+		AudioSource = TSharedPtr<IMillicastAudioSource>(IMillicastAudioSource::Create(AudioCaptureType));
 
 		if (AudioCaptureType == AudioCapturerType::DEVICE)
 		{
-			auto source = static_cast<AudioDeviceCapture*>(AudioSource.Get());
+			auto source = static_cast<AudioDeviceCapturer*>(AudioSource.Get());
 			source->SetAudioCaptureDevice(CaptureDeviceIndex);
 			source->SetVolumeMultiplier(VolumeMultiplier);
 		}
 		else if (AudioCaptureType == AudioCapturerType::SUBMIX)
 		{
-			auto source = static_cast<AudioGameCapturer*>(AudioSource.Get());
+			auto source = static_cast<AudioSubmixCapturer*>(AudioSource.Get());
 			source->SetAudioSubmix(Submix);
 		}
 
@@ -270,12 +288,29 @@ bool UMillicastPublisherSource::CanEditChange(const FProperty* InProperty) const
 	return Super::CanEditChange(InProperty);
 }
 
+bool UMillicastPublisherSource::IsCodecSupported(EMillicastAudioCodecs Selection)
+{
+	FString codecName= GetAudioCodec();
+
+	TArray<FString> Codecs = FWebRTCPeerConnection::GetSupportedAudioCodecs();
+
+	return Codecs.Contains(codecName);
+}
+
 void UMillicastPublisherSource::PostEditChangeChainProperty(struct FPropertyChangedChainEvent& InPropertyChangedEvent)
 {
 	Super::PostEditChangeChainProperty(InPropertyChangedEvent);
 
 	FName PropertyName = InPropertyChangedEvent.GetPropertyName();
-	UE_LOG(LogMillicastPublisher, Log, TEXT("Edit : %s"), *PropertyName.ToString());
+
+	if (*PropertyName.ToString() == FString("AudioCodec"))
+	{
+		if (!IsCodecSupported(AudioCodec))
+		{
+			UE_LOG(LogMillicastPublisher, Warning, TEXT("Selected audio codec is not supported, falling back to opus"));
+			AudioCodec = EMillicastAudioCodecs::Opus;
+		}
+	}
 }
 
 #endif //WITH_EDITOR
