@@ -1,6 +1,10 @@
 // Copyright Millicast 2022. All Rights Reserved.
 
 #include "Texture2DVideoSourceAdapter.h"
+
+#include "Texture2DFrameBuffer.h"
+#include "Stats.h"
+
 #include "MillicastPublisherPrivate.h"
 #include "FrameBufferRHI.h"
 #include "RHI/CopyTexture.h"

@@ -33,6 +33,7 @@ class FWebRTCPeerConnection : public webrtc::PeerConnectionObserver
 	TUniquePtr<FCreateSessionDescriptionObserver> CreateSessionDescription;
 	TUniquePtr<FSetSessionDescriptionObserver>    LocalSessionDescription;
 	TUniquePtr<FSetSessionDescriptionObserver>    RemoteSessionDescription;
+	TUniquePtr<class FRTCStatsCollector>          RTCStatsCollector;
 
 	TSharedPtr<webrtc::PeerConnectionInterface::BitrateParameters> Bitrates;
 
@@ -53,7 +54,7 @@ public:
 	/** Offer/Answer options (e.g. offer to receive audio/video) */
 	webrtc::PeerConnectionInterface::RTCOfferAnswerOptions OaOptions;
 
-	FWebRTCPeerConnection() = default;
+	FWebRTCPeerConnection();
 
 	/** Get WebRTC Peerconnection configuration */
 	static FRTCConfig GetDefaultConfig();
@@ -101,6 +102,8 @@ public:
 	void OnIceCandidate(const webrtc::IceCandidateInterface* candidate) override;
 	void OnIceConnectionReceivingChange(bool receiving) override;
 
+	void PollStats();
+	
 	/* Return the webrtc peerconnection underlying pointer */
 	webrtc::PeerConnectionInterface* operator->()
 	{
