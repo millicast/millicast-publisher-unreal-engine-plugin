@@ -10,6 +10,7 @@
 #include "Dom/JsonValue.h"
 #include "Dom/JsonObject.h"
 
+#include "Serialization/JsonSerializer.h"
 #include "Serialization/JsonReader.h"
 #include "Serialization/JsonWriter.h"
 
@@ -18,6 +19,9 @@
 #include "WebRTC/PeerConnection.h"
 
 #include "Util.h"
+
+#include "Interfaces/IPluginManager.h"
+#include "Kismet/GameplayStatics.h"
 
 constexpr auto HTTP_OK = 200;
 
@@ -31,6 +35,20 @@ auto MakeBroadcastEvent = [](auto&& Event) {
 	};
 };
 
+FString ToString(EMillicastCodec Codec)
+{
+	switch (Codec)
+	{
+		default:
+		case EMillicastCodec::MC_VP8:
+			return TEXT("vp8");
+		case EMillicastCodec::MC_VP9:
+			return TEXT("vp9");
+		case EMillicastCodec::MC_H264:
+			return TEXT("h264");
+	}
+}
+
 UMillicastPublisherComponent::UMillicastPublisherComponent(const FObjectInitializer& ObjectInitializer) : Super(ObjectInitializer)
 {
 	PeerConnection = nullptr;
@@ -40,6 +58,7 @@ UMillicastPublisherComponent::UMillicastPublisherComponent(const FObjectInitiali
 	// Event received from websocket signaling
 	EventBroadcaster.Emplace("active", MakeBroadcastEvent(OnActive));
 	EventBroadcaster.Emplace("inactive", MakeBroadcastEvent(OnInactive));
+	EventBroadcaster.Emplace("viewercount", MakeBroadcastEvent(OnViewerCount));
 
 	PeerConnectionConfig = FWebRTCPeerConnection::GetDefaultConfig();
 }
@@ -184,7 +203,7 @@ bool UMillicastPublisherComponent::Publish()
 		}
 	});
 
-	return PostHttpRequest->ProcessRequest();	    
+	return PostHttpRequest->ProcessRequest();
 }
 
 bool UMillicastPublisherComponent::PublishWithWsAndJwt(const FString& WsUrl, const FString& Jwt)
@@ -231,7 +250,15 @@ bool UMillicastPublisherComponent::StartWebSocketConnection(const FString& Url,
 		FModuleManager::Get().LoadModule("WebSockets");
 	}
 
-	WS = FWebSocketsModule::Get().CreateWebSocket(Url + "?token=" + Jwt);
+	TSharedPtr<IPlugin> Plugin = IPluginManager::Get().FindPlugin("MillicastPublisher");
+	const FString OSName = UGameplayStatics::GetPlatformName();
+	const FString PluginVersion = Plugin ? Plugin->GetDescriptor().VersionName : "Unknown";
+
+	const TMap<FString, FString> Headers {
+		{"user-agent", FString::Printf(TEXT("MillicastPublisher/%s/%s"), *OSName, *PluginVersion)}
+	};
+
+	WS = FWebSocketsModule::Get().CreateWebSocket(Url + "?token=" + Jwt, FString(), Headers);
 
 	// Attach callback
 	OnConnectedHandle = WS->OnConnected().AddLambda([this]() { OnConnected(); });
@@ -246,8 +273,8 @@ bool UMillicastPublisherComponent::StartWebSocketConnection(const FString& Url,
 
 bool UMillicastPublisherComponent::PublishToMillicast()
 {
-	PeerConnection =
-		FWebRTCPeerConnection::Create(PeerConnectionConfig);
+	PeerConnection = FWebRTCPeerConnection::Create(PeerConnectionConfig);
+	PeerConnection->SetBitrates(Bitrates);
 
 	// Starts the capture first and add track to the peerconnection
 	// TODO: add a boolean to let choose autoplay or not
@@ -261,6 +288,7 @@ bool UMillicastPublisherComponent::PublishToMillicast()
 	CreateSessionDescriptionObserver->SetOnSuccessCallback([this](const std::string& type, const std::string& sdp) {
 		UE_LOG(LogMillicastPublisher, Display, TEXT("pc.createOffer() | sucess\nsdp : %S"), sdp.c_str());
 
+		// Search for this expression and add the stereo flag to enable stereo
 		const std::string s = "minptime=10;useinbandfec=1";
 		std::string sdp_non_const = sdp;
 		std::ostringstream oss;
@@ -271,6 +299,7 @@ bool UMillicastPublisherComponent::PublishToMillicast()
 			sdp_non_const.replace(sdp.find(s), s.size(), oss.str());
 		}
 
+		// Set local description
 		PeerConnection->SetLocalDescription(sdp_non_const, type);
 	});
 
@@ -298,6 +327,7 @@ bool UMillicastPublisherComponent::PublishToMillicast()
 		auto DataJson = MakeShared<FJsonObject>();
 		DataJson->SetStringField("name", MillicastMediaSource->StreamName);
 		DataJson->SetStringField("sdp", ToString(sdp));
+		DataJson->SetStringField("codec", ToString(SelectedCodec));
 		DataJson->SetArrayField("events", eventsJson);
 
 		// If multisource feature
@@ -358,6 +388,7 @@ bool UMillicastPublisherComponent::PublishToMillicast()
 	}
 	(*PeerConnection)->SetBitrate(bitrateParameters);
 
+	// Create offer
 	UE_LOG(LogMillicastPublisher, Log, TEXT("Create offer"));
 	PeerConnection->CreateOffer();
 
@@ -427,12 +458,36 @@ void UMillicastPublisherComponent::OnMessage(const FString& Msg)
 
 		UE_LOG(LogMillicastPublisher, Log, TEXT("Received event : %s"), *eventName);
 
-		EventBroadcaster[eventName]();
+		if (EventBroadcaster.Contains(eventName))
+		{
+			EventBroadcaster[eventName]();
+		}
 	}
 	else 
 	{
 		UE_LOG(LogMillicastPublisher, Warning, TEXT("WebSocket response type not handled (yet?) %s"), *Type);
 	}
+}
+
+void UMillicastPublisherComponent::SetSimulcast(webrtc::RtpTransceiverInit& TransceiverInit)
+{
+	webrtc::RtpEncodingParameters params;
+	params.active = true;
+	params.max_bitrate_bps = MaximumBitrate.Get(4'000'000);
+	params.rid = "h";
+	TransceiverInit.send_encodings.push_back(params);
+
+	params.max_bitrate_bps = MaximumBitrate.Get(4'000'000) / 2;
+	params.active = true;
+	params.rid = "m";
+	params.scale_resolution_down_by = 2;
+	TransceiverInit.send_encodings.push_back(params);
+
+	params.max_bitrate_bps = MaximumBitrate.Get(4'000'000) / 4;
+	params.active = true;
+	params.rid = "l";
+	params.scale_resolution_down_by = 4;
+	TransceiverInit.send_encodings.push_back(params);
 }
 
 void UMillicastPublisherComponent::CaptureAndAddTracks()
@@ -457,6 +512,11 @@ void UMillicastPublisherComponent::CaptureAndAddTracks()
 		Encoding.network_priority = webrtc::Priority::kHigh;
 		init.send_encodings.push_back(Encoding);
 
+		if (MillicastMediaSource->Simulcast)
+		{
+			SetSimulcast(init);
+		}
+
 		auto result = (*PeerConnection)->AddTransceiver(Track, init);
 
 		if (result.ok())
@@ -474,6 +534,7 @@ void UMillicastPublisherComponent::CaptureAndAddTracks()
 	});
 }
 
+
 void UMillicastPublisherComponent::SetMinimumBitrate(int Bps)
 {
 	MinimumBitrate = Bps;
@@ -488,3 +549,4 @@ void UMillicastPublisherComponent::SetStartingBitrate(int Bps)
 {
 	StartingBitrate = Bps;
 }
+

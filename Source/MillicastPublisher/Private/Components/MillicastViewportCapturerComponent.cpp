@@ -2,14 +2,16 @@
 
 #include "MillicastViewportCapturerComponent.h"
 #include "MillicastPublisherPrivate.h"
-
+#include "CanvasTypes.h"
 #include <EngineModule.h>
 #include <LegacyScreenPercentageDriver.h>
 
 UMillicastViewportCapturerComponent::UMillicastViewportCapturerComponent(const FObjectInitializer& ObjectInitializer) :
 	EngineShowFlags(ESFIM_Game), ViewState(), ViewportWidget(nullptr), SceneViewport(nullptr), bIsInitialized(false)
 {
-	ViewState.Allocate(ERHIFeatureLevel::ES3_1);
+	AsyncTask(ENamedThreads::ActualRenderingThread, [this] {
+		ViewState.Allocate(ERHIFeatureLevel::ES3_1);
+		});
 
 	bWantsInitializeComponent = true;
 
@@ -122,13 +124,13 @@ void UMillicastViewportCapturerComponent::UpdateTexture()
 				if (RenderTarget->GetResource()->TextureRHI != RenderableTexture ||
 					RenderTarget->GetResource()->TextureRHI->GetSizeXYZ() != RenderableTexture->GetSizeXYZ())
 				{
-					RenderTarget->Resource->TextureRHI = (FTexture2DRHIRef&)RenderableTexture;
+					RenderTarget->GetResource()->TextureRHI = (FTexture2DRHIRef&)RenderableTexture;
 					//RP_CHANGE_BEGIN - nbabin - missing texture ref update
 					ENQUEUE_RENDER_COMMAND(FMillicastViewportCaptureViewFamily)
 						([&](FRHICommandListImmediate& RHICmdList) {
 						// ensure that the texture reference is the same as the renderable texture
 						RHIUpdateTextureReference(RenderTarget->TextureReference.TextureReferenceRHI,
-							RenderTarget->Resource->TextureRHI);
+							RenderTarget->GetResource()->TextureRHI);
 							});
 					//RP_CHANGE_END
 				}

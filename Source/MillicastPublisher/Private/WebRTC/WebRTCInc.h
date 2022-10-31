@@ -47,6 +47,8 @@ THIRD_PARTY_INCLUDES_START
 
 #include "modules/audio_device/include/audio_device.h"
 #include "modules/audio_device/audio_device_buffer.h"
+#include "modules/video_coding/codecs/vp8/include/vp8.h"
+#include "modules/video_coding/codecs/vp9/include/vp9.h"
 #include "modules/video_capture/video_capture.h"
 
 #include "pc/session_description.h"
