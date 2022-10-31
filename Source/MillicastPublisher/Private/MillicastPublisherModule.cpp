@@ -8,7 +8,6 @@
 #include "Modules/ModuleManager.h"
 #include "Styling/SlateStyle.h"
 
-#include "Media/AudioGameCapturer.h"
 #include "WebRTC/WebRTCLog.h"
 
 #if PLATFORM_WINDOWS

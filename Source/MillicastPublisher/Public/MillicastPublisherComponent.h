@@ -174,7 +174,6 @@ private:
 	/** WebRTC */
 	FWebRTCPeerConnection* PeerConnection;
 	webrtc::PeerConnectionInterface::RTCConfiguration PeerConnectionConfig;
-	TSharedPtr<webrtc::PeerConnectionInterface::BitrateParameters> Bitrates;
 
 	/** Publisher */
 	bool bIsPublishing;

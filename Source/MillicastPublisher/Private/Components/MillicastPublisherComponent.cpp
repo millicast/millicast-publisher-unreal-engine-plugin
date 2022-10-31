@@ -61,6 +61,10 @@ UMillicastPublisherComponent::UMillicastPublisherComponent(const FObjectInitiali
 	EventBroadcaster.Emplace("viewercount", MakeBroadcastEvent(OnViewerCount));
 
 	PeerConnectionConfig = FWebRTCPeerConnection::GetDefaultConfig();
+
+	MaximumBitrate = 4'000'000;
+	StartingBitrate = 2'000'000;
+	MinimumBitrate = 1'000'000;
 }
 
 UMillicastPublisherComponent::~UMillicastPublisherComponent()
@@ -274,7 +278,6 @@ bool UMillicastPublisherComponent::StartWebSocketConnection(const FString& Url,
 bool UMillicastPublisherComponent::PublishToMillicast()
 {
 	PeerConnection = FWebRTCPeerConnection::Create(PeerConnectionConfig);
-	PeerConnection->SetBitrates(Bitrates);
 
 	// Starts the capture first and add track to the peerconnection
 	// TODO: add a boolean to let choose autoplay or not

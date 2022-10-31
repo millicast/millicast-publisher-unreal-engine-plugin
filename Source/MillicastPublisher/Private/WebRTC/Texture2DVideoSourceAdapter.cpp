@@ -2,7 +2,6 @@
 
 #include "Texture2DVideoSourceAdapter.h"
 
-#include "Texture2DFrameBuffer.h"
 #include "Stats.h"
 
 #include "MillicastPublisherPrivate.h"
