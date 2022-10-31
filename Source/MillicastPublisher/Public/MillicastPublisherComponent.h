@@ -92,11 +92,25 @@ public:
 	bool IsPublishing() const;
 
 	/**
-	* Set the operating bitrates (in kilobits) for the stream.
-	* Note: This has to be called before Publish otherwise it has no effect.
+	* Set the minimum bitrate for the peerconnection
+	* Have to be called before Publish
 	*/
-	UFUNCTION(BlueprintCallable, Category = "MillicastPublisher", META = (DisplayName = "SetBitrates"))
-	void SetBitrates(int StartKbps = 1000, int MinKbps = 100, int MaxKbps = 10000);
+	UFUNCTION(BlueprintCallable, Category = "MillicastPublisher", META = (DisplayName = "SetMinimumBitrate"))
+	void SetMinimumBitrate(int Bps);
+
+	/**
+	* Set the maximum bitrate for the peerconnection
+	* Have to be called before Publish
+  */
+	UFUNCTION(BlueprintCallable, Category = "MillicastPublisher", META = (DisplayName = "SetMaximumBitrate"))
+	void SetMaximumBitrate(int Bps);
+
+	/**
+	* Set the starting bitrate for the peerconnection
+	* Have to be called before Publish
+	*/
+	UFUNCTION(BlueprintCallable, Category = "MillicastPublisher", META = (DisplayName = "SetStartingBitrate"))
+	void SetStartingBitrate(int Bps);
 
 public:
 	/** Called when the response from the Publisher api is successfull */
@@ -164,4 +178,7 @@ private:
 
 	/** Publisher */
 	bool bIsPublishing;
+	TOptional<int> MinimumBitrate; // in bps
+	TOptional<int> MaximumBitrate; // in bps
+	TOptional<int> StartingBitrate; // in bps
 };

@@ -55,13 +55,6 @@ UMillicastPublisherComponent::UMillicastPublisherComponent(const FObjectInitiali
 	WS = nullptr;
 	bIsPublishing = false;
 
-	Bitrates = MakeShared<webrtc::PeerConnectionInterface::BitrateParameters>();
-	
-	// Default bitrates
-	Bitrates->max_bitrate_bps = 2'500'000; // 2.5 megabit (this is the default in WebRTC anyway)
-	Bitrates->min_bitrate_bps = 100'000; // 100 kilobit
-	Bitrates->current_bitrate_bps = 1'000'000; // 1 megabit
-
 	// Event received from websocket signaling
 	EventBroadcaster.Emplace("active", MakeBroadcastEvent(OnActive));
 	EventBroadcaster.Emplace("inactive", MakeBroadcastEvent(OnInactive));
@@ -379,6 +372,22 @@ bool UMillicastPublisherComponent::PublishToMillicast()
 	PeerConnection->OaOptions.offer_to_receive_video = false;
 	PeerConnection->OaOptions.offer_to_receive_audio = false;
 
+	// Bitrate settings
+	webrtc::PeerConnectionInterface::BitrateParameters bitrateParameters;
+	if (MinimumBitrate.IsSet())
+	{
+		bitrateParameters.min_bitrate_bps = *MaximumBitrate;
+	}
+	if (MaximumBitrate.IsSet())
+	{
+		bitrateParameters.max_bitrate_bps = *MaximumBitrate;
+	}
+	if (StartingBitrate.IsSet())
+	{
+		bitrateParameters.current_bitrate_bps = *StartingBitrate;
+	}
+	(*PeerConnection)->SetBitrate(bitrateParameters);
+
 	// Create offer
 	UE_LOG(LogMillicastPublisher, Log, TEXT("Create offer"));
 	PeerConnection->CreateOffer();
@@ -464,17 +473,17 @@ void UMillicastPublisherComponent::SetSimulcast(webrtc::RtpTransceiverInit& Tran
 {
 	webrtc::RtpEncodingParameters params;
 	params.active = true;
-	params.max_bitrate_bps = Bitrates->max_bitrate_bps.value_or(4'000'000);
+	params.max_bitrate_bps = MaximumBitrate.Get(4'000'000);
 	params.rid = "h";
 	TransceiverInit.send_encodings.push_back(params);
 
-	params.max_bitrate_bps = Bitrates->max_bitrate_bps.value_or(4'000'000) / 2;
+	params.max_bitrate_bps = MaximumBitrate.Get(4'000'000) / 2;
 	params.active = true;
 	params.rid = "m";
 	params.scale_resolution_down_by = 2;
 	TransceiverInit.send_encodings.push_back(params);
 
-	params.max_bitrate_bps = Bitrates->max_bitrate_bps.value_or(4'000'000) / 4;
+	params.max_bitrate_bps = MaximumBitrate.Get(4'000'000) / 4;
 	params.active = true;
 	params.rid = "l";
 	params.scale_resolution_down_by = 4;
@@ -489,6 +498,19 @@ void UMillicastPublisherComponent::CaptureAndAddTracks()
 		webrtc::RtpTransceiverInit init;
 		init.direction = webrtc::RtpTransceiverDirection::kSendOnly;
 		init.stream_ids = { "unrealstream" };
+
+		webrtc::RtpEncodingParameters Encoding;
+		if (MinimumBitrate.IsSet())
+		{
+			Encoding.min_bitrate_bps = *MinimumBitrate;
+		}
+		if (MaximumBitrate.IsSet())
+		{
+			Encoding.max_bitrate_bps = *MaximumBitrate;
+		}
+		Encoding.max_framerate = 60;
+		Encoding.network_priority = webrtc::Priority::kHigh;
+		init.send_encodings.push_back(Encoding);
 
 		if (MillicastMediaSource->Simulcast)
 		{
@@ -512,9 +534,19 @@ void UMillicastPublisherComponent::CaptureAndAddTracks()
 	});
 }
 
-void UMillicastPublisherComponent::SetBitrates(int InStartKbps, int InMinKbps, int InMaxKbps)
+
+void UMillicastPublisherComponent::SetMinimumBitrate(int Bps)
 {
-	Bitrates->max_bitrate_bps = InMaxKbps * 1000;
-	Bitrates->min_bitrate_bps = InMinKbps * 1000;
-	Bitrates->current_bitrate_bps = InStartKbps * 1000;
+	MinimumBitrate = Bps;
 }
+
+void UMillicastPublisherComponent::SetMaximumBitrate(int Bps)
+{
+	MaximumBitrate = Bps;
+}
+
+void UMillicastPublisherComponent::SetStartingBitrate(int Bps)
+{
+	StartingBitrate = Bps;
+}
+
