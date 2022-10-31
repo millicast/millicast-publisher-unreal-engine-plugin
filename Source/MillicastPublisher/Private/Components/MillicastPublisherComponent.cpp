@@ -35,6 +35,20 @@ auto MakeBroadcastEvent = [](auto&& Event) {
 	};
 };
 
+FString ToString(EMillicastCodec Codec)
+{
+	switch (Codec)
+	{
+		default:
+		case EMillicastCodec::MC_VP8:
+			return TEXT("vp8");
+		case EMillicastCodec::MC_VP9:
+			return TEXT("vp9");
+		case EMillicastCodec::MC_H264:
+			return TEXT("h264");
+	}
+}
+
 UMillicastPublisherComponent::UMillicastPublisherComponent(const FObjectInitializer& ObjectInitializer) : Super(ObjectInitializer)
 {
 	PeerConnection = nullptr;
@@ -320,7 +334,7 @@ bool UMillicastPublisherComponent::PublishToMillicast()
 		auto DataJson = MakeShared<FJsonObject>();
 		DataJson->SetStringField("name", MillicastMediaSource->StreamName);
 		DataJson->SetStringField("sdp", ToString(sdp));
-		DataJson->SetStringField("codec", MillicastMediaSource->GetVideoCodec().ToLower());
+		DataJson->SetStringField("codec", ToString(SelectedCodec));
 		DataJson->SetArrayField("events", eventsJson);
 
 		// If multisource feature
@@ -435,43 +449,14 @@ void UMillicastPublisherComponent::OnMessage(const FString& Msg)
 
 		UE_LOG(LogMillicastPublisher, Log, TEXT("Received event : %s"), *eventName);
 
-		EventBroadcaster[eventName]();
+		if (EventBroadcaster.Contains(eventName))
+		{
+			EventBroadcaster[eventName]();
+		}
 	}
 	else 
 	{
 		UE_LOG(LogMillicastPublisher, Warning, TEXT("WebSocket response type not handled (yet?) %s"), *Type);
-	}
-}
-
-template<typename TransceiverType, cricket::MediaType T>
-void UMillicastPublisherComponent::SetCodecPreference(TransceiverType Transceiver)
-{
-	auto senderCapabilities = FWebRTCPeerConnection::GetPeerConnectionFactory()->GetRtpSenderCapabilities(T);
-
-	std::vector<webrtc::RtpCodecCapability> codecs;
-	auto predicate = [this](const auto& c) -> bool
-	{
-		if constexpr (T == cricket::MediaType::MEDIA_TYPE_VIDEO) {
-			return (c.name.c_str() == MillicastMediaSource->GetVideoCodec() || c.name == cricket::kRtxCodecName || c.name == cricket::kUlpfecCodecName || c.name == cricket::kRedCodecName);
-		}
-		else {
-			return c.name.c_str() == MillicastMediaSource->GetAudioCodec();
-		}
-	};
-
-	std::copy_if(senderCapabilities.codecs.begin(), senderCapabilities.codecs.end(),
-		std::back_inserter(codecs), predicate);
-
-	if (codecs.empty())
-	{
-		UE_LOG(LogMillicastPublisher, Warning, TEXT("Could not find specified codec"));
-		return;
-	}
-
-	auto err = Transceiver->SetCodecPreferences(codecs);
-	if (!err.ok())
-	{
-		UE_LOG(LogMillicastPublisher, Error, TEXT("%s"), err.message());
 	}
 }
 
@@ -516,10 +501,6 @@ void UMillicastPublisherComponent::CaptureAndAddTracks()
 		{
 			UE_LOG(LogMillicastPublisher, Log, TEXT("Add transceiver for %s track : %s"), 
 				Track->kind().c_str(), Track->id().c_str());
-
-			auto transceiver = result.value();
-			SetCodecPreference<decltype(transceiver), cricket::MediaType::MEDIA_TYPE_VIDEO>(transceiver);
-			SetCodecPreference<decltype(transceiver), cricket::MediaType::MEDIA_TYPE_AUDIO>(transceiver);
 		}
 		else
 		{

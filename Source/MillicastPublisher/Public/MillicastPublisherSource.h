@@ -59,10 +59,6 @@ public:
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = Video, AssetRegistrySearchable)
 	UTextureRenderTarget2D* RenderTarget = nullptr;
 
-	/** Video Codecs */
-	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = Video, AssetRegistrySearchable)
-	TEnumAsByte<EMillicastVideoCodecs> VideoCodec;
-
 	/** Whether to enable simulcast */
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = Video, AssetRegistrySearchable)
 	bool Simulcast = false;
@@ -125,10 +121,6 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "MillicastPublisher", META = (DisplayName = "SetVolumeMultiplier"))
 	void SetVolumeMultiplier(float f);
 
-	/** Get the selected video codec */
-	UFUNCTION(BlueprintCallable, Category = "MillicastPublisher", META = (DisplayName = "GetVideoCodec"))
-	FString GetVideoCodec() const;
-
 	/** Get the selected audio codec */
 	UFUNCTION(BlueprintCallable, Category = "MillicastPublisher", META = (DisplayName = "GetAudioCodec"))
 	FString GetAudioCodec() const;
@@ -170,7 +162,6 @@ public:
 	void StopCapture();
 
 private:
-	bool IsCodecSupported(EMillicastVideoCodecs Selection);
 	bool IsCodecSupported(EMillicastAudioCodecs Selection);
 
 private:
