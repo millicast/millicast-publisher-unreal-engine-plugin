@@ -259,7 +259,7 @@ bool UMillicastPublisherComponent::StartWebSocketConnection(const FString& Url,
 	const FString PluginVersion = Plugin ? Plugin->GetDescriptor().VersionName : "Unknown";
 
 	const TMap<FString, FString> Headers {
-		{"user-agent", FString::Printf(TEXT("MillicastPublisher/%s/%s"), *OSName, *PluginVersion)}
+		{"user-agent", FString::Printf(TEXT("MillicastPublisherUE5/%s/%s"), *OSName, *PluginVersion)}
 	};
 
 	WS = FWebSocketsModule::Get().CreateWebSocket(Url + "?token=" + Jwt, FString(), Headers);
