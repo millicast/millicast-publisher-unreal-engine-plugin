@@ -158,9 +158,6 @@ private:
 	void ParseDirectorResponse(TSharedPtr<IHttpResponse, ESPMode::ThreadSafe> Response);
 	void SetupIceServersFromJson(TArray<TSharedPtr<FJsonValue>> IceServersField);
 
-	template<typename TransceiverType, cricket::MediaType T>
-	void SetCodecPreference(TransceiverType Transceiver);
-
 	void SetSimulcast(webrtc::RtpTransceiverInit& TransceiverInit);
 
 private:
