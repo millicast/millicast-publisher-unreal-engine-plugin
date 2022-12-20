@@ -69,13 +69,13 @@ void UMillicastViewportCapturerComponent::InitializeComponent()
 	ViewportWidget->SetViewportInterface(SceneViewport.ToSharedRef());
 
 	// Create Renderable texture
-	FRHIResourceCreateInfo CreateInfo(TEXT("CreateINfo"), FClearValueBinding(FLinearColor(0.0f, 0.0f, 0.0f)));
+	FRHITextureCreateDesc CreateDesc = FRHITextureCreateDesc::Create2D(TEXT("MillicastTexture2d"),
+		TargetSize.X, TargetSize.Y, EPixelFormat::PF_B8G8R8A8);
 
-	FTexture2DRHIRef ReferenceTexture = RHICreateTexture2D(TargetSize.X, TargetSize.Y, EPixelFormat::PF_B8G8R8A8, 1,
-		1, TexCreate_CPUReadback, CreateInfo);
+	CreateDesc.SetFlags(TexCreate_RenderTargetable | TexCreate_Dynamic);
+	CreateDesc.SetClearValue(FClearValueBinding(FLinearColor(0.0f, 0.0f, 0.0f)));
 
-	RHICreateTargetableShaderResource2D(TargetSize.X, TargetSize.Y, EPixelFormat::PF_B8G8R8A8, 1, TexCreate_Dynamic,
-		TexCreate_RenderTargetable, false, CreateInfo, RenderableTexture, ReferenceTexture);
+	RenderableTexture = RHICreateTexture(CreateDesc);
 
 	if (IsActive())
 	{

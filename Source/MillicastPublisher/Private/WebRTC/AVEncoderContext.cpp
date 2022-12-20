@@ -36,7 +36,7 @@ void FAVEncoderContext::DeleteBackBuffers()
 
 bool FAVEncoderContext::IsFixedResolution() const
 {
-	return bFixedResolution;
+	return false;
 }
 
 int FAVEncoderContext::GetCaptureWidth() const
@@ -56,12 +56,6 @@ TSharedPtr<AVEncoder::FVideoEncoderInput> FAVEncoderContext::GetVideoEncoderInpu
 
 void FAVEncoderContext::SetCaptureResolution(int NewCaptureWidth, int NewCaptureHeight)
 {
-	// Don't change resolution if we are in a fixed resolution capturer or the user has indicated they do not want this behaviour.
-	if (bFixedResolution)
-	{
-		return;
-	}
-
 	// Check is requested resolution is same as current resolution, if so, do nothing.
 	if (CaptureWidth == NewCaptureWidth && CaptureHeight == NewCaptureHeight)
 	{
@@ -74,7 +68,7 @@ void FAVEncoderContext::SetCaptureResolution(int NewCaptureWidth, int NewCapture
 	CaptureWidth = NewCaptureWidth;
 	CaptureHeight = NewCaptureHeight;
 
-	VideoEncoderInput->SetResolution(CaptureWidth, CaptureHeight);
+	// VideoEncoderInput->SetCaptureResolution(CaptureWidth, CaptureHeight);
 
 	// Flushes available frames only, active frames still get a chance to go through the pipeline and be naturally removed from the backbuffers.
 	VideoEncoderInput->Flush();
@@ -89,22 +83,22 @@ TSharedPtr<AVEncoder::FVideoEncoderInput> FAVEncoderContext::CreateVideoEncoderI
 	}
 
 	FString RHIName = GDynamicRHI->GetName();
-	bool bIsResizable = !bInFixedResolution;
+	bool bIsResizable = true;
 
 	if (RHIName == TEXT("Vulkan"))
 	{
 		if (IsRHIDeviceAMD())
 		{
-			FVulkanDynamicRHI* DynamicRHI = static_cast<FVulkanDynamicRHI*>(GDynamicRHI);
-			AVEncoder::FVulkanDataStruct VulkanData = { DynamicRHI->GetInstance(), DynamicRHI->GetDevice()->GetPhysicalHandle(), DynamicRHI->GetDevice()->GetInstanceHandle() };
+			IVulkanDynamicRHI* DynamicRHI = GetDynamicRHI<IVulkanDynamicRHI>();
+			AVEncoder::FVulkanDataStruct VulkanData = { DynamicRHI->RHIGetVkInstance(), DynamicRHI->RHIGetVkPhysicalDevice(), DynamicRHI->RHIGetVkDevice() };
 
-			return AVEncoder::FVideoEncoderInput::CreateForVulkan(&VulkanData, InWidth, InHeight, bIsResizable);
+			return AVEncoder::FVideoEncoderInput::CreateForVulkan(&VulkanData, bIsResizable);
 		}
 		else if (IsRHIDeviceNVIDIA())
 		{
 			if (FModuleManager::Get().IsModuleLoaded("CUDA"))
 			{
-				return AVEncoder::FVideoEncoderInput::CreateForCUDA(FModuleManager::GetModuleChecked<FCUDAModule>("CUDA").GetCudaContext(), InWidth, InHeight, bIsResizable);
+				return AVEncoder::FVideoEncoderInput::CreateForCUDA(FModuleManager::GetModuleChecked<FCUDAModule>("CUDA").GetCudaContext(), bIsResizable);
 			}
 			else
 			{
@@ -116,11 +110,11 @@ TSharedPtr<AVEncoder::FVideoEncoderInput> FAVEncoderContext::CreateVideoEncoderI
 #if PLATFORM_WINDOWS
 	else if (RHIName == TEXT("D3D11"))
 	{
-		return AVEncoder::FVideoEncoderInput::CreateForD3D11(GDynamicRHI->RHIGetNativeDevice(), InWidth, InHeight, bIsResizable, IsRHIDeviceAMD());
+		return AVEncoder::FVideoEncoderInput::CreateForD3D11(GDynamicRHI->RHIGetNativeDevice(), bIsResizable, IsRHIDeviceAMD());
 	}
 	else if (RHIName == TEXT("D3D12"))
 	{
-		return AVEncoder::FVideoEncoderInput::CreateForD3D12(GDynamicRHI->RHIGetNativeDevice(), InWidth, InHeight, bIsResizable, IsRHIDeviceNVIDIA());
+		return AVEncoder::FVideoEncoderInput::CreateForD3D12(GDynamicRHI->RHIGetNativeDevice(), bIsResizable, IsRHIDeviceNVIDIA());
 	}
 #endif
 
@@ -129,34 +123,53 @@ TSharedPtr<AVEncoder::FVideoEncoderInput> FAVEncoderContext::CreateVideoEncoderI
 }
 
 #if PLATFORM_WINDOWS
-FTexture2DRHIRef FAVEncoderContext::SetBackbufferTextureDX11(AVEncoder::FVideoEncoderInputFrame* InputFrame)
+FTexture2DRHIRef FAVEncoderContext::SetBackbufferTextureDX11(TSharedPtr<AVEncoder::FVideoEncoderInputFrame> InputFrame)
 {
-	FRHIResourceCreateInfo CreateInfo(TEXT("VideoCapturerBackBuffer"));
-	FTexture2DRHIRef Texture = GDynamicRHI->RHICreateTexture2D(CaptureWidth, CaptureHeight, EPixelFormat::PF_B8G8R8A8, 1, 1, TexCreate_Shared | TexCreate_RenderTargetable, ERHIAccess::CopyDest, CreateInfo);
-	InputFrame->SetTexture((ID3D11Texture2D*)Texture->GetNativeResource(), [this, InputFrame](ID3D11Texture2D* NativeTexture) { BackBuffers.Remove(InputFrame); });
-	BackBuffers.Add(InputFrame, Texture);
+	// FRHIResourceCreateInfo CreateInfo(TEXT("VideoCapturerBackBuffer"));
+	// FTexture2DRHIRef Texture = GDynamicRHI->RHICreateTexture2D(CaptureWidth, CaptureHeight, EPixelFormat::PF_B8G8R8A8, 1, 1, TexCreate_Shared | TexCreate_RenderTargetable, ERHIAccess::CopyDest, CreateInfo);
+
+	FRHITextureCreateDesc CreateDesc = FRHITextureCreateDesc::Create2D(TEXT("VideoCapturerBackBuffer"),
+		CaptureWidth, CaptureHeight, EPixelFormat::PF_B8G8R8A8);
+
+	CreateDesc.SetFlags(TexCreate_Shared | TexCreate_RenderTargetable);
+	CreateDesc.SetInitialState(ERHIAccess::CopyDest);
+
+	FTexture2DRHIRef Texture = GDynamicRHI->RHICreateTexture(CreateDesc);
+
+	InputFrame->SetTexture((ID3D11Texture2D*)Texture->GetNativeResource(), [this, InputFrame](ID3D11Texture2D* NativeTexture) { BackBuffers.Remove(InputFrame.Get()); });
+	BackBuffers.Add(InputFrame.Get(), Texture);
 	return Texture;
 }
 
-FTexture2DRHIRef FAVEncoderContext::SetBackbufferTextureDX12(AVEncoder::FVideoEncoderInputFrame* InputFrame)
+FTexture2DRHIRef FAVEncoderContext::SetBackbufferTextureDX12(TSharedPtr<AVEncoder::FVideoEncoderInputFrame> InputFrame)
 {
-	FRHIResourceCreateInfo CreateInfo(TEXT("VideoCapturerBackBuffer"));
-	FTexture2DRHIRef Texture = GDynamicRHI->RHICreateTexture2D(CaptureWidth, CaptureHeight, EPixelFormat::PF_B8G8R8A8, 1, 1, TexCreate_Shared | TexCreate_RenderTargetable, ERHIAccess::CopyDest, CreateInfo);
-	InputFrame->SetTexture((ID3D12Resource*)Texture->GetNativeResource(), [this, InputFrame](ID3D12Resource* NativeTexture) { BackBuffers.Remove(InputFrame); });
-	BackBuffers.Add(InputFrame, Texture);
+	FRHITextureCreateDesc CreateDesc = FRHITextureCreateDesc::Create2D(TEXT("VideoCapturerBackBuffer"),
+		CaptureWidth, CaptureHeight, EPixelFormat::PF_B8G8R8A8);
+
+	CreateDesc.SetFlags(TexCreate_Shared | TexCreate_RenderTargetable);
+	CreateDesc.SetInitialState(ERHIAccess::CopyDest);
+
+	FTexture2DRHIRef Texture = GDynamicRHI->RHICreateTexture(CreateDesc);
+
+	InputFrame->SetTexture((ID3D12Resource*)Texture->GetNativeResource(), [this, InputFrame](ID3D12Resource* NativeTexture) { BackBuffers.Remove(InputFrame.Get()); });
+	BackBuffers.Add(InputFrame.Get(), Texture);
 	return Texture;
 }
 #endif // PLATFORM_WINDOWS
 
-FTexture2DRHIRef FAVEncoderContext::SetBackbufferTexturePureVulkan(AVEncoder::FVideoEncoderInputFrame* InputFrame)
+FTexture2DRHIRef FAVEncoderContext::SetBackbufferTexturePureVulkan(TSharedPtr<AVEncoder::FVideoEncoderInputFrame> InputFrame)
 {
-	FRHIResourceCreateInfo CreateInfo(TEXT("VideoCapturerBackBuffer"));
-	FTexture2DRHIRef Texture =
-		GDynamicRHI->RHICreateTexture2D(CaptureWidth, CaptureHeight, EPixelFormat::PF_B8G8R8A8, 1, 1, TexCreate_Shared | TexCreate_RenderTargetable | TexCreate_UAV, ERHIAccess::Present, CreateInfo);
+	FRHITextureCreateDesc CreateDesc = FRHITextureCreateDesc::Create2D(TEXT("VideoCapturerBackBuffer"),
+		CaptureWidth, CaptureHeight, EPixelFormat::PF_B8G8R8A8);
 
-	FVulkanTexture2D* VulkanTexture = static_cast<FVulkanTexture2D*>(Texture.GetReference());
-	InputFrame->SetTexture(VulkanTexture->Surface.Image, [this, InputFrame](VkImage NativeTexture) { BackBuffers.Remove(InputFrame); });
-	BackBuffers.Add(InputFrame, Texture);
+	CreateDesc.SetFlags(TexCreate_Shared | TexCreate_RenderTargetable | TexCreate_UAV);
+	CreateDesc.SetInitialState(ERHIAccess::Present);
+
+	FTexture2DRHIRef Texture = GDynamicRHI->RHICreateTexture(CreateDesc);
+
+	FVulkanTexture* VulkanTexture = static_cast<FVulkanTexture*>(Texture.GetReference());
+	InputFrame->SetTexture(VulkanTexture->Image, [this, InputFrame](VkImage NativeTexture) { BackBuffers.Remove(InputFrame.Get()); });
+	BackBuffers.Add(InputFrame.Get(), Texture);
 	return Texture;
 }
 
@@ -170,7 +183,7 @@ FAVEncoderContext::FCapturerInput FAVEncoderContext::ObtainCapturerInput()
 
 	// Obtain a frame from video encoder input, we use this frame to store an RHI specific texture.
 	// Note: obtain frame will recycle frames when they are no longer being used and become "available".
-	AVEncoder::FVideoEncoderInputFrame* InputFrame = VideoEncoderInput->ObtainInputFrame();
+	TSharedPtr<AVEncoder::FVideoEncoderInputFrame> InputFrame = VideoEncoderInput->ObtainInputFrame();
 
 	if (InputFrame == nullptr)
 	{
@@ -178,9 +191,9 @@ FAVEncoderContext::FCapturerInput FAVEncoderContext::ObtainCapturerInput()
 	}
 
 	// Back buffer already contains a texture for this particular frame, no need to go and make one.
-	if (BackBuffers.Contains(InputFrame))
+	if (BackBuffers.Contains(InputFrame.Get()))
 	{
-		return FAVEncoderContext::FCapturerInput(InputFrame, BackBuffers[InputFrame]);
+		return FAVEncoderContext::FCapturerInput(InputFrame, BackBuffers[InputFrame.Get()]);
 	}
 
 	// Got here, backbuffer does not contain this frame/texture already, so we must create a new platform specific texture.
@@ -226,12 +239,20 @@ FAVEncoderContext::FCapturerInput FAVEncoderContext::ObtainCapturerInput()
 	return FAVEncoderContext::FCapturerInput(InputFrame, OutTexture);
 }
 
-FTexture2DRHIRef FAVEncoderContext::SetBackbufferTextureCUDAVulkan(AVEncoder::FVideoEncoderInputFrame* InputFrame)
+FTexture2DRHIRef FAVEncoderContext::SetBackbufferTextureCUDAVulkan(TSharedPtr<AVEncoder::FVideoEncoderInputFrame> InputFrame)
 {
 	// Create a texture that can be exposed to external memory
-	FRHIResourceCreateInfo CreateInfo(TEXT("VideoCapturerBackBuffer"));
-	FTexture2DRHIRef Texture = GDynamicRHI->RHICreateTexture2D(CaptureWidth, CaptureHeight, EPixelFormat::PF_B8G8R8A8, 1, 1, TexCreate_Shared | TexCreate_RenderTargetable | TexCreate_UAV, ERHIAccess::Present, CreateInfo);
-	FVulkanTexture2D* VulkanTexture = static_cast<FVulkanTexture2D*>(Texture.GetReference());
+	FRHITextureCreateDesc CreateDesc = FRHITextureCreateDesc::Create2D(TEXT("VideoCapturerBackBuffer"),
+		CaptureWidth, CaptureHeight, EPixelFormat::PF_B8G8R8A8);
+
+	CreateDesc.SetFlags(TexCreate_Shared | TexCreate_RenderTargetable | TexCreate_UAV);
+	CreateDesc.SetInitialState(ERHIAccess::Present);
+
+	FTexture2DRHIRef Texture = GDynamicRHI->RHICreateTexture(CreateDesc);
+
+	FVulkanTexture* VulkanTexture = static_cast<FVulkanTexture*>(Texture.GetReference());
+
+
 	VkDevice Device = static_cast<FVulkanDynamicRHI*>(GDynamicRHI)->GetDevice()->GetInstanceHandle();
 
 #if PLATFORM_WINDOWS
@@ -246,7 +267,7 @@ FTexture2DRHIRef FAVEncoderContext::SetBackbufferTextureCUDAVulkan(AVEncoder::FV
 		VkMemoryGetWin32HandleInfoKHR MemoryGetHandleInfoKHR = {};
 		MemoryGetHandleInfoKHR.sType = VK_STRUCTURE_TYPE_MEMORY_GET_WIN32_HANDLE_INFO_KHR;
 		MemoryGetHandleInfoKHR.pNext = NULL;
-		MemoryGetHandleInfoKHR.memory = VulkanTexture->Surface.GetAllocationHandle();
+		MemoryGetHandleInfoKHR.memory = VulkanTexture->GetAllocationHandle();
 		MemoryGetHandleInfoKHR.handleType = bUseNTHandle ? VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_WIN32_BIT : VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_WIN32_KMT_BIT;
 
 		// While this operation is safe (and unavoidable) C4191 has been enabled and this will trigger an error with warnings as errors
@@ -267,7 +288,7 @@ FTexture2DRHIRef FAVEncoderContext::SetBackbufferTextureCUDAVulkan(AVEncoder::FV
 		CudaExtMemHandleDesc.type = bUseNTHandle ? CU_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_WIN32 : CU_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_WIN32_KMT;
 		CudaExtMemHandleDesc.handle.win32.name = NULL;
 		CudaExtMemHandleDesc.handle.win32.handle = Handle;
-		CudaExtMemHandleDesc.size = VulkanTexture->Surface.GetAllocationOffset() + VulkanTexture->Surface.GetMemorySize();
+		CudaExtMemHandleDesc.size = VulkanTexture->GetAllocationOffset() + VulkanTexture->GetMemorySize();
 
 		// import external memory
 		CUresult Result = FCUDAModule::CUDA().cuImportExternalMemory(&mappedExternalMemory, &CudaExtMemHandleDesc);
@@ -328,7 +349,7 @@ FTexture2DRHIRef FAVEncoderContext::SetBackbufferTextureCUDAVulkan(AVEncoder::FV
 	{
 		CUDA_EXTERNAL_MEMORY_MIPMAPPED_ARRAY_DESC mipmapDesc = {};
 		mipmapDesc.numLevels = 1;
-		mipmapDesc.offset = VulkanTexture->Surface.GetAllocationOffset();
+		mipmapDesc.offset = VulkanTexture->GetAllocationOffset();
 		mipmapDesc.arrayDesc.Width = Texture->GetSizeX();
 		mipmapDesc.arrayDesc.Height = Texture->GetSizeY();
 		mipmapDesc.arrayDesc.Depth = 0;
@@ -387,9 +408,9 @@ FTexture2DRHIRef FAVEncoderContext::SetBackbufferTextureCUDAVulkan(AVEncoder::FV
 		FCUDAModule::CUDA().cuCtxPopCurrent(NULL);
 
 		// finally remove the input frame
-		BackBuffers.Remove(InputFrame);
+		BackBuffers.Remove(InputFrame.Get());
 	});
 
-	BackBuffers.Add(InputFrame, Texture);
+	BackBuffers.Add(InputFrame.Get(), Texture);
 	return Texture;
 }

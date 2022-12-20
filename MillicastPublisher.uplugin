@@ -21,14 +21,14 @@
 			"Type": "Runtime",
 			"LoadingPhase": "PreLoadingScreen",
 			"WhitelistPlatforms": [ "Win64", "Linux" ],
-			"EngineVersion": "5.0"
+			"EngineVersion": "5.1"
 		},
 		{
 			"Name": "MillicastPublisherEditor",
 			"Type": "Editor",
 			"LoadingPhase": "PostEngineInit",
 			"WhitelistPlatforms": [ "Win64", "Linux" ],
-			"EngineVersion": "5.0"
+			"EngineVersion": "5.1"
 		}
 	],
 	"Plugins": [

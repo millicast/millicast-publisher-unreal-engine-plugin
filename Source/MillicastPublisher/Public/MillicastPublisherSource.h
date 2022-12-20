@@ -81,7 +81,7 @@ public:
 
 	/** Capture device index  */
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = Audio, AssetRegistrySearchable)
-	int32 CaptureDeviceIndex UMETA(ArrayClamp = "CaptureDevicesName");
+	int32 CaptureDeviceIndex; // UMETA(ArrayClamp = "CaptureDevicesName");
 
 	/** Apply a volume multiplier for the recorded data in dB */
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = Audio, AssetRegistrySearchable)

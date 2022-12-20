@@ -223,7 +223,7 @@ bool UMillicastPublisherComponent::Publish()
 		}
 		else 
 		{
-			UE_LOG(LogMillicastPublisher, Error, TEXT("Director HTTP request failed %d %S"), Response->GetResponseCode(), *Response->GetContentType());
+			UE_LOG(LogMillicastPublisher, Error, TEXT("Director HTTP request failed %d %s"), Response->GetResponseCode(), *Response->GetContentType());
 			FString ErrorMsg = Response->GetContentAsString();
 			OnAuthenticationFailure.Broadcast(Response->GetResponseCode(), ErrorMsg);
 		}
@@ -436,7 +436,7 @@ bool UMillicastPublisherComponent::PublishToMillicast()
 	PeerConnection->OaOptions.offer_to_receive_audio = false;
 
 	// Bitrate settings
-	webrtc::PeerConnectionInterface::BitrateParameters bitrateParameters;
+	webrtc::BitrateSettings bitrateParameters;
 	if (MinimumBitrate.IsSet())
 	{
 		bitrateParameters.min_bitrate_bps = *MinimumBitrate;
@@ -447,7 +447,7 @@ bool UMillicastPublisherComponent::PublishToMillicast()
 	}
 	if (StartingBitrate.IsSet())
 	{
-		bitrateParameters.current_bitrate_bps = *StartingBitrate;
+		bitrateParameters.start_bitrate_bps = *StartingBitrate;
 	}
 	(*PeerConnection)->SetBitrate(bitrateParameters);
 
@@ -509,6 +509,7 @@ void UMillicastPublisherComponent::OnMessage(const FString& Msg)
 		FScopeLock Lock(&CriticalSection);
 		if (PeerConnection) 
 		{
+			Sdp += FString(TEXT("a=x-google-flag:conference\r\n"));
 			PeerConnection->SetRemoteDescription(to_string(Sdp));
 			PeerConnection->ServerId = MoveTemp(ServerId);
 			PeerConnection->ClusterId = MoveTemp(ClusterId);

@@ -35,7 +35,7 @@ class FWebRTCPeerConnection : public webrtc::PeerConnectionObserver
 	TUniquePtr<FSetSessionDescriptionObserver>    RemoteSessionDescription;
 	TUniquePtr<class FRTCStatsCollector>          RTCStatsCollector;
 
-	TSharedPtr<webrtc::PeerConnectionInterface::BitrateParameters> Bitrates;
+	TSharedPtr<webrtc::BitrateSettings> Bitrates;
 
 	template<typename Callback>
 	webrtc::SessionDescriptionInterface* CreateDescription(const std::string&,
@@ -114,7 +114,7 @@ public:
 		return PeerConnection.get();
 	}
 
-	void SetBitrates(TSharedPtr<webrtc::PeerConnectionInterface::BitrateParameters> InBitrates);
+	void SetBitrates(TSharedPtr<webrtc::BitrateSettings> InBitrates);
 
 	/* Give a session description ensure we are setting the our operating bitrates for video. */
 	void ApplyBitrates(cricket::SessionDescription* Sdp);

@@ -7,6 +7,7 @@
 #include "Interfaces/IPluginManager.h"
 #include "Modules/ModuleManager.h"
 #include "Styling/SlateStyle.h"
+#include "WebRTC/WebRTCInc.h"
 
 #include "WebRTC/WebRTCLog.h"
 
@@ -36,6 +37,8 @@ public:
 	//~ IModuleInterface interface
 	virtual void StartupModule() override
 	{
+		rtc::InitializeSSL();
+
 #if PLATFORM_WINDOWS
 		WasapiDeviceCapturer::ColdInit();
 #endif
@@ -46,6 +49,8 @@ public:
 
 	virtual void ShutdownModule() override 
 	{
+		rtc::CleanupSSL();
+
 #if PLATFORM_WINDOWS
 		WasapiDeviceCapturer::ColdExit();
 #endif
