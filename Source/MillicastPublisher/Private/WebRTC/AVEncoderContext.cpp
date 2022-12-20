@@ -316,7 +316,7 @@ FTexture2DRHIRef FAVEncoderContext::SetBackbufferTextureCUDAVulkan(AVEncoder::FV
 		CUresult Result = FCUDAModule::CUDA().cuImportExternalMemory(&mappedExternalMemory, &CudaExtMemHandleDesc);
 		if (Result != CUDA_SUCCESS)
 		{
-			UE_LOG(LogPixelStreaming, Error, TEXT("Failed to import external memory from vulkan error: %d"), Result);
+			UE_LOG(LogMillicastPublisher, Error, TEXT("Failed to import external memory from vulkan error: %d"), Result);
 		}
 	}
 
