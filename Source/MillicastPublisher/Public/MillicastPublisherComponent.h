@@ -26,7 +26,7 @@ DECLARE_DYNAMIC_MULTICAST_SPARSE_DELEGATE_OneParam(FMillicastPublisherComponentP
 
 DECLARE_DYNAMIC_MULTICAST_SPARSE_DELEGATE(FMillicastPublisherComponentActive, UMillicastPublisherComponent, OnActive);
 DECLARE_DYNAMIC_MULTICAST_SPARSE_DELEGATE(FMillicastPublisherComponentInactive, UMillicastPublisherComponent, OnInactive);
-DECLARE_DYNAMIC_MULTICAST_SPARSE_DELEGATE(FMillicastPublisherComponentViewerCount, UMillicastPublisherComponent, OnViewerCount);
+DECLARE_DYNAMIC_MULTICAST_SPARSE_DELEGATE_OneParam(FMillicastPublisherComponentViewerCount, UMillicastPublisherComponent, OnViewerCount, int, Count);
 
 UENUM()
 enum class EMillicastCodec : uint8
@@ -46,7 +46,7 @@ class MILLICASTPUBLISHER_API UMillicastPublisherComponent : public UActorCompone
 	GENERATED_UCLASS_BODY()
 
 private:
-	TMap <FString, TFunction<void()>> EventBroadcaster;
+	TMap <FString, TFunction<void(TSharedPtr<FJsonObject>)>> EventBroadcaster;
 
 	/** The Millicast Media Source representing the configuration of the network source */
 	UPROPERTY(EditDefaultsOnly, Category = "Properties",
@@ -157,6 +157,10 @@ private:
 
 	void ParseDirectorResponse(TSharedPtr<IHttpResponse, ESPMode::ThreadSafe> Response);
 	void SetupIceServersFromJson(TArray<TSharedPtr<FJsonValue>> IceServersField);
+
+	void ParseActiveEvent(TSharedPtr<FJsonObject> JsonMsg);
+	void ParseInactiveEvent(TSharedPtr<FJsonObject> JsonMsg);
+	void ParseViewerCountEvent(TSharedPtr<FJsonObject> JsonMsg);
 
 	void SetSimulcast(webrtc::RtpTransceiverInit& TransceiverInit);
 
