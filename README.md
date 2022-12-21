@@ -1,10 +1,21 @@
 # MillicastPublisher plugin for Unreal Engine 5.0
 
-* Supported UE version >= 5.0.0,  <= 5.0.3
 * Supported on Windows and Linux
 
 This plugin enable to publish game audio and video content to Millicast.
 You can configure your credentials and configure your game logic using unreal object, capture and publish from virtual camera.
+
+## Supported Unreal Engine
+
+The Unreal publisher supports Unreal engine 4.27, 5.0.3 and 5.1.
+In order to get the plugin corresponding to your unreal version,
+you must change use the right github branch.
+The naming pattern follows : UEX.Y where X is the major unreal version and Y the minor.
+
+* [Unreal 4.27 ](https://github.com/millicast/millicast-publisher-unreal-engine-plugin/tree/UE4.27)
+* [Unreal 5.1](https://github.com/millicast/millicast-publisher-unreal-engine-plugin/tree/UE5.1)
+
+The main is currently for UE5.0.3.
 
 ## Installation
 
