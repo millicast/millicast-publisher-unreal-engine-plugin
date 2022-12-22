@@ -15,7 +15,40 @@ UMillicastViewportCapturerComponent::UMillicastViewportCapturerComponent(const F
 
 	bWantsInitializeComponent = true;
 
-	PrimaryComponentTick.bCanEverTick = false;
+	this->PrimaryComponentTick.bAllowTickOnDedicatedServer = false;
+	this->PrimaryComponentTick.bCanEverTick = true;
+	this->PrimaryComponentTick.bHighPriority = true;
+	this->PrimaryComponentTick.bRunOnAnyThread = false;
+	this->PrimaryComponentTick.bStartWithTickEnabled = true;
+	this->PrimaryComponentTick.bTickEvenWhenPaused = true;
+
+	this->bWantsInitializeComponent = true;
+
+	// this->PostProcessSettings.ReflectionsType = EReflectionsType::ScreenSpace;
+	this->PostProcessSettings.ScreenSpaceReflectionIntensity = 90.0f;
+	this->PostProcessSettings.ScreenSpaceReflectionMaxRoughness = 0.85f;
+	this->PostProcessSettings.ScreenSpaceReflectionQuality = 100.0f;
+
+	// this->PostProcessSettings.bOverride_ReflectionsType = true;
+	this->PostProcessSettings.bOverride_ScreenSpaceReflectionIntensity = true;
+	this->PostProcessSettings.bOverride_ScreenSpaceReflectionMaxRoughness = true;
+	this->PostProcessSettings.bOverride_ScreenSpaceReflectionQuality = true;
+
+	this->PostProcessSettings.MotionBlurAmount = 0.0f;
+	this->PostProcessSettings.MotionBlurPerObjectSize = 0.35;
+	this->PostProcessSettings.MotionBlurTargetFPS = 60.0f;
+	this->PostProcessSettings.MotionBlurMax = 5.0f;
+
+	this->PostProcessSettings.bOverride_MotionBlurAmount = true;
+	this->PostProcessSettings.bOverride_MotionBlurMax = true;
+	this->PostProcessSettings.bOverride_MotionBlurPerObjectSize = true;
+	this->PostProcessSettings.bOverride_MotionBlurTargetFPS = true;
+
+	// this->PostProcessSettings.ScreenPercentage = 100.0f;
+	// this->PostProcessSettings.bOverride_ScreenPercentage = true;
+
+	this->ViewportWidget = nullptr;
+	this->SceneViewport = nullptr;
 }
 
 void UMillicastViewportCapturerComponent::InitializeComponent()
@@ -24,13 +57,13 @@ void UMillicastViewportCapturerComponent::InitializeComponent()
 
 	// Create viewport widget with gamma correction
 	ViewportWidget = SNew(SViewport)
-		.RenderDirectlyToWindow(true)
+		.RenderDirectlyToWindow(false)
 		.IsEnabled(true)
 		.EnableGammaCorrection(true)
 		.EnableBlending(true)
-		.EnableStereoRendering(true)
+		.EnableStereoRendering(false)
 		.ForceVolatile(true)
-		.IgnoreTextureAlpha(false);
+		.IgnoreTextureAlpha(true);
 
 	SceneViewport = MakeShareable(new FSceneViewport(this, ViewportWidget));
 	ViewportWidget->SetViewportInterface(SceneViewport.ToSharedRef());
@@ -154,8 +187,8 @@ void UMillicastViewportCapturerComponent::SetupView()
 		EngineShowFlags.SetSeparateTranslucency(true);
 		EngineShowFlags.SetScreenPercentage(true);
 		EngineShowFlags.SetTemporalAA(true);
-		EngineShowFlags.SetScreenSpaceAO(false);
-		EngineShowFlags.SetScreenSpaceReflections(false);
+		EngineShowFlags.SetScreenSpaceAO(true);
+		EngineShowFlags.SetScreenSpaceReflections(true);
 
 		// Construct the ViewFamily we need to render
 		ViewFamily = new FSceneViewFamilyContext(FSceneViewFamily::ConstructionValues(this, GetScene(), EngineShowFlags)
@@ -165,13 +198,13 @@ void UMillicastViewportCapturerComponent::SetupView()
 		// Update the ViewFamily with the properties we want to see in the capture
 		ViewFamily->ViewMode = VMI_Lit;
 		ViewFamily->EngineShowFlags = EngineShowFlags;
-		ViewFamily->EngineShowFlags.ScreenSpaceReflections = false;
-		ViewFamily->EngineShowFlags.ReflectionEnvironment = false;
+		ViewFamily->EngineShowFlags.ScreenSpaceReflections = true;
+		ViewFamily->EngineShowFlags.ReflectionEnvironment = true;
 		ViewFamily->SceneCaptureCompositeMode = SCCM_Additive;
 		ViewFamily->Scene = GetScene();
 		ViewFamily->bIsHDR = false;
 		ViewFamily->bDeferClear = true;
-		ViewFamily->bRealtimeUpdate = false;
+		ViewFamily->bRealtimeUpdate = true;
 		ViewFamily->bResolveScene = true;
 		ViewFamily->SceneCaptureSource = SCS_FinalColorLDR;
 
