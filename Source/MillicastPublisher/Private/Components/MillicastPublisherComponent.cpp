@@ -550,15 +550,69 @@ void UMillicastPublisherComponent::CaptureAndAddTracks()
 void UMillicastPublisherComponent::SetMinimumBitrate(int Bps)
 {
 	MinimumBitrate = Bps;
+
+	if (PeerConnection)
+	{
+		webrtc::PeerConnectionInterface::BitrateParameters BitrateParameters;
+		BitrateParameters.min_bitrate_bps = *MinimumBitrate;
+
+		if (MaximumBitrate.IsSet())
+		{
+			BitrateParameters.max_bitrate_bps = *MaximumBitrate;
+		}
+
+		if (StartingBitrate.IsSet())
+		{
+			BitrateParameters.current_bitrate_bps = *StartingBitrate;
+		}
+
+		(*PeerConnection)->SetBitrate(BitrateParameters);
+	}
 }
 
 void UMillicastPublisherComponent::SetMaximumBitrate(int Bps)
 {
 	MaximumBitrate = Bps;
+
+	if (PeerConnection)
+	{
+		webrtc::PeerConnectionInterface::BitrateParameters BitrateParameters;
+		BitrateParameters.max_bitrate_bps = *MaximumBitrate;
+
+		if (MinimumBitrate.IsSet())
+		{
+			BitrateParameters.min_bitrate_bps = *MinimumBitrate;
+		}
+
+		if (StartingBitrate.IsSet())
+		{
+			BitrateParameters.current_bitrate_bps = *StartingBitrate;
+		}
+
+		(*PeerConnection)->SetBitrate(BitrateParameters);
+	}
 }
 
 void UMillicastPublisherComponent::SetStartingBitrate(int Bps)
 {
 	StartingBitrate = Bps;
+
+	if (PeerConnection)
+	{
+		webrtc::PeerConnectionInterface::BitrateParameters BitrateParameters;
+		BitrateParameters.current_bitrate_bps = *StartingBitrate;
+
+		if (MaximumBitrate.IsSet())
+		{
+			BitrateParameters.max_bitrate_bps = *MinimumBitrate;
+		}
+
+		if (StartingBitrate.IsSet())
+		{
+			BitrateParameters.min_bitrate_bps = *MinimumBitrate;
+		}
+
+		(*PeerConnection)->SetBitrate(BitrateParameters);
+	}
 }
 
