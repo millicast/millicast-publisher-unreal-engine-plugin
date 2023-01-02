@@ -5,6 +5,8 @@
 #include "Engine/TextureRenderTarget2D.h"
 #include "Util.h"
 
+#include <condition_variable>
+
 IMillicastVideoSource* IMillicastVideoSource::Create(UTextureRenderTarget2D* RenderTarget)
 {
 	return new RenderTargetCapturer(RenderTarget);
@@ -16,13 +18,7 @@ RenderTargetCapturer::RenderTargetCapturer(UTextureRenderTarget2D* InRenderTarge
 
 RenderTargetCapturer::~RenderTargetCapturer() noexcept
 {
-	FScopeLock Lock(&CriticalSection);
-
-	if (RtcVideoSource)
-	{
-		// Remove callback to stop receiveng end frame rendering event
-		FCoreDelegates::OnEndFrameRT.RemoveAll(this);
-	}
+	StopCapture();
 }
 
 RenderTargetCapturer::FStreamTrackInterface RenderTargetCapturer::StartCapture()
@@ -59,13 +55,29 @@ RenderTargetCapturer::FStreamTrackInterface RenderTargetCapturer::StartCapture()
 
 void RenderTargetCapturer::StopCapture()
 {
-	FScopeLock Lock(&CriticalSection);
+	std::unique_lock<std::mutex> Lock(CriticalSection);
 
-	RtcVideoTrack = nullptr;
-	RtcVideoSource = nullptr;
+	if (RtcVideoSource)
+	{
+		RtcVideoTrack = nullptr;
+		RtcVideoSource = nullptr;
+		// Remove callback to stop receiveng end frame rendering event
+		FCoreDelegates::OnEndFrameRT.RemoveAll(this);
 
-	// Remove callback to stop receiveng end frame rendering event
-	FCoreDelegates::OnEndFrameRT.RemoveAll(this);
+		// Wait for OnEndFrameRT callback to finish its last call to avoid segfault 
+		// because this object is released while the thread is still stuck on the mutex
+		UE_LOG(LogMillicastPublisher, Log, TEXT("Waiting for thread to finish"));
+		auto status = ConditionVariable.wait_for(Lock, std::chrono::milliseconds(100));
+
+		if (status == std::cv_status::no_timeout)
+		{
+			UE_LOG(LogMillicastPublisher, Log, TEXT("Thread finished: no timeout"));
+		}
+		else
+		{
+			UE_LOG(LogMillicastPublisher, Log, TEXT("Thread finished: timeout"));
+		}
+	}
 }
 
 RenderTargetCapturer::FStreamTrackInterface RenderTargetCapturer::GetTrack()
@@ -75,14 +87,14 @@ RenderTargetCapturer::FStreamTrackInterface RenderTargetCapturer::GetTrack()
 
 void RenderTargetCapturer::SwitchTarget(UTextureRenderTarget2D* InRenderTarget)
 {
-	FScopeLock Lock(&CriticalSection);
+	std::unique_lock<std::mutex> Lock(CriticalSection);
 
 	RenderTarget = InRenderTarget;
 }
 
 void RenderTargetCapturer::OnEndFrameRenderThread()
 {
-	FScopeLock Lock(&CriticalSection);
+	std::unique_lock<std::mutex> Lock(CriticalSection);
 
 	if (RtcVideoSource)
 	{
@@ -95,4 +107,7 @@ void RenderTargetCapturer::OnEndFrameRenderThread()
 			RtcVideoSource->OnFrameReady(texture);
 		}
 	}
+
+	Lock.unlock();
+	ConditionVariable.notify_all();
 }

@@ -4,6 +4,7 @@
 
 #include "IMillicastSource.h"
 #include "WebRTC/Texture2DVideoSourceAdapter.h"
+#include <condition_variable>
 
 
 /** Video source capturer to capture video frame from a RenderTarget2D */
@@ -13,7 +14,8 @@ class RenderTargetCapturer : public IMillicastVideoSource
 	FVideoTrackInterface RtcVideoTrack;
 	rtc::scoped_refptr<FTexture2DVideoSourceAdapter> RtcVideoSource;
 
-	FCriticalSection CriticalSection;
+	std::mutex CriticalSection;
+	std::condition_variable ConditionVariable;
 
 public:
 	explicit RenderTargetCapturer(UTextureRenderTarget2D* InRenderTarget) noexcept;
