@@ -609,7 +609,7 @@ void UMillicastPublisherComponent::UpdateBitrateSettings()
 {
 	if (PeerConnection)
 	{
-		webrtc::PeerConnectionInterface::BitrateParameters BitrateParameters;
+		webrtc::BitrateSettings BitrateParameters;
 
 		if (MinimumBitrate.IsSet())
 		{
@@ -623,7 +623,7 @@ void UMillicastPublisherComponent::UpdateBitrateSettings()
 
 		if (StartingBitrate.IsSet())
 		{
-			BitrateParameters.current_bitrate_bps = *StartingBitrate;
+			BitrateParameters.start_bitrate_bps = *StartingBitrate;
 		}
 
 		auto error = (*PeerConnection)->SetBitrate(BitrateParameters);

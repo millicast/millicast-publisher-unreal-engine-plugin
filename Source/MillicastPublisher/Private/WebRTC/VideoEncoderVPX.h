@@ -5,6 +5,7 @@
 #include "WebRTCInc.h"
 
 // Wrapper for VPX encoders just to wrap the RHI texture to I420 step in Encode
+
 class FVideoEncoderVPX : public webrtc::VideoEncoder
 {
 public:
