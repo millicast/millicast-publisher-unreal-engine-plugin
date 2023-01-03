@@ -5,7 +5,6 @@
 #include "Engine/TextureRenderTarget2D.h"
 #include "Util.h"
 
-#include <condition_variable>
 
 IMillicastVideoSource* IMillicastVideoSource::Create(UTextureRenderTarget2D* RenderTarget)
 {
@@ -55,28 +54,16 @@ RenderTargetCapturer::FStreamTrackInterface RenderTargetCapturer::StartCapture()
 
 void RenderTargetCapturer::StopCapture()
 {
-	std::unique_lock<std::mutex> Lock(CriticalSection);
-
 	if (RtcVideoSource)
 	{
+		FRenderCommandFence Fence;
+		Fence.BeginFence();
+		Fence.Wait();
+
 		RtcVideoTrack = nullptr;
 		RtcVideoSource = nullptr;
 		// Remove callback to stop receiveng end frame rendering event
 		FCoreDelegates::OnEndFrameRT.RemoveAll(this);
-
-		// Wait for OnEndFrameRT callback to finish its last call to avoid segfault 
-		// because this object is released while the thread is still stuck on the mutex
-		UE_LOG(LogMillicastPublisher, Log, TEXT("Waiting for thread to finish"));
-		auto status = ConditionVariable.wait_for(Lock, std::chrono::milliseconds(100));
-
-		if (status == std::cv_status::no_timeout)
-		{
-			UE_LOG(LogMillicastPublisher, Log, TEXT("Thread finished: no timeout"));
-		}
-		else
-		{
-			UE_LOG(LogMillicastPublisher, Log, TEXT("Thread finished: timeout"));
-		}
 	}
 }
 
@@ -87,15 +74,15 @@ RenderTargetCapturer::FStreamTrackInterface RenderTargetCapturer::GetTrack()
 
 void RenderTargetCapturer::SwitchTarget(UTextureRenderTarget2D* InRenderTarget)
 {
-	std::unique_lock<std::mutex> Lock(CriticalSection);
+	FRenderCommandFence Fence;
+	Fence.BeginFence();
+	Fence.Wait();
 
 	RenderTarget = InRenderTarget;
 }
 
 void RenderTargetCapturer::OnEndFrameRenderThread()
 {
-	std::unique_lock<std::mutex> Lock(CriticalSection);
-
 	if (RtcVideoSource)
 	{
 		// Read the render target resource texture 2D
@@ -107,7 +94,4 @@ void RenderTargetCapturer::OnEndFrameRenderThread()
 			RtcVideoSource->OnFrameReady(texture);
 		}
 	}
-
-	Lock.unlock();
-	ConditionVariable.notify_all();
 }
