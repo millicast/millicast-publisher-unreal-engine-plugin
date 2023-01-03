@@ -53,7 +53,7 @@ UMillicastPublisherComponent::UMillicastPublisherComponent(const FObjectInitiali
 	EventBroadcaster.Emplace("inactive", [this](TSharedPtr<FJsonObject> Msg) { ParseInactiveEvent(Msg); });
 	EventBroadcaster.Emplace("viewercount", [this](TSharedPtr<FJsonObject> Msg) { ParseViewerCountEvent(Msg); });
 
-	PeerConnectionConfig = FWebRTCPeerConnection::GetDefaultConfig();
+	PeerConnectionConfig = Millicast::Publisher::FWebRTCPeerConnection::GetDefaultConfig();
 
 	MaximumBitrate = 4'000'000;
 	StartingBitrate = 2'000'000;
@@ -83,6 +83,8 @@ bool UMillicastPublisherComponent::Initialize(UMillicastPublisherSource* InMedia
 
 void UMillicastPublisherComponent::SetupIceServersFromJson(TArray<TSharedPtr<FJsonValue>> IceServersField)
 {
+	using namespace Millicast::Publisher;
+
 	PeerConnectionConfig.servers.clear();
 	for (auto& elt : IceServersField)
 	{
@@ -302,6 +304,8 @@ bool UMillicastPublisherComponent::StartWebSocketConnection(const FString& Url,
 
 bool UMillicastPublisherComponent::PublishToMillicast()
 {
+	using namespace Millicast::Publisher;
+
 	PeerConnection = FWebRTCPeerConnection::Create(PeerConnectionConfig);
 
 	// Starts the capture first and add track to the peerconnection

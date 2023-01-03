@@ -11,6 +11,9 @@ DEFINE_LOG_CATEGORY(LogMillicastPublisherStats);
 
 CSV_DEFINE_CATEGORY(Millicast_Publisher, false);
 
+namespace Millicast::Publisher
+{
+
 FPublisherStats FPublisherStats::Instance;
 
 double CalcEMA(double PrevAvg, int NumSamples, double Value)
@@ -262,7 +265,7 @@ void FRTCStatsCollector::OnStatsDelivered(const rtc::scoped_refptr<const webrtc:
 		{
 			return ToString(*(*it)->mime_type);
 		}
-		
+
 		return FString();
 	};
 
@@ -296,9 +299,9 @@ void FRTCStatsCollector::OnStatsDelivered(const rtc::scoped_refptr<const webrtc:
 				ContentType = GetOptionalStat(OutboundStat.content_type);
 				QualityLimitationResolutionChange = ValueOrDefault(OutboundStat.quality_limitation_resolution_changes, 0);
 
-				if (LastVideoStatTimestamp != 0 && VideoTotalSent!= lastByteCount)
+				if (LastVideoStatTimestamp != 0 && VideoTotalSent != lastByteCount)
 				{
-					VideoBitrate = (VideoTotalSent- lastByteCount) * NUM_US * 8. / (timestamp - LastVideoStatTimestamp);
+					VideoBitrate = (VideoTotalSent - lastByteCount) * NUM_US * 8. / (timestamp - LastVideoStatTimestamp);
 				}
 
 				LastVideoStatTimestamp = timestamp;
@@ -315,7 +318,7 @@ void FRTCStatsCollector::OnStatsDelivered(const rtc::scoped_refptr<const webrtc:
 				// AudioTargetBitrate = ValueOrDefault(OutboundStat.target_bitrate, 0);
 				AudioPacketRetransmitted = ValueOrDefault(OutboundStat.retransmitted_packets_sent, 0);
 
-				if (LastAudioStatTimestamp != 0 && AudioTotalSent!= lastByteCount)
+				if (LastAudioStatTimestamp != 0 && AudioTotalSent != lastByteCount)
 				{
 					AudioBitrate = (AudioTotalSent - lastByteCount) * NUM_US * 8 / (timestamp - LastAudioStatTimestamp);
 				}
@@ -366,4 +369,6 @@ rtc::RefCountReleaseStatus FRTCStatsCollector::Release() const
 	}
 
 	return rtc::RefCountReleaseStatus::kOtherRefsRemained;
+}
+
 }

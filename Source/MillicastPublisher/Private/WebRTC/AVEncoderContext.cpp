@@ -20,6 +20,9 @@ THIRD_PARTY_INCLUDES_END
 	#include "Windows/HideWindowsPlatformTypes.h"
 #endif
 
+namespace Millicast::Publisher
+{
+
 FAVEncoderContext::FAVEncoderContext(int InCaptureWidth, int InCaptureHeight, bool bInFixedResolution)
 	: CaptureWidth(InCaptureWidth)
 	, CaptureHeight(InCaptureHeight)
@@ -413,4 +416,6 @@ FTexture2DRHIRef FAVEncoderContext::SetBackbufferTextureCUDAVulkan(TSharedPtr<AV
 
 	BackBuffers.Add(InputFrame.Get(), Texture);
 	return Texture;
+}
+
 }

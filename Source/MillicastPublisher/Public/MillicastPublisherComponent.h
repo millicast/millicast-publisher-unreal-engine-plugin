@@ -9,12 +9,16 @@
 
 // Forward declarations
 class IWebSocket;
-class FWebRTCPeerConnection;
 class IHttpResponse;
 
 namespace webrtc
 {
 	struct RtpTransceiverInit;
+}
+
+namespace Millicast::Publisher
+{
+	class FWebRTCPeerConnection;
 }
 
 // Event declaration
@@ -182,7 +186,7 @@ private:
 	FDelegateHandle OnMessageHandle;
 
 	/** WebRTC */
-	FWebRTCPeerConnection* PeerConnection;
+	Millicast::Publisher::FWebRTCPeerConnection* PeerConnection;
 	webrtc::PeerConnectionInterface::RTCConfiguration PeerConnectionConfig;
 
 	/** Publisher */

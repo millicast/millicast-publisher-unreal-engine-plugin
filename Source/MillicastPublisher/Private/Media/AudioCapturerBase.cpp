@@ -15,6 +15,8 @@
 
 IMillicastAudioSource* IMillicastAudioSource::Create(AudioCapturerType CapturerType)
 {
+	using namespace Millicast::Publisher;
+
 	switch (CapturerType)
 	{
 	case AudioCapturerType::SUBMIX: return new AudioSubmixCapturer;
@@ -28,6 +30,9 @@ IMillicastAudioSource* IMillicastAudioSource::Create(AudioCapturerType CapturerT
 
 	return nullptr;
 }
+
+namespace Millicast::Publisher
+{
 
 AudioCapturerBase::AudioCapturerBase() noexcept : NumChannels(2), RtcAudioTrack(nullptr)
 {
@@ -94,7 +99,7 @@ void AudioCapturerBase::SendAudio()
 void AudioCapturerBase::CreateRtcSourceTrack()
 {
 	// Get PCF to create audio source and audio track
-	auto peerConnectionFactory = FWebRTCPeerConnection::GetPeerConnectionFactory();
+	auto peerConnectionFactory = Millicast::Publisher::FWebRTCPeerConnection::GetPeerConnectionFactory();
 
 	// Create audio track
 	RtcAudioTrack  = peerConnectionFactory->CreateAudioTrack(to_string(TrackId.Get("audio")), this);
@@ -121,4 +126,6 @@ void AudioCapturerBase::SetNumChannel(uint8 InNumChannel)
 
 	NumSamples = NumChannels * SamplePerSecond * TimePerFrameMs / 1000;
 	BitPerSample = NumChannels * sizeof(FSample) * 8;
+}
+
 }

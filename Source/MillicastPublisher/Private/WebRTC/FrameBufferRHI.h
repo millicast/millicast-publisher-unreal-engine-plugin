@@ -26,129 +26,136 @@ namespace libyuv
 	}
 } // namespace libyuv
 
-class FFrameBufferRHI : public webrtc::VideoFrameBuffer
+namespace Millicast::Publisher
 {
-public:
-	FFrameBufferRHI(FTexture2DRHIRef SourceTexture,
-		TSharedPtr<AVEncoder::FVideoEncoderInputFrame> InputFrame,
-		TSharedPtr<AVEncoder::FVideoEncoderInput> InputVideoEncoderInput)
-		: TextureRef(SourceTexture)
-		, Frame(InputFrame)
-		, VideoEncoderInput(InputVideoEncoderInput)
-	{
-		Frame->Obtain();
 
-		//FPublisherStats::Get().TextureReadbackStart();
-		FRHICommandListImmediate& RHICmdList = FRHICommandListExecutor::GetImmediateCommandList();
-		if (GDynamicRHI && GDynamicRHI->GetName() == FString(TEXT("D3D12")))
+	class FFrameBufferRHI : public webrtc::VideoFrameBuffer
+	{
+	public:
+		FFrameBufferRHI(FTexture2DRHIRef SourceTexture,
+			TSharedPtr<AVEncoder::FVideoEncoderInputFrame> InputFrame,
+			TSharedPtr<AVEncoder::FVideoEncoderInput> InputVideoEncoderInput)
+			: TextureRef(SourceTexture)
+			, Frame(InputFrame)
+			, VideoEncoderInput(InputVideoEncoderInput)
 		{
-			ReadTextureDX12(RHICmdList);
-		}
-		else
-		{
-			ReadTexture(RHICmdList);
-		}
-		//FPublisherStats::Get().TextureReadbackEnd();
-	}
+			Frame->Obtain();
 
-	~FFrameBufferRHI()
-	{
-		Frame->Release();
-	}
-
-	Type type() const override
-	{
-		return Type::kNative;
-	}
-
-	virtual int width() const override
-	{
-		return Frame->GetWidth();
-	}
-
-	virtual int height() const override
-	{
-		return Frame->GetHeight();
-	}
-
-	virtual rtc::scoped_refptr<webrtc::I420BufferInterface> ToI420() override
-	{
-		if (!Buffer)
-		{
-			int Width = TextureRef->GetSizeX();
-			int Height = TextureRef->GetSizeY();
-
-			Buffer = webrtc::I420Buffer::Create(Width, Height);
-			if (TextureData)
+			//FPublisherStats::Get().TextureReadbackStart();
+			FRHICommandListImmediate& RHICmdList = FRHICommandListExecutor::GetImmediateCommandList();
+			if (GDynamicRHI && GDynamicRHI->GetName() == FString(TEXT("D3D12")))
 			{
-				libyuv::ARGBToI420(
-					static_cast<uint8*>(TextureData),
-					PitchPixels * 4,
-					Buffer->MutableDataY(),
-					Buffer->StrideY(),
-					Buffer->MutableDataU(),
-					Buffer->StrideU(),
-					Buffer->MutableDataV(),
-					Buffer->StrideV(),
-					Buffer->width(),
-					Buffer->height());
+				ReadTextureDX12(RHICmdList);
 			}
+			else
+			{
+				ReadTexture(RHICmdList);
+			}
+			//FPublisherStats::Get().TextureReadbackEnd();
 		}
 
-		return Buffer;
-	}
-
-	virtual const webrtc::I420BufferInterface* GetI420() const override
-	{
-		return nullptr;
-	}
-
-	FTexture2DRHIRef GetTextureRHI() const
-	{
-		return TextureRef;
-	}
-
-	TSharedPtr<AVEncoder::FVideoEncoderInputFrame> GetFrame() const
-	{
-		return Frame;
-	}
-
-	TSharedPtr<AVEncoder::FVideoEncoderInput> GetVideoEncoderInput() const
-	{
-		return VideoEncoderInput;
-	}
-
-private:
-	FTexture2DRHIRef TextureRef;
-	TSharedPtr<AVEncoder::FVideoEncoderInputFrame> Frame;
-	TSharedPtr<AVEncoder::FVideoEncoderInput> VideoEncoderInput;
-	rtc::scoped_refptr<webrtc::I420Buffer> Buffer;
-	TUniquePtr<FRHIGPUTextureReadback> Readback;
-	void* TextureData = nullptr;
-	int PitchPixels = 0;
-
-	void ReadTextureDX12(FRHICommandListImmediate& RHICmdList)
-	{
-		if (!Readback.IsValid())
+		~FFrameBufferRHI()
 		{
-			Readback = MakeUnique<FRHIGPUTextureReadback>(TEXT("CaptureReadback"));
+			Frame->Release();
 		}
 
-		Readback->EnqueueCopy(RHICmdList, TextureRef);
-		RHICmdList.BlockUntilGPUIdle();
-		check(Readback->IsReady());
-		TextureData = Readback->Lock(PitchPixels);
+		Type type() const override
+		{
+			return Type::kNative;
+		}
 
-		Readback->Unlock();
-	}
+		virtual int width() const override
+		{
+			return Frame->GetWidth();
+		}
 
-	void ReadTexture(FRHICommandListImmediate& RHICmdList)
-	{
-		uint32 Stride;
-		TextureData = (uint8*)RHICmdList.LockTexture2D(TextureRef, 0, EResourceLockMode::RLM_ReadOnly, Stride, true);
+		virtual int height() const override
+		{
+			return Frame->GetHeight();
+		}
 
-		PitchPixels = Stride / 4;
+		virtual rtc::scoped_refptr<webrtc::I420BufferInterface> ToI420() override
+		{
+			if (!Buffer)
+			{
+				int Width = TextureRef->GetSizeX();
+				int Height = TextureRef->GetSizeY();
 
-		RHICmdList.UnlockTexture2D(TextureRef, 0, true);
-	}
-};
+				Buffer = webrtc::I420Buffer::Create(Width, Height);
+				if (TextureData)
+				{
+					libyuv::ARGBToI420(
+						static_cast<uint8*>(TextureData),
+						PitchPixels * 4,
+						Buffer->MutableDataY(),
+						Buffer->StrideY(),
+						Buffer->MutableDataU(),
+						Buffer->StrideU(),
+						Buffer->MutableDataV(),
+						Buffer->StrideV(),
+						Buffer->width(),
+						Buffer->height());
+				}
+			}
+
+			return Buffer;
+		}
+
+
+		virtual const webrtc::I420BufferInterface* GetI420() const override
+		{
+			return nullptr;
+		}
+
+
+		FTexture2DRHIRef GetTextureRHI() const
+		{
+			return TextureRef;
+		}
+
+		TSharedPtr<AVEncoder::FVideoEncoderInputFrame> GetFrame() const
+		{
+			return Frame;
+		}
+
+		TSharedPtr<AVEncoder::FVideoEncoderInput> GetVideoEncoderInput() const
+		{
+			return VideoEncoderInput;
+		}
+
+	private:
+		FTexture2DRHIRef TextureRef;
+		TSharedPtr<AVEncoder::FVideoEncoderInputFrame> Frame;
+		TSharedPtr<AVEncoder::FVideoEncoderInput> VideoEncoderInput;
+		rtc::scoped_refptr<webrtc::I420Buffer> Buffer;
+		TUniquePtr<FRHIGPUTextureReadback> Readback;
+		void* TextureData = nullptr;
+		int PitchPixels = 0;
+
+		void ReadTextureDX12(FRHICommandListImmediate& RHICmdList)
+		{
+			if (!Readback.IsValid())
+			{
+				Readback = MakeUnique<FRHIGPUTextureReadback>(TEXT("CaptureReadback"));
+			}
+
+			Readback->EnqueueCopy(RHICmdList, TextureRef);
+			RHICmdList.BlockUntilGPUIdle();
+			check(Readback->IsReady());
+			TextureData = Readback->Lock(PitchPixels);
+
+			Readback->Unlock();
+		}
+
+		void ReadTexture(FRHICommandListImmediate& RHICmdList)
+		{
+			uint32 Stride;
+			TextureData = (uint8*)RHICmdList.LockTexture2D(TextureRef, 0, EResourceLockMode::RLM_ReadOnly, Stride, true);
+
+			PitchPixels = Stride / 4;
+
+			RHICmdList.UnlockTexture2D(TextureRef, 0, true);
+		}
+	};
+
+}

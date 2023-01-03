@@ -9,6 +9,9 @@
 #include "RHI/CopyTexture.h"
 //#include "Stats.h"
 
+namespace Millicast::Publisher
+{
+
 void FTexture2DVideoSourceAdapter::OnFrameReady(const FTexture2DRHIRef& FrameBuffer)
 {
 	const int64 Timestamp = rtc::TimeMicros();
@@ -59,4 +62,6 @@ bool FTexture2DVideoSourceAdapter::AdaptVideoFrame(int64 TimestampUs, FIntPoint 
 	int out_width, out_height, crop_width, crop_height, crop_x, crop_y;
 	return rtc::AdaptedVideoTrackSource::AdaptFrame(Resolution.X, Resolution.Y, TimestampUs,
 		&out_width, &out_height, &crop_width, &crop_height, &crop_x, &crop_y);
+}
+
 }

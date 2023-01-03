@@ -40,11 +40,11 @@ public:
 		rtc::InitializeSSL();
 
 #if PLATFORM_WINDOWS
-		WasapiDeviceCapturer::ColdInit();
+		Millicast::Publisher::WasapiDeviceCapturer::ColdInit();
 #endif
 		CreateStyle();
 
-		RedirectWebRtcLogsToUnreal(rtc::LoggingSeverity::LS_VERBOSE);
+		Millicast::Publisher::RedirectWebRtcLogsToUnreal(rtc::LoggingSeverity::LS_VERBOSE);
 	}
 
 	virtual void ShutdownModule() override 
@@ -52,7 +52,7 @@ public:
 		rtc::CleanupSSL();
 
 #if PLATFORM_WINDOWS
-		WasapiDeviceCapturer::ColdExit();
+		Millicast::Publisher::WasapiDeviceCapturer::ColdExit();
 #endif
 	}
 

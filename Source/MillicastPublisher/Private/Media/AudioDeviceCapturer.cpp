@@ -4,6 +4,9 @@
 #include "common_audio/include/audio_util.h"
 #include "MillicastPublisherPrivate.h"
 
+namespace Millicast::Publisher
+{
+
 TArray<Audio::FCaptureDeviceInfo> AudioDeviceCapturer::CaptureDevices;
 
 AudioDeviceCapturer::AudioDeviceCapturer() noexcept : VolumeMultiplier(0.f)
@@ -104,4 +107,6 @@ TArray<Audio::FCaptureDeviceInfo>& AudioDeviceCapturer::GetCaptureDevicesAvailab
 	AudioCapture.GetCaptureDevicesAvailable(CaptureDevices);
 
 	return CaptureDevices;
+}
+
 }

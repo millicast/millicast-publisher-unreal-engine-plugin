@@ -7,6 +7,9 @@
 #include "RHI/CopyTexture.h"
 #include "Stats.h"
 
+namespace Millicast::Publisher
+{
+
 FVideoEncoderNVENC::FVideoEncoderNVENC()
 {
 	SharedContext = MakeShared<FVideoEncoderNVENC::FSharedContext>();
@@ -216,6 +219,8 @@ void FVideoEncoderNVENC::CreateAVEncoder(TSharedPtr<AVEncoder::FVideoEncoderInpu
 				FScopeLock Lock(Context->ParentSection);
 				OnEncodedPacket(InLayerIndex, InFrame, InPacket, Context->OnEncodedImageCallback);
 			}
-		});
+			});
 	}
+}
+
 }
