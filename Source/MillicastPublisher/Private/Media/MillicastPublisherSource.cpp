@@ -110,7 +110,7 @@ void UMillicastPublisherSource::SetAudioDeviceByName(FString Name)
 void UMillicastPublisherSource::RefreshAudioDevicesList()
 {
 	CaptureDevicesName.Empty();
-	auto& CaptureDevices = AudioDeviceCapturer::GetCaptureDevicesAvailable();
+	auto& CaptureDevices = Millicast::Publisher::AudioDeviceCapturer::GetCaptureDevicesAvailable();
 
 	for (auto& elt : CaptureDevices)
 	{
@@ -123,7 +123,7 @@ void UMillicastPublisherSource::SetVolumeMultiplier(float f)
 	VolumeMultiplier = f;
 	if (AudioSource) 
 	{
-		auto* src = static_cast<AudioDeviceCapturer*>(AudioSource.Get());
+		auto* src = static_cast<Millicast::Publisher::AudioDeviceCapturer*>(AudioSource.Get());
 		src->SetVolumeMultiplier(f);
 	}
 }
@@ -205,6 +205,8 @@ void UMillicastPublisherSource::StartCapture(TFunction<void(IMillicastSource::FS
 	// If audio is enabled, create audio capturer
 	if (CaptureAudio)
 	{
+		using namespace Millicast::Publisher;
+
 		AudioSource = TSharedPtr<IMillicastAudioSource>(IMillicastAudioSource::Create(AudioCaptureType));
 
 		if (AudioCaptureType == AudioCapturerType::DEVICE)
@@ -251,7 +253,7 @@ void UMillicastPublisherSource::ChangeRenderTarget(UTextureRenderTarget2D* InRen
 	{
 		UE_LOG(LogMillicastPublisher, Log, TEXT("Changing render target"));
 		RenderTarget = InRenderTarget;
-		auto* src = static_cast<RenderTargetCapturer*>(VideoSource.Get());
+		auto* src = static_cast<Millicast::Publisher::RenderTargetCapturer*>(VideoSource.Get());
 		src->SwitchTarget(RenderTarget);
 	}
 }
@@ -292,7 +294,7 @@ bool UMillicastPublisherSource::IsCodecSupported(EMillicastAudioCodecs Selection
 {
 	FString codecName= GetAudioCodec();
 
-	TArray<FString> Codecs = FWebRTCPeerConnection::GetSupportedAudioCodecs();
+	TArray<FString> Codecs = Millicast::Publisher::FWebRTCPeerConnection::GetSupportedAudioCodecs();
 
 	return Codecs.Contains(codecName);
 }

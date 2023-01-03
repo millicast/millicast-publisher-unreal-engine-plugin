@@ -3,6 +3,9 @@
 #include "WebRTCLog.h"
 #include "MillicastPublisherPrivate.h"
 
+namespace Millicast::Publisher
+{
+
 /**
  * Receives logging from WebRTC internals, and writes it to a log file
  * and VS's Output window
@@ -72,4 +75,6 @@ void RedirectWebRtcLogsToUnreal(rtc::LoggingSeverity Verbosity)
 #if !UE_BUILD_SHIPPING
 	static FWebRtcLogRedirector Redirector{ Verbosity };
 #endif
+}
+
 }

@@ -5,93 +5,95 @@
 #include "Engine/TextureRenderTarget2D.h"
 #include "Util.h"
 
-
 IMillicastVideoSource* IMillicastVideoSource::Create(UTextureRenderTarget2D* RenderTarget)
 {
-	return new RenderTargetCapturer(RenderTarget);
+	return new Millicast::Publisher::RenderTargetCapturer(RenderTarget);
 }
 
-RenderTargetCapturer::RenderTargetCapturer(UTextureRenderTarget2D* InRenderTarget) noexcept
-	: RenderTarget(InRenderTarget)
-{}
-
-RenderTargetCapturer::~RenderTargetCapturer() noexcept
+namespace Millicast::Publisher
 {
-	StopCapture();
-}
+	RenderTargetCapturer::RenderTargetCapturer(UTextureRenderTarget2D* InRenderTarget) noexcept
+		: RenderTarget(InRenderTarget)
+	{}
 
-RenderTargetCapturer::FStreamTrackInterface RenderTargetCapturer::StartCapture()
-{
-	// Check if a render target has been set in order to start the capture
-	if (RenderTarget == nullptr) 
+	RenderTargetCapturer::~RenderTargetCapturer() noexcept
 	{
-		UE_LOG(LogMillicastPublisher, Warning, TEXT("Could not start capture, no render target has been provided"));
-		return nullptr;
+		StopCapture();
 	}
 
-	// Create WebRTC Video source
-	RtcVideoSource = new rtc::RefCountedObject<FTexture2DVideoSourceAdapter>();
-
-	// Get PCF to create video track
-	auto PeerConnectionFactory = FWebRTCPeerConnection::GetPeerConnectionFactory();
-
-	RtcVideoTrack = PeerConnectionFactory->CreateVideoTrack(to_string(TrackId.Get("render-target-track")), RtcVideoSource);
-
-	if (RtcVideoTrack)
+	RenderTargetCapturer::FStreamTrackInterface RenderTargetCapturer::StartCapture()
 	{
-		UE_LOG(LogMillicastPublisher, Log, TEXT("Created video track"));
+		// Check if a render target has been set in order to start the capture
+		if (RenderTarget == nullptr)
+		{
+			UE_LOG(LogMillicastPublisher, Warning, TEXT("Could not start capture, no render target has been provided"));
+			return nullptr;
+		}
+
+		// Create WebRTC Video source
+		RtcVideoSource = new rtc::RefCountedObject<Millicast::Publisher::FTexture2DVideoSourceAdapter>();
+
+		// Get PCF to create video track
+		auto PeerConnectionFactory = Millicast::Publisher::FWebRTCPeerConnection::GetPeerConnectionFactory();
+
+		RtcVideoTrack = PeerConnectionFactory->CreateVideoTrack(to_string(TrackId.Get("render-target-track")), RtcVideoSource);
+
+		if (RtcVideoTrack)
+		{
+			UE_LOG(LogMillicastPublisher, Log, TEXT("Created video track"));
+		}
+		else
+		{
+			UE_LOG(LogMillicastPublisher, Warning, TEXT("Could not create video track"));
+		}
+
+		// Attach a callback to be notified when a new frame is ready
+		FCoreDelegates::OnEndFrameRT.AddRaw(this, &RenderTargetCapturer::OnEndFrameRenderThread);
+
+		return RtcVideoTrack;
 	}
-	else
+
+	void RenderTargetCapturer::StopCapture()
 	{
-		UE_LOG(LogMillicastPublisher, Warning, TEXT("Could not create video track"));
+		if (RtcVideoSource)
+		{
+			FRenderCommandFence Fence;
+			Fence.BeginFence();
+			Fence.Wait();
+
+			RtcVideoTrack = nullptr;
+			RtcVideoSource = nullptr;
+			// Remove callback to stop receiveng end frame rendering event
+			FCoreDelegates::OnEndFrameRT.RemoveAll(this);
+		}
 	}
 
-	// Attach a callback to be notified when a new frame is ready
-	FCoreDelegates::OnEndFrameRT.AddRaw(this, &RenderTargetCapturer::OnEndFrameRenderThread);
+	RenderTargetCapturer::FStreamTrackInterface RenderTargetCapturer::GetTrack()
+	{
+		return RtcVideoTrack;
+	}
 
-	return RtcVideoTrack;
-}
-
-void RenderTargetCapturer::StopCapture()
-{
-	if (RtcVideoSource)
+	void RenderTargetCapturer::SwitchTarget(UTextureRenderTarget2D* InRenderTarget)
 	{
 		FRenderCommandFence Fence;
 		Fence.BeginFence();
 		Fence.Wait();
 
-		RtcVideoTrack = nullptr;
-		RtcVideoSource = nullptr;
-		// Remove callback to stop receiveng end frame rendering event
-		FCoreDelegates::OnEndFrameRT.RemoveAll(this);
+		RenderTarget = InRenderTarget;
 	}
-}
 
-RenderTargetCapturer::FStreamTrackInterface RenderTargetCapturer::GetTrack()
-{
-	return RtcVideoTrack;
-}
-
-void RenderTargetCapturer::SwitchTarget(UTextureRenderTarget2D* InRenderTarget)
-{
-	FRenderCommandFence Fence;
-	Fence.BeginFence();
-	Fence.Wait();
-
-	RenderTarget = InRenderTarget;
-}
-
-void RenderTargetCapturer::OnEndFrameRenderThread()
-{
-	if (RtcVideoSource)
+	void RenderTargetCapturer::OnEndFrameRenderThread()
 	{
-		// Read the render target resource texture 2D
-		auto texture = RenderTarget->GetResource()->GetTexture2DRHI();
-
-		// Convert it to WebRTC video frame
-		if (texture)
+		if (RtcVideoSource)
 		{
-			RtcVideoSource->OnFrameReady(texture);
+			// Read the render target resource texture 2D
+			auto texture = RenderTarget->GetResource()->GetTexture2DRHI();
+
+			// Convert it to WebRTC video frame
+			if (texture)
+			{
+				RtcVideoSource->OnFrameReady(texture);
+			}
 		}
 	}
 }

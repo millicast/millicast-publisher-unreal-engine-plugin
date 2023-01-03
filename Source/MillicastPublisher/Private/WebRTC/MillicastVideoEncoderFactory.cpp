@@ -8,6 +8,9 @@
 #include "VideoEncoderNVENC.h"
 #include "VideoEncoderVPX.h"
 
+
+namespace Millicast::Publisher
+{
 webrtc::SdpVideoFormat CreateH264Format(webrtc::H264::Profile profile, webrtc::H264::Level level)
 {
 	const absl::optional<std::string> profile_string =
@@ -58,15 +61,17 @@ std::unique_ptr<webrtc::VideoEncoder> FMillicastVideoEncoderFactory::CreateVideo
 {
 	if (absl::EqualsIgnoreCase(format.name, cricket::kVp8CodecName))
 	{
-		return std::make_unique<FVideoEncoderVPX>(8);
+		return std::make_unique<Millicast::Publisher::FVideoEncoderVPX>(8);
 	}
 	if (absl::EqualsIgnoreCase(format.name, cricket::kVp9CodecName))
 	{
-		return std::make_unique<FVideoEncoderVPX>(9);
+		return std::make_unique<Millicast::Publisher::FVideoEncoderVPX>(9);
 	}
 	if (absl::EqualsIgnoreCase(format.name, cricket::kH264CodecName))
 	{
-		return std::make_unique<FVideoEncoderNVENC>();
+		return std::make_unique<Millicast::Publisher::FVideoEncoderNVENC>();
 	}
 	return nullptr;
+}
+
 }

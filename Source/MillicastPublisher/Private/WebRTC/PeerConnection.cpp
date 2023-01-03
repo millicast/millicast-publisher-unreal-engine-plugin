@@ -11,6 +11,9 @@
 #include "AudioDeviceModule.h"
 #include "Stats.h"
 
+namespace Millicast::Publisher
+{
+
 rtc::scoped_refptr<webrtc::PeerConnectionFactoryInterface> FWebRTCPeerConnection::PeerConnectionFactory = nullptr;
 TUniquePtr<rtc::Thread> FWebRTCPeerConnection::SignalingThread = nullptr;
 rtc::scoped_refptr<FAudioDeviceModule> FWebRTCPeerConnection::AudioDeviceModule = nullptr;
@@ -369,4 +372,6 @@ void FWebRTCPeerConnection::EnableStats(bool Enable)
 	{
 		RTCStatsCollector = nullptr;
 	}
+}
+
 }

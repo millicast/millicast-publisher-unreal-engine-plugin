@@ -5,100 +5,105 @@
 
 #include "MillicastPublisherPrivate.h"
 
-AudioSubmixCapturer::AudioSubmixCapturer() noexcept : Submix(nullptr)
-{}
-
-inline FAudioDevice* GetUEAudioDevice()
+namespace Millicast::Publisher
 {
-	if (!GEngine)
-	{
-		UE_LOG(LogMillicastPublisher, Warning, TEXT("GEngine is NULL"));
-		return nullptr;
-	}
-	
-	auto AudioDevice = GEngine->GetMainAudioDevice();
-	if (!AudioDevice)
-	{
-		UE_LOG(LogMillicastPublisher, Warning, TEXT("Could not get main audio device"));
-		return nullptr;
-	}
 
-	return AudioDevice.GetAudioDevice();
-}
+	AudioSubmixCapturer::AudioSubmixCapturer() noexcept : Submix(nullptr)
+	{}
 
-inline FAudioDevice* GetUEAudioDevice(Audio::FDeviceId id)
-{
-	if (!GEngine)
+	inline FAudioDevice* GetUEAudioDevice()
 	{
-		UE_LOG(LogMillicastPublisher, Warning, TEXT("GEngine is NULL"));
-		return nullptr;
+		if (!GEngine)
+		{
+			UE_LOG(LogMillicastPublisher, Warning, TEXT("GEngine is NULL"));
+			return nullptr;
+		}
+
+		auto AudioDevice = GEngine->GetMainAudioDevice();
+		if (!AudioDevice)
+		{
+			UE_LOG(LogMillicastPublisher, Warning, TEXT("Could not get main audio device"));
+			return nullptr;
+		}
+
+		return AudioDevice.GetAudioDevice();
 	}
 
-	auto AudioDevice = GEngine->GetAudioDeviceManager()->GetAudioDevice(id);
-	if (!AudioDevice)
+	inline FAudioDevice* GetUEAudioDevice(Audio::FDeviceId id)
 	{
-		UE_LOG(LogMillicastPublisher, Warning, TEXT("Could not get main audio device"));
-		return nullptr;
+		if (!GEngine)
+		{
+			UE_LOG(LogMillicastPublisher, Warning, TEXT("GEngine is NULL"));
+			return nullptr;
+		}
+
+		auto AudioDevice = GEngine->GetAudioDeviceManager()->GetAudioDevice(id);
+		if (!AudioDevice)
+		{
+			UE_LOG(LogMillicastPublisher, Warning, TEXT("Could not get main audio device"));
+			return nullptr;
+		}
+
+		return AudioDevice.GetAudioDevice();
 	}
 
-	return AudioDevice.GetAudioDevice();
-}
-
-IMillicastSource::FStreamTrackInterface AudioSubmixCapturer::StartCapture()
-{
-	if (DeviceId.IsSet())
+	IMillicastSource::FStreamTrackInterface AudioSubmixCapturer::StartCapture()
 	{
-		AudioDevice = GetUEAudioDevice(DeviceId.GetValue());
-	}
-	else
-	{
-		AudioDevice = GetUEAudioDevice();
-	}
-	
-	if (AudioDevice == nullptr) return nullptr;
+		if (DeviceId.IsSet())
+		{
+			AudioDevice = GetUEAudioDevice(DeviceId.GetValue());
+		}
+		else
+		{
+			AudioDevice = GetUEAudioDevice();
+		}
 
-	AudioDevice->RegisterSubmixBufferListener(this, Submix);
+		if (AudioDevice == nullptr) return nullptr;
 
-	CreateRtcSourceTrack();
+		AudioDevice->RegisterSubmixBufferListener(this, Submix);
 
-	return RtcAudioTrack;
-}
+		CreateRtcSourceTrack();
 
-void AudioSubmixCapturer::StopCapture()
-{
-	if(!RtcAudioTrack)
-	{
-		return;
+		return RtcAudioTrack;
 	}
 
-	// If engine exit requested then audio device is already destroyed.
-	if (!IsEngineExitRequested())
+	void AudioSubmixCapturer::StopCapture()
 	{
-		AudioDevice->UnregisterSubmixBufferListener(this, Submix);
+		if (!RtcAudioTrack)
+		{
+			return;
+		}
+
+		// If engine exit requested then audio device is already destroyed.
+		if (!IsEngineExitRequested())
+		{
+			AudioDevice->UnregisterSubmixBufferListener(this, Submix);
+		}
+
+		RtcAudioTrack = nullptr;
 	}
 
-	RtcAudioTrack = nullptr;
-}
-
-AudioSubmixCapturer::~AudioSubmixCapturer()
-{
-	StopCapture();
-}
-
-void AudioSubmixCapturer::SetAudioSubmix(USoundSubmix* InSubmix)
-{
-	Submix = InSubmix;
-}
-
-void AudioSubmixCapturer::SetAudioDeviceId(Audio::FDeviceId Id)
-{
-	DeviceId = Id;
-}
-
-void AudioSubmixCapturer::OnNewSubmixBuffer(const USoundSubmix* /*OwningSubmix*/, float* InAudioData, int32 InNumSamples, int32 InNumChannels, const int32 SampleRate, double AudioClock)
-{
-	if (SamplePerSecond == SampleRate)
+	AudioSubmixCapturer::~AudioSubmixCapturer()
 	{
-		SendAudio(InAudioData, InNumSamples, InNumChannels);
+		StopCapture();
 	}
+
+	void AudioSubmixCapturer::SetAudioSubmix(USoundSubmix* InSubmix)
+	{
+		Submix = InSubmix;
+	}
+
+	void AudioSubmixCapturer::SetAudioDeviceId(Audio::FDeviceId Id)
+	{
+		DeviceId = Id;
+	}
+
+	void AudioSubmixCapturer::OnNewSubmixBuffer(const USoundSubmix* /*OwningSubmix*/, float* InAudioData, int32 InNumSamples, int32 InNumChannels, const int32 SampleRate, double AudioClock)
+	{
+		if (SamplePerSecond == SampleRate)
+		{
+			SendAudio(InAudioData, InNumSamples, InNumChannels);
+		}
+	}
+
 }

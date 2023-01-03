@@ -4,4 +4,7 @@
 
 #include "WebRTCInc.h"
 
-void RedirectWebRtcLogsToUnreal(rtc::LoggingSeverity Verbosity);
+namespace Millicast::Publisher
+{
+	void RedirectWebRtcLogsToUnreal(rtc::LoggingSeverity Verbosity);
+}

@@ -3,6 +3,9 @@
 #include "VideoEncoderVPX.h"
 #include "FrameBufferRHI.h"
 
+namespace Millicast::Publisher
+{
+
 FVideoEncoderVPX::FVideoEncoderVPX(int VPXVersion)
 {
 	if (VPXVersion == 8)
@@ -74,4 +77,6 @@ webrtc::VideoEncoder::EncoderInfo FVideoEncoderVPX::GetEncoderInfo() const
 	VideoEncoder::EncoderInfo info = WebRTCEncoder->GetEncoderInfo();
 	info.supports_native_handle = true;
 	return info;
+}
+
 }

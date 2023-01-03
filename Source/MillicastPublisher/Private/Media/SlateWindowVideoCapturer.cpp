@@ -6,8 +6,11 @@
 
 TSharedPtr<IMillicastVideoSource> IMillicastVideoSource::Create()
 {
-	return SlateWindowVideoCapturer::CreateCapturer();
+	return Millicast::Publisher::SlateWindowVideoCapturer::CreateCapturer();
 }
+
+namespace Millicast::Publisher
+{
 
 TSharedPtr<SlateWindowVideoCapturer> SlateWindowVideoCapturer::CreateCapturer()
 {
@@ -38,14 +41,14 @@ void SlateWindowVideoCapturer::SetTargetWindow(TSharedPtr<SWindow> InTargetWindo
 IMillicastSource::FStreamTrackInterface SlateWindowVideoCapturer::StartCapture()
 {
 	// Create WebRTC video source
-	RtcVideoSource = new rtc::RefCountedObject<FTexture2DVideoSourceAdapter>();
+	RtcVideoSource = new rtc::RefCountedObject<Millicast::Publisher::FTexture2DVideoSourceAdapter>();
 
 	// Attach the callback to the Slate window renderer
 	OnBackBufferHandle = FSlateApplication::Get().GetRenderer()->OnBackBufferReadyToPresent().AddSP(this, 
 		&SlateWindowVideoCapturer::OnBackBufferReadyToPresent);
 
 	// Get the peerconnection factory to create the video track
-	auto PeerConnectionFactory = FWebRTCPeerConnection::GetPeerConnectionFactory();
+	auto PeerConnectionFactory = Millicast::Publisher::FWebRTCPeerConnection::GetPeerConnectionFactory();
 
 	RtcVideoTrack = PeerConnectionFactory->CreateVideoTrack(to_string(TrackId.Get("slate-window-track")), RtcVideoSource);
 
@@ -111,3 +114,4 @@ void SlateWindowVideoCapturer::OnBackBufferReadyToPresent(SWindow& SlateWindow, 
 	RtcVideoSource->OnFrameReady(Buffer);
 }
 
+}
