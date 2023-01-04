@@ -12,7 +12,6 @@ namespace UnrealBuildTool.Rules
 		{
 			PCHUsage = PCHUsageMode.UseExplicitOrSharedPCHs;
 
-
 			DynamicallyLoadedModuleNames.AddRange(
 				new string[] {
 					"Media",

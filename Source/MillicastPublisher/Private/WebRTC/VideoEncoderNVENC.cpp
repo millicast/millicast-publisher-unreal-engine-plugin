@@ -3,6 +3,8 @@
 #include "VideoEncoderNVENC.h"
 #include "FrameBufferRHI.h"
 #include "VideoEncoderFactory.h"
+#include "AVEncoderContext.h"
+#include "RHI/CopyTexture.h"
 //#include "Stats.h"
 
 FVideoEncoderNVENC::FVideoEncoderNVENC()
@@ -106,7 +108,19 @@ int FVideoEncoderNVENC::InitEncode(webrtc::VideoCodec const* codec_settings, Vid
 int32 FVideoEncoderNVENC::Encode(webrtc::VideoFrame const& frame, std::vector<webrtc::VideoFrameType> const* frame_types)
 {
 	// Get the frame buffer out of the frame
-	FFrameBufferRHI* VideoFrameBuffer = static_cast<FFrameBufferRHI*>(frame.video_frame_buffer().get());
+	FFrameBufferRHI* VideoFrameBuffer = nullptr;
+
+	// the buffer is modified by a black frame buffer by libwebrtc when the track is muted
+	// So when get the video frame buffer it is no longer a FFrameBufferRHI which lead a segfault later
+	// This condition is to re-create a FFrameBufferRHI with a black frame
+	if (frame.video_frame_buffer()->GetI420() != nullptr)
+	{
+		return WEBRTC_VIDEO_CODEC_OK;
+	}
+	else
+	{
+		VideoFrameBuffer = static_cast<FFrameBufferRHI*>(frame.video_frame_buffer().get());
+	}
 
 	if (!NVENCEncoder)
 	{
@@ -138,8 +152,10 @@ int32 FVideoEncoderNVENC::Encode(webrtc::VideoFrame const& frame, std::vector<we
 	}
 
 	AVEncoder::FVideoEncoderInputFrame* EncoderInputFrame = VideoFrameBuffer->GetFrame();
-	EncoderInputFrame->SetTimestampRTP(frame.timestamp());
 
+	// if(EncoderInputFrame)
+	EncoderInputFrame->SetTimestampRTP(frame.timestamp());
+	
 	// Encode the frame!
 	NVENCEncoder->Encode(EncoderInputFrame, EncodeOptions);
 

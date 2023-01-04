@@ -5,6 +5,8 @@
 #include "VideoEncoder.h"
 #include "CodecPacket.h"
 
+class FAVEncoderContext;
+
 class FVideoEncoderNVENC : public webrtc::VideoEncoder
 {
 public:
@@ -40,4 +42,6 @@ private:
 	TSharedPtr<AVEncoder::FVideoEncoder> NVENCEncoder;
 	AVEncoder::FVideoEncoder::FLayerConfig EncoderConfig;
 	TOptional<RateControlParameters> PendingRateChange;
+
+	TUniquePtr<FAVEncoderContext> CaptureContext;
 };

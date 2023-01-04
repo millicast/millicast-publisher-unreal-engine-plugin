@@ -100,7 +100,7 @@ public:
 
 	virtual const webrtc::I420BufferInterface* GetI420() const override
 	{
-		return Buffer;
+		return nullptr;
 	}
 
 	FTexture2DRHIRef GetTextureRHI() const
