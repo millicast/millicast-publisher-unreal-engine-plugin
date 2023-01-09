@@ -17,6 +17,18 @@ The naming pattern follows : UEX.Y where X is the major unreal version and Y the
 
 The main is currently for UE5.0.3.
 
+## Support codec
+
+### Audio
+
+* Opus (software encoding)
+
+### Video
+
+* VP8 (simulcast available, software encoding)
+* VP9 (software encoding)
+* H264 (hardware encoding)
+
 ## Installation
 
 You can install the plugin from the source code.
