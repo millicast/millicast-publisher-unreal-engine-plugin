@@ -334,6 +334,15 @@ bool UMillicastPublisherComponent::PublishToMillicast()
 
 	LocalDescriptionObserver->SetOnSuccessCallback([this]() {
 		UE_LOG(LogMillicastPublisher, Log, TEXT("pc.setLocalDescription() | sucess"));
+
+		if (!WS || !WS.IsValid())
+		{
+			UE_LOG(LogMillicastPublisher, Warning, TEXT("WebSocket is closed, can not send SDP"));
+			OnPublishingError.Broadcast(TEXT("Websocket is closed. Can not send SDP to server."));
+
+			return;
+		}
+		 
 		std::string sdp;
 		(*PeerConnection)->local_description()->ToString(&sdp);
 
