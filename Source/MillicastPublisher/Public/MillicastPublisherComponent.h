@@ -181,4 +181,6 @@ private:
 	TOptional<int> MinimumBitrate; // in bps
 	TOptional<int> MaximumBitrate; // in bps
 	TOptional<int> StartingBitrate; // in bps
+
+	FCriticalSection CriticalSection;
 };
