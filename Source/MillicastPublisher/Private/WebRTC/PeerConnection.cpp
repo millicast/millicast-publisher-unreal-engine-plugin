@@ -330,7 +330,9 @@ void FWebRTCPeerConnection::OnDataChannel(rtc::scoped_refptr<webrtc::DataChannel
 {}
 
 void FWebRTCPeerConnection::OnRenegotiationNeeded()
-{}
+{
+	UE_LOG(LogMillicastPublisher, Log, TEXT("OnRenegociationNeeded"));
+}
 
 void FWebRTCPeerConnection::OnIceConnectionChange(webrtc::PeerConnectionInterface::IceConnectionState)
 {}

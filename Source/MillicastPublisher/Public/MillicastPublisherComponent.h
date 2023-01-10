@@ -164,6 +164,8 @@ private:
 
 	void SetSimulcast(webrtc::RtpTransceiverInit& TransceiverInit);
 
+	void UpdateBitrateSettings();
+
 private:
 	/** WebSocket Connection */
 	TSharedPtr<IWebSocket> WS;
