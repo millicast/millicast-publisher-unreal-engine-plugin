@@ -6,6 +6,9 @@
 
 class FRTCStatsCollector : public webrtc::RTCStatsCollectorCallback
 {
+	double LastVideoStatTimestamp;
+	double LastAudioStatTimestamp;
+
 public:
 	FRTCStatsCollector(class FWebRTCPeerConnection* InPeerConnection);
 	~FRTCStatsCollector();
@@ -18,10 +21,36 @@ public:
 	rtc::RefCountReleaseStatus Release() const override;
 	// End RTCStatsCollectorCallback interface
 
-	double TotalEncodeTime;
+	double Rtt; // ms
+	size_t Width; // px
+	size_t Height; // px
+	size_t FramePerSecond;
+	double VideoBitrate; // bps
+	double AudioBitrate; // bps
+	double AudioTargetBitrate; // bps
+	double VideoTargetBitrate; // bps
+	size_t VideoTotalSent; // bytes
+	size_t AudioTotalSent; // bytes
+	int VideoPacketRetransmitted; // num packets
+	int AudioPacketRetransmitted; // num packets
+	FString VideoCodec; // mimetype
+	FString AudioCodec; // mimetype
+	int FramesDropped;
+	int VideoNackCount;
+	int AudioNackCount;
+
 	double TotalEncodedFrames;
 	double AvgEncodeTime;
-	double EncodeFPS;
+	double TotalEncodeTime;
+
+	TOptional<FString> QualityLimitationReason;
+	uint32 QualityLimitationResolutionChange;
+	TOptional<FString> ContentType;
+
+	double Timestamp; // us
+
+	const FString& Cluster() const { return PeerConnection->ClusterId; }
+	const FString& Server() const { return PeerConnection->ServerId; }
 
 private:
 	mutable int32 RefCount;

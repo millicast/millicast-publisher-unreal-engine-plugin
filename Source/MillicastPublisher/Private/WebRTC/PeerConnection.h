@@ -49,6 +49,9 @@ class FWebRTCPeerConnection : public webrtc::PeerConnectionObserver
 	static TArray<FString> GetSupportedCodecs();
 
 public:
+	FString ClusterId;
+	FString ServerId;
+
 	using FRTCConfig = webrtc::PeerConnectionInterface::RTCConfiguration;
 
 	/** Offer/Answer options (e.g. offer to receive audio/video) */
@@ -103,6 +106,7 @@ public:
 	void OnIceConnectionReceivingChange(bool receiving) override;
 
 	void PollStats();
+	void EnableStats(bool Enable);
 	
 	/* Return the webrtc peerconnection underlying pointer */
 	webrtc::PeerConnectionInterface* operator->()

@@ -28,8 +28,7 @@ public:
 private:
 	/** Width and height of the viewport. */
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Capture Settings",
-		META = (DisplayName = "Capture Size", AllowPrivateAccess = true,
-			EditCondition = "bOverrideBroadcastSettings"))
+		META = (DisplayName = "Capture Size", AllowPrivateAccess = true))
 	FIntPoint TargetSize = FIntPoint(1280, 720);
 
 protected:

@@ -454,6 +454,7 @@ bool UMillicastPublisherComponent::PublishToMillicast()
 	// Create offer
 	UE_LOG(LogMillicastPublisher, Log, TEXT("Create offer"));
 	PeerConnection->CreateOffer();
+	PeerConnection->EnableStats(RtcStatsEnabled);
 
 	return true;
 }
@@ -502,11 +503,15 @@ void UMillicastPublisherComponent::OnMessage(const FString& Msg)
 	{
 		auto DataJson = ResponseJson->GetObjectField("data");
 		FString Sdp = DataJson->GetStringField("sdp");
+		FString ServerId = DataJson->GetStringField("publisherId");
+		FString ClusterId = DataJson->GetStringField("clusterId");
 
 		FScopeLock Lock(&CriticalSection);
 		if (PeerConnection) 
 		{
 			PeerConnection->SetRemoteDescription(to_string(Sdp));
+			PeerConnection->ServerId = MoveTemp(ServerId);
+			PeerConnection->ClusterId = MoveTemp(ClusterId);
 		}
 	}
 	else if(Type == "error") // Error in the request data sent to millicast
@@ -648,5 +653,14 @@ void UMillicastPublisherComponent::SetStartingBitrate(int Bps)
 	StartingBitrate = Bps;
 
 	UpdateBitrateSettings();
+}
+
+void UMillicastPublisherComponent::EnableStats(bool Enable)
+{
+	RtcStatsEnabled = Enable;
+	if (PeerConnection)
+	{
+		PeerConnection->EnableStats(Enable);
+	}
 }
 

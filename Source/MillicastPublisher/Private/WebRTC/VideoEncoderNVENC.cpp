@@ -5,7 +5,7 @@
 #include "VideoEncoderFactory.h"
 #include "AVEncoderContext.h"
 #include "RHI/CopyTexture.h"
-//#include "Stats.h"
+#include "Stats.h"
 
 FVideoEncoderNVENC::FVideoEncoderNVENC()
 {
@@ -153,7 +153,6 @@ int32 FVideoEncoderNVENC::Encode(webrtc::VideoFrame const& frame, std::vector<we
 
 	AVEncoder::FVideoEncoderInputFrame* EncoderInputFrame = VideoFrameBuffer->GetFrame();
 
-	// if(EncoderInputFrame)
 	EncoderInputFrame->SetTimestampRTP(frame.timestamp());
 	
 	// Encode the frame!
@@ -242,7 +241,7 @@ void OnEncodedPacket(uint32 InLayerIndex, const AVEncoder::FVideoEncoderInputFra
 	const double EncoderLatencyMs = (InPacket.Timings.FinishTs.GetTotalMicroseconds() - InPacket.Timings.StartTs.GetTotalMicroseconds()) / 1000.0;
 	const double BitrateMbps = InPacket.DataSize * 8 * InPacket.Framerate / 1000000.0;
 
-	//FPublisherStats::Get().SetEncoderStats(EncoderLatencyMs, BitrateMbps, InPacket.VideoQP);
+	FPublisherStats::Get().SetEncoderStats(EncoderLatencyMs, BitrateMbps, InPacket.VideoQP);
 	
 	if (OnEncodedImageCallback)
 	{

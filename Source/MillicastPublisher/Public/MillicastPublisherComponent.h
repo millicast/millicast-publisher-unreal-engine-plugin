@@ -112,6 +112,13 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "MillicastPublisher", META = (DisplayName = "SetStartingBitrate"))
 	void SetStartingBitrate(int Bps);
 
+	/**
+	* Enable RTC stats gathering
+	* Enter the cmd: ``stat millicast_publisher`` in order to display them
+	*/
+	UFUNCTION(BlueprintCallable, Category = "MillicastPublisher", META = (DisplayName = "EnableStat"))
+	void EnableStats(bool Enable);
+
 public:
 	/** Called when the response from the Publisher api is successfull */
 	UPROPERTY(BlueprintAssignable, Category = "Components|Activation")
@@ -180,6 +187,7 @@ private:
 
 	/** Publisher */
 	bool bIsPublishing;
+	bool RtcStatsEnabled;
 	TOptional<int> MinimumBitrate; // in bps
 	TOptional<int> MaximumBitrate; // in bps
 	TOptional<int> StartingBitrate; // in bps

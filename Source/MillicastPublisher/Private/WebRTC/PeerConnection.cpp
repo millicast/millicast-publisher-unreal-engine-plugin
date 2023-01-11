@@ -18,7 +18,7 @@ std::unique_ptr<webrtc::TaskQueueFactory> FWebRTCPeerConnection::TaskQueueFactor
 
 FWebRTCPeerConnection::FWebRTCPeerConnection()
 {
-	RTCStatsCollector = MakeUnique<FRTCStatsCollector>(this);
+	RTCStatsCollector = nullptr;
 }
 
 void FWebRTCPeerConnection::CreatePeerConnectionFactory()
@@ -354,10 +354,19 @@ void FWebRTCPeerConnection::PollStats()
 		std::vector<rtc::scoped_refptr<webrtc::RtpTransceiverInterface>> Transceivers = PeerConnection->GetTransceivers();
 		for (rtc::scoped_refptr<webrtc::RtpTransceiverInterface> Transceiver : Transceivers)
 		{
-			if (Transceiver->media_type() == cricket::MediaType::MEDIA_TYPE_VIDEO)
-			{
-				PeerConnection->GetStats(Transceiver->sender(), RTCStatsCollector.Get());
-			}
+			PeerConnection->GetStats(Transceiver->sender(), RTCStatsCollector.Get());
 		}
+	}
+}
+
+void FWebRTCPeerConnection::EnableStats(bool Enable)
+{
+	if (Enable && !RTCStatsCollector)
+	{
+		RTCStatsCollector = MakeUnique<FRTCStatsCollector>(this);
+	}
+	else
+	{
+		RTCStatsCollector = nullptr;
 	}
 }
