@@ -514,7 +514,7 @@ void UMillicastPublisherComponent::OnMessage(const FString& Msg)
 		if (PeerConnection) 
 		{
 			Sdp += FString(TEXT("a=x-google-flag:conference\r\n"));
-			PeerConnection->SetRemoteDescription(to_string(Sdp));
+			PeerConnection->SetRemoteDescription(Millicast::Publisher::to_string(Sdp));
 			PeerConnection->ServerId = MoveTemp(ServerId);
 			PeerConnection->ClusterId = MoveTemp(ClusterId);
 		}

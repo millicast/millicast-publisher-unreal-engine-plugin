@@ -4,11 +4,11 @@
 
 #include "Tickable.h"
 #include "WebRTC/PeerConnection.h"
-
+#include "api/peer_connection_interface.h"
 
 namespace Millicast::Publisher
 {
-	class FRTCStatsCollector
+	class FRTCStatsCollector : public webrtc::RTCStatsCollectorCallback
 	{
 		double LastVideoStatTimestamp;
 		double LastAudioStatTimestamp;
