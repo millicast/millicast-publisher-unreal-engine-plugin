@@ -1,4 +1,4 @@
-# MillicastPublisher plugin for Unreal Engine 5.1
+# MillicastPublisher plugin 1.3.0 for Unreal Engine 5.1
 
 * Supported UE version 5.1
 * Supported on Windows and Linux
@@ -14,9 +14,10 @@ you must change use the right github branch.
 The naming pattern follows : UEX.Y where X is the major unreal version and Y the minor.
 
 * [Unreal 4.27 ](https://github.com/millicast/millicast-publisher-unreal-engine-plugin/tree/UE4.27)
+* [Unreal 5.0.3](https://github.com/millicast/millicast-publisher-unreal-engine-plugin/tree/UE5.0)
 * [Unreal 5.1](https://github.com/millicast/millicast-publisher-unreal-engine-plugin/tree/UE5.1)
 
-The main is currently for UE5.0.3.
+The main is currently for UE5.1.
 
 ## Support codec
 
@@ -28,7 +29,7 @@ The main is currently for UE5.0.3.
 
 * VP8 (simulcast available, software encoding)
 * VP9 (software encoding)
-* H264 (hardware encoding)
+* H264 (simulcast not available, hardware encoding)
 
 ## Installation
 
