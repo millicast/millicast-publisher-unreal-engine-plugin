@@ -4,7 +4,7 @@
 #include "WebRTC/PeerConnection.h"
 #include "MillicastPublisherPrivate.h"
 #include "api/stats/rtcstats_objects.h"
-#include "util.h"
+#include "Util.h"
 
 DECLARE_LOG_CATEGORY_EXTERN(LogMillicastPublisherStats, Log, All);
 DEFINE_LOG_CATEGORY(LogMillicastPublisherStats);
@@ -256,7 +256,7 @@ void FRTCStatsCollector::OnStatsDelivered(const rtc::scoped_refptr<const webrtc:
 	double NewTotalEncodeTime = 0;
 
 	auto get_codec = [](auto&& Report, auto&& OutboundStat) -> FString {
-		auto CodecStats = Report->GetStatsOfType<webrtc::RTCCodecStats>();
+		auto CodecStats = Report->template GetStatsOfType<webrtc::RTCCodecStats>();
 
 		auto it = std::find_if(CodecStats.begin(), CodecStats.end(),
 			[&OutboundStat](auto&& e) { return e->id() == *OutboundStat.codec_id; });
