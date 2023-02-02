@@ -20,8 +20,8 @@ namespace UnrealBuildTool.Rules
 					"MediaAssets",
 					"Projects",
 					"SlateCore",
-					"PlacementMode",
-				});
+					"PlacementMode"
+                });
 
 			PrivateIncludePathModuleNames.AddRange(
 				new string[] {
