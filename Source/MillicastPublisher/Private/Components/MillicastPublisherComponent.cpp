@@ -27,17 +27,29 @@
 
 constexpr auto HTTP_OK = 200;
 
-FString ToString(EMillicastCodec Codec)
+inline FString ToString(EMillicastVideoCodecs Codec)
 {
 	switch (Codec)
 	{
 		default:
-		case EMillicastCodec::MC_VP8:
+		case EMillicastVideoCodecs::Vp8:
 			return TEXT("vp8");
-		case EMillicastCodec::MC_VP9:
+		case EMillicastVideoCodecs::Vp9:
 			return TEXT("vp9");
-		case EMillicastCodec::MC_H264:
+		case EMillicastVideoCodecs::H264:
 			return TEXT("h264");
+		case EMillicastVideoCodecs::Av1:
+			return TEXT("av1");
+	}
+}
+
+inline FString ToString(EMillicastAudioCodecs Codec)
+{
+	switch (Codec)
+	{
+	default:
+	case EMillicastAudioCodecs::Opus:
+		return TEXT("opus");
 	}
 }
 
@@ -258,7 +270,8 @@ void UMillicastPublisherComponent::UnPublish()
 	}
 
 	// Close websocket connection
-	if (WS) {
+	if (WS) 
+	{
 		WS->Close();
 		WS = nullptr;
 	}
@@ -386,7 +399,7 @@ bool UMillicastPublisherComponent::PublishToMillicast()
 		auto DataJson = MakeShared<FJsonObject>();
 		DataJson->SetStringField("name", WeakThis->MillicastMediaSource->StreamName);
 		DataJson->SetStringField("sdp", ToString(sdp));
-		DataJson->SetStringField("codec", ToString(WeakThis->SelectedCodec));
+		DataJson->SetStringField("codec", ToString(WeakThis->SelectedVideoCodec));
 		DataJson->SetArrayField("events", eventsJson);
 
 		// If multisource feature
@@ -587,7 +600,7 @@ void UMillicastPublisherComponent::CaptureAndAddTracks()
 		Encoding.network_priority = webrtc::Priority::kHigh;
 		init.send_encodings.push_back(Encoding);
 
-		if (MillicastMediaSource->Simulcast)
+		if (Simulcast)
 		{
 			SetSimulcast(init);
 		}
@@ -669,3 +682,24 @@ void UMillicastPublisherComponent::EnableStats(bool Enable)
 	}
 }
 
+#if WITH_EDITOR
+bool UMillicastPublisherComponent::CanEditChange(const FProperty* InProperty) const
+{
+	FString Name;
+	InProperty->GetName(Name);
+
+	// Can't change render target if Capture video is disabled
+	if (Name == "Simulcast")
+	{
+		return SelectedVideoCodec == EMillicastVideoCodecs::Vp8;
+	}
+
+	return Super::CanEditChange(InProperty);
+}
+
+void UMillicastPublisherComponent::PostEditChangeChainProperty(struct FPropertyChangedChainEvent& InPropertyChangedEvent)
+{
+	Super::PostEditChangeChainProperty(InPropertyChangedEvent);
+}
+
+#endif //WITH_EDITOR

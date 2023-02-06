@@ -2,8 +2,8 @@
 
 #include <CoreMinimal.h>
 
-UENUM(BlueprintType)
-enum EMillicastVideoCodecs
+UENUM()
+enum class EMillicastVideoCodecs : uint8
 {
 	Vp8  UMETA(DisplayName = "VP8"),
 	Vp9  UMETA(DisplayName = "VP9"),
@@ -11,9 +11,8 @@ enum EMillicastVideoCodecs
 	Av1  UMETA(DisplayName = "AV1")
 };
 
-UENUM(BlueprintType)
-enum EMillicastAudioCodecs
+UENUM()
+enum class EMillicastAudioCodecs : uint8
 {
 	Opus      UMETA(DisplayName = "opus"),
-	Multiopus UMETA(DisplayName = "multiopus")
 };
