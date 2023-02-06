@@ -38,8 +38,6 @@ inline FString ToString(EMillicastVideoCodecs Codec)
 			return TEXT("vp9");
 		case EMillicastVideoCodecs::H264:
 			return TEXT("h264");
-		case EMillicastVideoCodecs::Av1:
-			return TEXT("av1");
 	}
 }
 
