@@ -5,6 +5,7 @@
 #include <CoreMinimal.h>
 #include <Components/ActorComponent.h>
 #include "MillicastPublisherSource.h"
+#include "RtcCodecsConstants.h"
 #include "MillicastPublisherComponent.generated.h"
 
 // Forward declarations
@@ -32,13 +33,6 @@ DECLARE_DYNAMIC_MULTICAST_SPARSE_DELEGATE(FMillicastPublisherComponentActive, UM
 DECLARE_DYNAMIC_MULTICAST_SPARSE_DELEGATE(FMillicastPublisherComponentInactive, UMillicastPublisherComponent, OnInactive);
 DECLARE_DYNAMIC_MULTICAST_SPARSE_DELEGATE_OneParam(FMillicastPublisherComponentViewerCount, UMillicastPublisherComponent, OnViewerCount, int, Count);
 
-UENUM()
-enum class EMillicastCodec : uint8
-{
-	MC_VP8 UMETA(DisplayName="VP8"),
-	MC_VP9 UMETA(DisplayName="VP9"),
-	MC_H264 UMETA(DisplayName="H264"),
-};
 
 /**
 	A component used to publish audio, video feed to millicast.
@@ -58,7 +52,14 @@ private:
 	UMillicastPublisherSource* MillicastMediaSource = nullptr;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Properties", META = (DisplayName = "Video Codec"))
-	EMillicastCodec SelectedCodec;
+	EMillicastVideoCodecs SelectedVideoCodec;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Properties", META = (DisplayName = "Audio Codec"))
+	EMillicastAudioCodecs SelectedAudioCodec;
+
+	/** Whether to enable simulcast */
+	UPROPERTY(EditDefaultsOnly, Category = "Properties", META = (DisplayName = "Simulcast"))
+	bool Simulcast = false;
 	
 public:
 	~UMillicastPublisherComponent();
@@ -122,6 +123,11 @@ public:
 	*/
 	UFUNCTION(BlueprintCallable, Category = "MillicastPublisher", META = (DisplayName = "EnableStat"))
 	void EnableStats(bool Enable);
+
+#if WITH_EDITOR
+	virtual bool CanEditChange(const FProperty* InProperty) const override;
+	virtual void PostEditChangeChainProperty(struct FPropertyChangedChainEvent& InPropertyChangedEvent) override;
+#endif
 
 public:
 	/** Called when the response from the Publisher api is successfull */

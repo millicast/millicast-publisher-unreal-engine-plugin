@@ -128,19 +128,6 @@ void UMillicastPublisherSource::SetVolumeMultiplier(float f)
 	}
 }
 
-FString UMillicastPublisherSource::GetAudioCodec() const
-{
-	FString codecName;
-
-	switch (AudioCodec)
-	{
-	case EMillicastAudioCodecs::Opus:      codecName = cricket::kOpusCodecName;  break;
-	case EMillicastAudioCodecs::Multiopus: codecName = "multiopus"; break;
-	}
-
-	return codecName;
-}
-
 FString UMillicastPublisherSource::GetMediaOption(const FName& Key, const FString& DefaultValue) const
 {
 	if (Key == MillicastPublisherOption::StreamName)
@@ -290,29 +277,9 @@ bool UMillicastPublisherSource::CanEditChange(const FProperty* InProperty) const
 	return Super::CanEditChange(InProperty);
 }
 
-bool UMillicastPublisherSource::IsCodecSupported(EMillicastAudioCodecs Selection)
-{
-	FString codecName= GetAudioCodec();
-
-	TArray<FString> Codecs = Millicast::Publisher::FWebRTCPeerConnection::GetSupportedAudioCodecs();
-
-	return Codecs.Contains(codecName);
-}
-
 void UMillicastPublisherSource::PostEditChangeChainProperty(struct FPropertyChangedChainEvent& InPropertyChangedEvent)
 {
 	Super::PostEditChangeChainProperty(InPropertyChangedEvent);
-
-	FName PropertyName = InPropertyChangedEvent.GetPropertyName();
-
-	if (*PropertyName.ToString() == FString("AudioCodec"))
-	{
-		if (!IsCodecSupported(AudioCodec))
-		{
-			UE_LOG(LogMillicastPublisher, Warning, TEXT("Selected audio codec is not supported, falling back to opus"));
-			AudioCodec = EMillicastAudioCodecs::Opus;
-		}
-	}
 }
 
 #endif //WITH_EDITOR
