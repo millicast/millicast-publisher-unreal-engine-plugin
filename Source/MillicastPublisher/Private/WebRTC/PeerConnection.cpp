@@ -126,7 +126,7 @@ FWebRTCPeerConnection* FWebRTCPeerConnection::Create(const FRTCConfig& Config)
 
 	if (!result.ok())
 	{
-		UE_LOG(LogMillicastPublisher, Error, TEXT("Could not create peerconnection : %S"), result.error().message());
+		UE_LOG(LogMillicastPublisher, Error, TEXT("Could not create peerconnection : %s"), result.error().message());
 		PeerConnectionInstance->PeerConnection = nullptr;
 		return nullptr;
 	}
