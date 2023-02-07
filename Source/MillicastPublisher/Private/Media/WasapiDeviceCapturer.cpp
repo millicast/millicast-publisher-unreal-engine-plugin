@@ -816,7 +816,7 @@ namespace Millicast::Publisher
 				case AUDCLNT_E_BUFFER_OPERATION_PENDING: ErrorMsg = "Buffer cannot be accessed because a stream reset is in progress."; break;
 				case AUDCLNT_E_SERVICE_NOT_RUNNING: ErrorMsg = "	The Windows audio service is not running."; break;
 				case E_POINTER: ErrorMsg = "Parameter is NULL"; break;
-				default: ErrorMsg = "Unknown reason";
+				default: ErrorMsg = "Unknown reason: " + FString::FromInt(getBufferRet);
 				}
 
 				UE_LOG(LogMillicastPublisher, Error, TEXT("Couldn't get capture buffer : %S"), *ErrorMsg);
