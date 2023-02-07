@@ -299,7 +299,7 @@ void FRTCStatsCollector::OnStatsDelivered(const rtc::scoped_refptr<const webrtc:
 				ContentType = GetOptionalStat(OutboundStat.content_type);
 				QualityLimitationResolutionChange = ValueOrDefault(OutboundStat.quality_limitation_resolution_changes, 0);
 
-				if (LastVideoStatTimestamp != 0 && VideoTotalSent != lastByteCount)
+				if (LastVideoStatTimestamp != 0 && timestamp != LastVideoStatTimestamp)
 				{
 					VideoBitrate = (VideoTotalSent - lastByteCount) * NUM_US * 8. / (timestamp - LastVideoStatTimestamp);
 				}
@@ -318,7 +318,7 @@ void FRTCStatsCollector::OnStatsDelivered(const rtc::scoped_refptr<const webrtc:
 				// AudioTargetBitrate = ValueOrDefault(OutboundStat.target_bitrate, 0);
 				AudioPacketRetransmitted = ValueOrDefault(OutboundStat.retransmitted_packets_sent, 0);
 
-				if (LastAudioStatTimestamp != 0 && AudioTotalSent != lastByteCount)
+				if (LastAudioStatTimestamp != 0 && timestamp != LastAudioStatTimestamp)
 				{
 					AudioBitrate = (AudioTotalSent - lastByteCount) * NUM_US * 8 / (timestamp - LastAudioStatTimestamp);
 				}

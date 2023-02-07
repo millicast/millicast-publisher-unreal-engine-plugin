@@ -138,11 +138,26 @@ void UMillicastPublisherComponent::SetupIceServersFromJson(TArray<TSharedPtr<FJs
 void UMillicastPublisherComponent::ParseActiveEvent(TSharedPtr<FJsonObject> JsonMsg)
 {
 	OnActive.Broadcast();
+
+	// Unmute audio and video
+	if (Automute && MillicastMediaSource)
+	{
+		UE_LOG(LogMillicastPublisher, Log, TEXT("Auto unmuting media tracks"));
+		MillicastMediaSource->MuteVideo(false);
+		MillicastMediaSource->MuteAudio(false);
+	}
 }
 
 void UMillicastPublisherComponent::ParseInactiveEvent(TSharedPtr<FJsonObject> JsonMsg)
 {
 	OnInactive.Broadcast();
+
+	if (Automute && MillicastMediaSource)
+	{
+		UE_LOG(LogMillicastPublisher, Log, TEXT("Auto muting media tracks"));
+		MillicastMediaSource->MuteVideo(true);
+		MillicastMediaSource->MuteAudio(true);
+	}
 }
 
 void UMillicastPublisherComponent::ParseViewerCountEvent(TSharedPtr<FJsonObject> JsonMsg)
@@ -618,6 +633,14 @@ void UMillicastPublisherComponent::CaptureAndAddTracks()
 				result.error().message());
 		}
 	});
+
+	if (Automute)
+	{
+		// Muting media tracks until there are viewers watching the stream
+		UE_LOG(LogMillicastPublisher, Log, TEXT("Auto muting media tracks until viewers are watching"));
+		MillicastMediaSource->MuteVideo(true);
+		MillicastMediaSource->MuteAudio(true);
+	}
 }
 
 void UMillicastPublisherComponent::UpdateBitrateSettings()
