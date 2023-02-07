@@ -51,15 +51,23 @@ private:
 			  META = (DisplayName = "Millicast Publisher Source", AllowPrivateAccess = true))
 	UMillicastPublisherSource* MillicastMediaSource = nullptr;
 
+	/** The video codec to be used to encode video */
 	UPROPERTY(EditDefaultsOnly, Category = "Properties", META = (DisplayName = "Video Codec"))
 	EMillicastVideoCodecs SelectedVideoCodec;
 
+	/** The video codec to be used to encode audio */
 	UPROPERTY(EditDefaultsOnly, Category = "Properties", META = (DisplayName = "Audio Codec"))
 	EMillicastAudioCodecs SelectedAudioCodec;
 
 	/** Whether to enable simulcast */
 	UPROPERTY(EditDefaultsOnly, Category = "Properties", META = (DisplayName = "Simulcast"))
 	bool Simulcast = false;
+
+	/** Whether you want to automute the tracks when the number of viewer reach 0 
+	* And unmute them when there are viewer watching the stream.
+	*/
+	UPROPERTY(EditDefaultsOnly, Category = "Properties", META = (DisplayName = "Automute"))
+	bool Automute = false;
 	
 public:
 	~UMillicastPublisherComponent();
