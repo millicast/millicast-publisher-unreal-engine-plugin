@@ -110,20 +110,16 @@ int FVideoEncoderNVENC::InitEncode(webrtc::VideoCodec const* codec_settings, Vid
 
 int32 FVideoEncoderNVENC::Encode(webrtc::VideoFrame const& frame, std::vector<webrtc::VideoFrameType> const* frame_types)
 {
-	// Get the frame buffer out of the frame
-	FFrameBufferRHI* VideoFrameBuffer = nullptr;
-
 	// the buffer is modified by a black frame buffer by libwebrtc when the track is muted
 	// So when get the video frame buffer it is no longer a FFrameBufferRHI which lead a segfault later
 	// This condition is to re-create a FFrameBufferRHI with a black frame
-	if (frame.video_frame_buffer()->GetI420() != nullptr)
+	if (frame.video_frame_buffer()->GetI420())
 	{
 		return WEBRTC_VIDEO_CODEC_OK;
 	}
-	else
-	{
-		VideoFrameBuffer = static_cast<FFrameBufferRHI*>(frame.video_frame_buffer().get());
-	}
+
+	// Get the frame buffer out of the frame
+	auto* VideoFrameBuffer = static_cast<FFrameBufferRHI*>(frame.video_frame_buffer().get());
 
 	if (!NVENCEncoder)
 	{
