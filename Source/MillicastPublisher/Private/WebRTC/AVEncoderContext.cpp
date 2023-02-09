@@ -314,7 +314,7 @@ FTexture2DRHIRef FAVEncoderContext::SetBackbufferTextureCUDAVulkan(TSharedPtr<AV
 		VkMemoryGetFdInfoKHR MemoryGetFdInfoKHR = {};
 		MemoryGetFdInfoKHR.sType = VK_STRUCTURE_TYPE_MEMORY_GET_FD_INFO_KHR;
 		MemoryGetFdInfoKHR.pNext = NULL;
-		MemoryGetFdInfoKHR.memory = VulkanTexture->Surface.GetAllocationHandle();
+		MemoryGetFdInfoKHR.memory = VulkanTexture->GetAllocationHandle();
 		MemoryGetFdInfoKHR.handleType = VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_FD_BIT_KHR;
 
 		// While this operation is safe (and unavoidable) C4191 has been enabled and this will trigger an error with warnings as errors
@@ -334,7 +334,7 @@ FTexture2DRHIRef FAVEncoderContext::SetBackbufferTextureCUDAVulkan(TSharedPtr<AV
 		CUDA_EXTERNAL_MEMORY_HANDLE_DESC CudaExtMemHandleDesc = {};
 		CudaExtMemHandleDesc.type = CU_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_FD;
 		CudaExtMemHandleDesc.handle.fd = Fd;
-		CudaExtMemHandleDesc.size = VulkanTexture->Surface.GetAllocationOffset() + VulkanTexture->Surface.GetMemorySize();
+		CudaExtMemHandleDesc.size = VulkanTexture->GetAllocationOffset() + VulkanTexture->GetMemorySize();
 
 		// import external memory
 		CUresult Result = FCUDAModule::CUDA().cuImportExternalMemory(&mappedExternalMemory, &CudaExtMemHandleDesc);
