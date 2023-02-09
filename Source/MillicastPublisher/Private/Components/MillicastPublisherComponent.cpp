@@ -190,8 +190,7 @@ void UMillicastPublisherComponent::ParseDirectorResponse(FHttpResponsePtr Respon
 		FString WsUrl;
 		WebSocketUrlField->TryGetString(WsUrl);
 
-		UE_LOG(LogMillicastPublisher, Log, TEXT("WsUrl : %S \njwt : %S"),
-			*WsUrl, *Jwt);
+		UE_LOG(LogMillicastPublisher, Log, TEXT("WsUrl : %s \njwt : %s"), *WsUrl, *Jwt);
 
 		SetupIceServersFromJson(IceServersField);
 
@@ -283,6 +282,7 @@ void UMillicastPublisherComponent::UnPublish()
 	}
 
 	// Close websocket connection
+
 	if (auto* pWS = WS.Get())
 	{
 		pWS->OnConnected().Remove(OnConnectedHandle);
@@ -354,7 +354,7 @@ bool UMillicastPublisherComponent::PublishToMillicast()
 			return;
 		}
 
-		UE_LOG(LogMillicastPublisher, Display, TEXT("pc.createOffer() | sucess\nsdp : %S"), sdp.c_str());
+		UE_LOG(LogMillicastPublisher, Display, TEXT("pc.createOffer() | sucess\nsdp : %s"), sdp.c_str());
 
 		// Search for this expression and add the stereo flag to enable stereo
 		const std::string s = "minptime=10;useinbandfec=1";
@@ -377,7 +377,7 @@ bool UMillicastPublisherComponent::PublishToMillicast()
 	CreateSessionDescriptionObserver->SetOnFailureCallback([WEAK_CAPTURE](const std::string& err) {
 		if (WeakThis.IsValid())
 		{
-			UE_LOG(LogMillicastPublisher, Error, TEXT("pc.createOffer() | Error: %S"), err.c_str());
+			UE_LOG(LogMillicastPublisher, Error, TEXT("pc.createOffer() | Error: %s"), err.c_str());
 			WeakThis->OnPublishingError.Broadcast(TEXT("Could not create offer"));
 		}
 	});
@@ -673,7 +673,7 @@ void UMillicastPublisherComponent::UpdateBitrateSettings()
 
 		if (!error.ok())
 		{
-			UE_LOG(LogMillicastPublisher, Error, TEXT("Could not set maximum bitrate: %S"), error.message());
+			UE_LOG(LogMillicastPublisher, Error, TEXT("Could not set maximum bitrate: %s"), error.message());
 		}
 	}
 }
