@@ -1,4 +1,4 @@
-# MillicastPublisher plugin 1.3.0 for Unreal Engine 5.1
+# MillicastPublisher plugin 1.4.0 for Unreal Engine 5.1
 
 * Supported UE version 5.1
 * Supported on Windows and Linux

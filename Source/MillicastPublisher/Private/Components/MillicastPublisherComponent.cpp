@@ -249,7 +249,7 @@ bool UMillicastPublisherComponent::Publish()
 		}
 		else 
 		{
-			UE_LOG(LogMillicastPublisher, Error, TEXT("Director HTTP request failed %d %s"), Response->GetResponseCode(), *Response->GetContentType());
+			UE_LOG(LogMillicastPublisher, Error, TEXT("Director HTTP request failed [code] %d [response] %s \n [body] %s"), Response->GetResponseCode(), *Response->GetContentType(), *Response->GetContentAsString());
 			FString ErrorMsg = Response->GetContentAsString();
 			OnAuthenticationFailure.Broadcast(Response->GetResponseCode(), ErrorMsg);
 		}
@@ -271,8 +271,8 @@ void UMillicastPublisherComponent::UnPublish()
 	FScopeLock Lock(&CriticalSection);
 
 	UE_LOG(LogMillicastPublisher, Display, TEXT("Unpublish"));
+	
 	// Release peerconnection and stop capture
-
 	if(PeerConnection)
 	{
 		delete PeerConnection;
@@ -282,9 +282,15 @@ void UMillicastPublisherComponent::UnPublish()
 	}
 
 	// Close websocket connection
-	if (WS) 
+
+	if (auto* pWS = WS.Get())
 	{
-		WS->Close();
+		pWS->OnConnected().Remove(OnConnectedHandle);
+		pWS->OnConnectionError().Remove(OnConnectionErrorHandle);
+		pWS->OnClosed().Remove(OnClosedHandle);
+		pWS->OnMessage().Remove(OnMessageHandle);
+		pWS->Close();
+		
 		WS = nullptr;
 	}
 
