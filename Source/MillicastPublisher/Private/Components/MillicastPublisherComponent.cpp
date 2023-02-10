@@ -354,7 +354,7 @@ bool UMillicastPublisherComponent::PublishToMillicast()
 			return;
 		}
 
-		UE_LOG(LogMillicastPublisher, Display, TEXT("pc.createOffer() | sucess\nsdp : %s"), sdp.c_str());
+		UE_LOG(LogMillicastPublisher, Display, TEXT("pc.createOffer() | sucess\nsdp : %s"), *FString(sdp.c_str()));
 
 		// Search for this expression and add the stereo flag to enable stereo
 		const std::string s = "minptime=10;useinbandfec=1";
@@ -444,7 +444,7 @@ bool UMillicastPublisherComponent::PublishToMillicast()
 	LocalDescriptionObserver->SetOnFailureCallback([WEAK_CAPTURE](const std::string& err) {
 		if (WeakThis.IsValid())
 		{
-			UE_LOG(LogMillicastPublisher, Error, TEXT("Set local description failed : %s"), *ToString(err));
+			UE_LOG(LogMillicastPublisher, Error, TEXT("Set local description failed : %s"), *FString(err.c_str()));
 			WeakThis->OnPublishingError.Broadcast(TEXT("Could not set local description"));
 		}
 	});
@@ -459,7 +459,7 @@ bool UMillicastPublisherComponent::PublishToMillicast()
 		}
 	});
 	RemoteDescriptionObserver->SetOnFailureCallback([WEAK_CAPTURE](const std::string& err) {
-		UE_LOG(LogMillicastPublisher, Error, TEXT("Set remote description failed : %s"), *ToString(err));
+		UE_LOG(LogMillicastPublisher, Error, TEXT("Set remote description failed : %s"), *FString(err.c_str()));
 		if (WeakThis.IsValid())
 		{
 			WeakThis->OnPublishingError.Broadcast(TEXT("Could not set remote description"));
@@ -628,7 +628,7 @@ void UMillicastPublisherComponent::CaptureAndAddTracks()
 		if (result.ok())
 		{
 			UE_LOG(LogMillicastPublisher, Log, TEXT("Add transceiver for %s track : %s"), 
-				Track->kind().c_str(), Track->id().c_str());
+				*FString( Track->kind().c_str() ), *FString( Track->id().c_str() ) );
 		}
 		else
 		{
