@@ -26,7 +26,7 @@ public:
 	* Starts a capture according to the specific capturer and creates the corresponding WebRTC video source and video track.
 	* Returns the WebRTC video track so you can add it to the SDP to establish the peerconnection with Millicast.
 	*/
-	virtual FStreamTrackInterface StartCapture() = 0;
+	virtual FStreamTrackInterface StartCapture(UWorld* InWorld) = 0;
 
 	/** Stops the capture. The WebRTC Video Source and track will be set to null. */
 	virtual void StopCapture() = 0;
@@ -49,9 +49,13 @@ public:
 	using FVideoTrackInterface = rtc::scoped_refptr<webrtc::VideoTrackInterface>;
 
 	/** Creates VideoSource with SlateWindow Capture */
-	static TSharedPtr<IMillicastVideoSource> Create();
-	/** Creates VideoSource and capture from a RenderTarget */
-	static IMillicastVideoSource* Create(UTextureRenderTarget2D* RenderTarget);
+	static TSharedPtr<IMillicastVideoSource> CreateForSlate();
+	
+	/** Creates VideoSource */
+	static IMillicastVideoSource* Create();
+
+	virtual void SetSimulcast(bool InSimulcast) = 0;
+	virtual void SetRenderTarget(UTextureRenderTarget2D* InRenderTarget) = 0;
 };
 
 UENUM(BlueprintType)

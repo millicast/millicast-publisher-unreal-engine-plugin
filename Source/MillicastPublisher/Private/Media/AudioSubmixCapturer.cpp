@@ -43,7 +43,7 @@ namespace Millicast::Publisher
 		return AudioDevice.GetAudioDevice();
 	}
 
-	IMillicastSource::FStreamTrackInterface AudioSubmixCapturer::StartCapture()
+	IMillicastSource::FStreamTrackInterface AudioSubmixCapturer::StartCapture(UWorld* InWorld)
 	{
 		if (DeviceId.IsSet())
 		{
@@ -54,7 +54,10 @@ namespace Millicast::Publisher
 			AudioDevice = GetUEAudioDevice();
 		}
 
-		if (AudioDevice == nullptr) return nullptr;
+		if (!AudioDevice)
+		{
+			return nullptr;
+		}
 
 		AudioDevice->RegisterSubmixBufferListener(this, Submix);
 

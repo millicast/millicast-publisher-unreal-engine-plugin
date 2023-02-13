@@ -18,4 +18,15 @@ namespace Millicast::Publisher
 		FString Res{ Conv.Length(), Conv.Get() };
 		return Res;
 	}
+
+        template<typename T>
+        bool IsEmpty(const TArray<T>& Array)
+        {
+        #if ENGINE_MAJOR_VERSION < 5
+          return Array.Num() == 0;
+        #else
+          return Array.IsEmpty();
+        #endif
+        }
+
 }

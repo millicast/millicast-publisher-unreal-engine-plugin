@@ -13,19 +13,15 @@ namespace Millicast::Publisher
 	*/
 	class SlateWindowVideoCapturer : public IMillicastVideoSource, public TSharedFromThis<SlateWindowVideoCapturer>
 	{
-		rtc::scoped_refptr<Millicast::Publisher::FTexture2DVideoSourceAdapter> RtcVideoSource;
-		FVideoTrackInterface RtcVideoTrack;
-		FCriticalSection CriticalSection;
-		TSharedPtr<SWindow> TargetWindow;
-		FDelegateHandle OnBackBufferHandle;
-
 	public:
 		static TSharedPtr<SlateWindowVideoCapturer> CreateCapturer();
 
 		/* Begin IMillicastVideoSource */
-		FStreamTrackInterface StartCapture() override;
+		FStreamTrackInterface StartCapture(UWorld* InWorld) override;
 		void StopCapture() override;
 		FStreamTrackInterface GetTrack() override;
+		void SetSimulcast(bool InSimulcast) override { Simulcast = InSimulcast; }
+		void SetRenderTarget(UTextureRenderTarget2D* InRenderTarget) override { /*TODO [RW]*/ }
 		/* End IMillicastVideoSource */
 
 		/**
@@ -37,10 +33,19 @@ namespace Millicast::Publisher
 
 	private:
 		// Constructor explicitly private because we only want user to be create TSharedPtr of this type.
-		SlateWindowVideoCapturer() noexcept : RtcVideoSource(nullptr), RtcVideoTrack(nullptr) {}
+		SlateWindowVideoCapturer() noexcept = default;
 
 		/** Callback from the SlateWindowRenderer when a new frame buffer is ready */
 		void OnBackBufferReadyToPresent(SWindow& SlateWindow, const FTexture2DRHIRef& Buffer);
+
+		rtc::scoped_refptr<Millicast::Publisher::FTexture2DVideoSourceAdapter> RtcVideoSource;
+		FVideoTrackInterface RtcVideoTrack;
+		FCriticalSection CriticalSection;
+		TSharedPtr<SWindow> TargetWindow;
+		FDelegateHandle OnBackBufferHandle;
+		
+		bool Simulcast = false;
+		UTextureRenderTarget2D* RenderTarget = nullptr;
 	};
 
 }

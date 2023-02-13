@@ -13,7 +13,7 @@ namespace Millicast::Publisher
 		virtual ~AudioSubmixCapturer() override;
 
 		/** Just create audio source and audio track. The audio capture is started by WebRTC in the audio device module */
-		FStreamTrackInterface StartCapture() override;
+		FStreamTrackInterface StartCapture(UWorld* InWorld) override;
 		void StopCapture() override;
 
 		/** Set the submix to attach a callback to. nullptr means master submix */

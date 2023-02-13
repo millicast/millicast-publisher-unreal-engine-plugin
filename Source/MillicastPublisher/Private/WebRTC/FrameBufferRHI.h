@@ -6,7 +6,7 @@
 #include "VideoEncoderInput.h"
 #include "RHI.h"
 #include "RHIGPUReadback.h"
-//#include "Stats.h"
+#include "Util.h"
 
 namespace libyuv
 {
@@ -28,7 +28,6 @@ namespace libyuv
 
 namespace Millicast::Publisher
 {
-
 	class FFrameBufferRHI : public webrtc::VideoFrameBuffer
 	{
 	public:
@@ -64,12 +63,12 @@ namespace Millicast::Publisher
 			return Type::kNative;
 		}
 
-		virtual int width() const override
+		int width() const override
 		{
 			return Frame->GetWidth();
 		}
 
-		virtual int height() const override
+		int height() const override
 		{
 			return Frame->GetHeight();
 		}
@@ -78,8 +77,8 @@ namespace Millicast::Publisher
 		{
 			if (!Buffer)
 			{
-				int Width = TextureRef->GetSizeX();
-				int Height = TextureRef->GetSizeY();
+				const auto Width = TextureRef->GetSizeX();
+				const auto Height = TextureRef->GetSizeY();
 
 				Buffer = webrtc::I420Buffer::Create(Width, Height);
 				if (TextureData)
@@ -163,4 +162,61 @@ namespace Millicast::Publisher
 		}
 	};
 
+
+	class FSimulcastFrameBuffer : public webrtc::VideoFrameBuffer
+	{
+	public:
+		void AddLayer(rtc::scoped_refptr<FFrameBufferRHI> Layer)
+		{
+			FrameBuffers.Add(Layer);
+		}
+
+		int32 GetNumLayers() const
+		{
+			return FrameBuffers.Num();
+		}
+
+		rtc::scoped_refptr<FFrameBufferRHI> GetLayer(int Id) 
+		{
+			return FrameBuffers[Id];
+		}
+
+		Type type() const override
+		{
+			return Type::kNative;
+		}
+
+		int width() const override
+		{
+      		        if( IsEmpty(FrameBuffers) )
+			{
+				return 0;
+			}
+
+			return FrameBuffers[0]->width();
+		}
+
+		int height() const override
+		{
+		        if( IsEmpty(FrameBuffers) )
+			{
+				return 0;
+			}
+			
+			return FrameBuffers[0]->height();
+		}
+
+		rtc::scoped_refptr<webrtc::I420BufferInterface> ToI420() override
+		{
+			return nullptr;
+		}
+		
+		const webrtc::I420BufferInterface* GetI420() const override
+		{
+			return nullptr;
+		}
+
+	private:
+		TArray<rtc::scoped_refptr<FFrameBufferRHI>> FrameBuffers;
+	};
 }

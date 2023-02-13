@@ -5,6 +5,7 @@
 #include "AudioDeviceModule.h"
 #include "VideoEncoderFactory.h"
 #include "MillicastVideoEncoderFactory.h"
+#include "SimulcastEncoderFactory.h"
 
 #include <sstream>
 
@@ -45,7 +46,7 @@ void FWebRTCPeerConnection::CreatePeerConnectionFactory()
 	ApmConfig.gain_controller1.enabled = false;
 	ApmConfig.gain_controller2.enabled = false;
 	ApmConfig.residual_echo_detector.enabled = false;
-	ApmConfig.level_estimation.enabled = false;
+	// ApmConfig.level_estimation.enabled = false;
 
 	// Apply the config.
 	AudioProcessingModule->ApplyConfig(ApmConfig);
@@ -54,7 +55,7 @@ void FWebRTCPeerConnection::CreatePeerConnectionFactory()
 				nullptr, nullptr, SignalingThread.Get(), AudioDeviceModule,
 				webrtc::CreateAudioEncoderFactory<webrtc::AudioEncoderOpus>(),
 				webrtc::CreateAudioDecoderFactory<webrtc::AudioDecoderOpus>(),
-				std::make_unique<FMillicastVideoEncoderFactory>(),
+				std::make_unique<FSimulcastEncoderFactory>(),
 				webrtc::CreateBuiltinVideoDecoderFactory(),
 				nullptr, AudioProcessingModule
 	  ).release();

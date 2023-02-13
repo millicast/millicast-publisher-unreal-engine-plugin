@@ -4,10 +4,8 @@
 
 #include "Stats.h"
 
-#include "MillicastPublisherPrivate.h"
 #include "FrameBufferRHI.h"
 #include "RHI/CopyTexture.h"
-//#include "Stats.h"
 
 namespace Millicast::Publisher
 {
@@ -19,41 +17,68 @@ void FTexture2DVideoSourceAdapter::OnFrameReady(const FTexture2DRHIRef& FrameBuf
 	if (!AdaptVideoFrame(Timestamp, FrameBuffer->GetSizeXY()))
 		return;
 
-	if (!CaptureContext)
+	TryInitializeCaptureContexts(FrameBuffer);
+
+	const auto& SimulcastBuffer = rtc::make_ref_counted<FSimulcastFrameBuffer>();
+
+	TArray<FVideoEncoderInputFrameType> InputFrames;
+	InputFrames.Reserve( CaptureContexts.Num() );
+	
+	for (const auto& Context : CaptureContexts)
 	{
-		FIntPoint FBSize = FrameBuffer->GetSizeXY();
-		CaptureContext = MakeUnique<FAVEncoderContext>(FBSize.X, FBSize.Y, true);
-	}
+		const auto& CapturedInput = Context->ObtainCapturedInput();
+		FVideoEncoderInputFrameType InputFrame = CapturedInput.InputFrame;
+		InputFrames.Add(InputFrame);
 
-	FAVEncoderContext::FCapturerInput CapturerInput = CaptureContext->ObtainCapturerInput();
-	FVideoEncoderInputFrameType InputFrame = CapturerInput.InputFrame;
-	FTexture2DRHIRef Texture = CapturerInput.Texture.GetValue();
-
-	const int32 FrameId = InputFrame->GetFrameID();
-	
-	InputFrame->SetTimestampUs(Timestamp);
-	
+		const FTexture2DRHIRef Texture = CapturedInput.Texture.GetValue();
+		
+		InputFrame->SetTimestampUs(Timestamp);
+		
 #if ENGINE_MAJOR_VERSION < 5 || ENGINE_MINOR_VERSION == 0
 #else
-	const FIntPoint FBSize = FrameBuffer->GetSizeXY();
-	InputFrame->SetWidth(FBSize.X);
-	InputFrame->SetHeight(FBSize.Y);
+		InputFrame->SetWidth(Context->GetCaptureWidth());
+		InputFrame->SetHeight(Context->GetCaptureHeight());
 #endif
 
-	FRHICommandListImmediate& RHICmdList = FRHICommandListExecutor::GetImmediateCommandList();
-	CopyTexture(RHICmdList, FrameBuffer, Texture);
+		FRHICommandListImmediate& RHICmdList = FRHICommandListExecutor::GetImmediateCommandList();
+		CopyTexture(RHICmdList, FrameBuffer, Texture);
 
-	rtc::scoped_refptr<FFrameBufferRHI> Buffer = new rtc::RefCountedObject<FFrameBufferRHI>(Texture, InputFrame, CaptureContext->GetVideoEncoderInput());
+		const auto& Buffer = rtc::make_ref_counted<FFrameBufferRHI>(Texture, InputFrame, Context->GetVideoEncoderInput());
+		SimulcastBuffer->AddLayer(Buffer);
+	}
+
 	webrtc::VideoFrame Frame = webrtc::VideoFrame::Builder()
-								   .set_video_frame_buffer(Buffer)
+								   .set_video_frame_buffer(SimulcastBuffer)
 								   .set_timestamp_us(Timestamp)
 								   .set_rotation(webrtc::VideoRotation::kVideoRotation_0)
 								   .build();
 
 	rtc::AdaptedVideoTrackSource::OnFrame(Frame);
-	InputFrame->Release();
+
+	// Release the input frames that we obtained
+	for( auto& InputFrame : InputFrames )
+	{
+		InputFrame->Release();
+	}
 
 	FPublisherStats::Get().FrameRendered();
+}
+
+void FTexture2DVideoSourceAdapter::TryInitializeCaptureContexts(const FTexture2DRHIRef& FrameBuffer)
+{
+        if (!IsEmpty(CaptureContexts))
+	{
+		return;
+	}
+	
+	const auto& FBSize = FrameBuffer->GetSizeXY();
+	CaptureContexts.Add(MakeUnique<FAVEncoderContext>(FBSize.X, FBSize.Y, true));
+
+	if (Simulcast)
+	{
+		CaptureContexts.Add(MakeUnique<FAVEncoderContext>(FBSize.X / 2, FBSize.Y / 2, true));
+		CaptureContexts.Add(MakeUnique<FAVEncoderContext>(FBSize.X / 4, FBSize.Y / 4, true));
+	}
 }
 
 bool FTexture2DVideoSourceAdapter::AdaptVideoFrame(int64 TimestampUs, FIntPoint Resolution)

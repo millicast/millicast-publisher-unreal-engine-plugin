@@ -10,20 +10,17 @@ namespace Millicast::Publisher
 	/** Video source capturer to capture video frame from a RenderTarget2D */
 	class RenderTargetCapturer : public IMillicastVideoSource
 	{
-		UTextureRenderTarget2D* RenderTarget;
-		FVideoTrackInterface RtcVideoTrack;
-		rtc::scoped_refptr<FTexture2DVideoSourceAdapter> RtcVideoSource;
-
 	public:
 		DECLARE_EVENT(RenderTargetCapturer, FMillicastSourceOnFrameRendered)
 		FMillicastSourceOnFrameRendered OnFrameRendered;
 
 	public:
-		explicit RenderTargetCapturer(UTextureRenderTarget2D* InRenderTarget) noexcept;
 		~RenderTargetCapturer() noexcept;
 
-		FStreamTrackInterface StartCapture() override;
+		FStreamTrackInterface StartCapture(UWorld* InWorld) override;
 		void StopCapture() override;
+		void SetSimulcast(bool InSimulcast) override { Simulcast = InSimulcast; }
+		void SetRenderTarget(UTextureRenderTarget2D* InRenderTarget) override { RenderTarget = InRenderTarget; }
 
 		FStreamTrackInterface GetTrack() override;
 
@@ -33,6 +30,13 @@ namespace Millicast::Publisher
 	private:
 		/** Callback called on the rendering thread when a new frame has been rendered */
 		void OnEndFrameRenderThread();
+
+		UWorld* World = nullptr;
+		UTextureRenderTarget2D* RenderTarget = nullptr;
+		bool Simulcast = false;
+		
+		FVideoTrackInterface RtcVideoTrack;
+		rtc::scoped_refptr<FTexture2DVideoSourceAdapter> RtcVideoSource;
 	};
 
 }

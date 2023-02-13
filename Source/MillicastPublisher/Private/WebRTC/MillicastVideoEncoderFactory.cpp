@@ -13,6 +13,7 @@
 
 #include "VideoEncoderNVENC.h"
 #include "VideoEncoderVPX.h"
+#include "MillicastPublisherPrivate.h"
 
 namespace Millicast::Publisher
 {
@@ -46,6 +47,8 @@ std::vector<webrtc::SdpVideoFormat> FMillicastVideoEncoderFactory::GetSupportedF
 {
 	std::vector<webrtc::SdpVideoFormat> VideoFormats;
 	VideoFormats.push_back(CreateH264Format(H264_Profile::kProfileMain, H264_Level::kLevel1));
+	VideoFormats.push_back(CreateH264Format(H264_Profile::kProfileConstrainedBaseline, H264_Level::kLevel3_1));
+	VideoFormats.push_back(CreateH264Format(H264_Profile::kProfileBaseline, H264_Level::kLevel3_1));
 	VideoFormats.push_back(webrtc::SdpVideoFormat(cricket::kVp8CodecName));
 	VideoFormats.push_back(webrtc::SdpVideoFormat(cricket::kVp9CodecName));
 	return VideoFormats;

@@ -628,29 +628,31 @@ void UMillicastPublisherComponent::SetSimulcast(webrtc::RtpTransceiverInit& Tran
 void UMillicastPublisherComponent::CaptureAndAddTracks()
 {
 	// Starts audio and video capture
-	MillicastMediaSource->StartCapture(GetWorld(), [this](auto&& Track)
+	MillicastMediaSource->StartCapture(GetWorld(), Simulcast, [this](auto&& Track)
 	{
 		// Add transceiver with sendonly direction
 		webrtc::RtpTransceiverInit init;
 		init.direction = webrtc::RtpTransceiverDirection::kSendOnly;
 		init.stream_ids = { "unrealstream" };
 
-		webrtc::RtpEncodingParameters Encoding;
-		if (MinimumBitrate.IsSet())
-		{
-			Encoding.min_bitrate_bps = *MinimumBitrate;
-		}
-		if (MaximumBitrate.IsSet())
-		{
-			Encoding.max_bitrate_bps = *MaximumBitrate;
-		}
-		Encoding.max_framerate = 60;
-		Encoding.network_priority = webrtc::Priority::kHigh;
-		init.send_encodings.push_back(Encoding);
-
-		if (Simulcast)
+		if (Track->kind() == webrtc::MediaStreamTrackInterface::kVideoKind && Simulcast)
 		{
 			SetSimulcast(init);
+		}
+		else
+		{
+			webrtc::RtpEncodingParameters Encoding;
+			if (MinimumBitrate.IsSet())
+			{
+				Encoding.min_bitrate_bps = *MinimumBitrate;
+			}
+			if (MaximumBitrate.IsSet())
+			{
+				Encoding.max_bitrate_bps = *MaximumBitrate;
+			}
+			Encoding.max_framerate = 60;
+			Encoding.network_priority = webrtc::Priority::kHigh;
+			init.send_encodings.push_back(Encoding);
 		}
 
 		auto result = (*PeerConnection)->AddTransceiver(Track, init);
@@ -663,9 +665,9 @@ void UMillicastPublisherComponent::CaptureAndAddTracks()
 		else
 		{
 			UE_LOG(LogMillicastPublisher, Error, TEXT("Couldn't add transceiver for %s track %s : %s"), 
-				*FString( Track->kind().c_str() ),
-				*FString( Track->id().c_str() ),
-				*FString( result.error().message()) );
+				*FString(Track->kind().c_str()),
+				*FString(Track->id().c_str()),
+				*FString(result.error().message()));
 		}
 	});
 
@@ -761,30 +763,38 @@ void UMillicastPublisherComponent::EnableStats(bool Enable)
 	}
 }
 
-void UMillicastPublisherComponent::HandleError(const FString& Message)
-{
-	State = EMillicastPublisherState::Disconnected;
-	OnPublishingError.Broadcast(Message);
-}
-
 #if WITH_EDITOR
+
 bool UMillicastPublisherComponent::CanEditChange(const FProperty* InProperty) const
 {
 	FString Name;
 	InProperty->GetName(Name);
 
-	// Can't change render target if Capture video is disabled
 	if (Name == "Simulcast")
 	{
-		return SelectedVideoCodec == EMillicastVideoCodecs::Vp8;
+		return SelectedVideoCodec != EMillicastVideoCodecs::Vp9;
 	}
 
 	return Super::CanEditChange(InProperty);
 }
 
-void UMillicastPublisherComponent::PostEditChangeChainProperty(FPropertyChangedChainEvent& InPropertyChangedEvent)
+void UMillicastPublisherComponent::PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent)
 {
-	Super::PostEditChangeChainProperty(InPropertyChangedEvent);
+	FName Name = PropertyChangedEvent.GetPropertyName();
+
+	if (Name == "SelectedVideoCodec")
+	{
+		if (SelectedVideoCodec == EMillicastVideoCodecs::Vp9)
+		{
+			Simulcast = false;
+		}
+	}
 }
 
-#endif //WITH_EDITOR
+#endif
+
+void UMillicastPublisherComponent::HandleError(const FString& Message)
+{
+	State = EMillicastPublisherState::Disconnected;
+	OnPublishingError.Broadcast(Message);
+}

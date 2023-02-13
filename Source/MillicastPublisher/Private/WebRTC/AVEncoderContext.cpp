@@ -7,23 +7,19 @@
 
 #if PLATFORM_WINDOWS
 	#include "VideoCommon.h"
-	#include "D3D11State.h"
-	#include "D3D11Resources.h"
 	#include "D3D12RHICommon.h"
 	#include "D3D12RHIPrivate.h"
-	#include "D3D12Resources.h"
-	#include "D3D12Texture.h"
-	#include "Windows/AllowWindowsPlatformTypes.h"
 THIRD_PARTY_INCLUDES_START
+	#include "Windows/AllowWindowsPlatformTypes.h"
 	#include <VersionHelpers.h>
-THIRD_PARTY_INCLUDES_END
 	#include "Windows/HideWindowsPlatformTypes.h"
+THIRD_PARTY_INCLUDES_END
 #endif
 
 namespace Millicast::Publisher
 {
 
-FAVEncoderContext::FAVEncoderContext(int InCaptureWidth, int InCaptureHeight, bool bInFixedResolution)
+FAVEncoderContext::FAVEncoderContext(int32 InCaptureWidth, int32 InCaptureHeight, bool bInFixedResolution)
 	: CaptureWidth(InCaptureWidth)
 	, CaptureHeight(InCaptureHeight)
 	, bFixedResolution(bInFixedResolution)
@@ -44,21 +40,6 @@ bool FAVEncoderContext::IsFixedResolution() const
 #else
 	return false;
 #endif
-}
-
-int FAVEncoderContext::GetCaptureWidth() const
-{
-	return CaptureWidth;
-}
-
-int FAVEncoderContext::GetCaptureHeight() const
-{
-	return CaptureHeight;
-}
-
-TSharedPtr<AVEncoder::FVideoEncoderInput> FAVEncoderContext::GetVideoEncoderInput() const
-{
-	return VideoEncoderInput;
 }
 
 void FAVEncoderContext::SetCaptureResolution(int NewCaptureWidth, int NewCaptureHeight)
@@ -101,7 +82,7 @@ TSharedPtr<AVEncoder::FVideoEncoderInput> FAVEncoderContext::CreateVideoEncoderI
 		return nullptr;
 	}
 
-	FString RHIName = GDynamicRHI->GetName();
+	const FString& RHIName = GDynamicRHI->GetName();
 
 #if ENGINE_MAJOR_VERSION < 5 || ENGINE_MINOR_VERSION == 0
 	bool bIsResizable = !bInFixedResolution;
@@ -161,7 +142,7 @@ TSharedPtr<AVEncoder::FVideoEncoderInput> FAVEncoderContext::CreateVideoEncoderI
 	}
 #endif
 
-	UE_LOG(LogMillicastPublisher, Error, TEXT("Current RHI %s is not supported in Pixel Streaming"), *RHIName);
+	UE_LOG(LogMillicastPublisher, Error, TEXT("Current RHI %s is not supported"), *RHIName);
 	return nullptr;
 }
 
@@ -232,31 +213,30 @@ FTexture2DRHIRef FAVEncoderContext::SetBackbufferTexturePureVulkan(FVideoEncoder
 	return Texture;
 }
 
-FAVEncoderContext::FCapturerInput FAVEncoderContext::ObtainCapturerInput()
+FCapturedInput FAVEncoderContext::ObtainCapturedInput()
 {
 	if (!VideoEncoderInput.IsValid())
 	{
 		UE_LOG(LogMillicastPublisher, Error, TEXT("VideoEncoderInput is nullptr cannot capture a frame."));
-		return FAVEncoderContext::FCapturerInput();
+		return {};
 	}
 
 	// Obtain a frame from video encoder input, we use this frame to store an RHI specific texture.
 	// Note: obtain frame will recycle frames when they are no longer being used and become "available".
 	FVideoEncoderInputFrameType InputFrame = VideoEncoderInput->ObtainInputFrame();
-
-	if (InputFrame == nullptr)
+	if (!InputFrame)
 	{
-		return FAVEncoderContext::FCapturerInput();
+		return {};
 	}
 
 	// Back buffer already contains a texture for this particular frame, no need to go and make one.
 	if (BackBuffers.Contains(InputFrameRef))
 	{
-		return FAVEncoderContext::FCapturerInput(InputFrame, BackBuffers[InputFrameRef]);
+		return FCapturedInput(InputFrame, BackBuffers[InputFrameRef]);
 	}
 
 	// Got here, backbuffer does not contain this frame/texture already, so we must create a new platform specific texture.
-	FString RHIName = GDynamicRHI->GetName();
+	const FString& RHIName = GDynamicRHI->GetName();
 
 	FTexture2DRHIRef OutTexture;
 
@@ -273,8 +253,8 @@ FAVEncoderContext::FCapturerInput FAVEncoderContext::ObtainCapturerInput()
 		}
 		else
 		{
-			UE_LOG(LogMillicastPublisher, Error, TEXT("Pixel Streaming only supports AMD and NVIDIA devices, this device is neither of those."));
-			return FAVEncoderContext::FCapturerInput();
+			UE_LOG(LogMillicastPublisher, Error, TEXT("Millicast Publisher plugin only supports AMD and NVIDIA devices, this device is neither of those."));
+			return {};
 		}
 	}
 #if PLATFORM_WINDOWS
@@ -291,11 +271,11 @@ FAVEncoderContext::FCapturerInput FAVEncoderContext::ObtainCapturerInput()
 #endif // PLATFORM_WINDOWS
 	else
 	{
-		UE_LOG(LogMillicastPublisher, Error, TEXT("Pixel Streaming does not support this RHI - %s"), *RHIName);
-		return FAVEncoderContext::FCapturerInput();
+		UE_LOG(LogMillicastPublisher, Error, TEXT("RHI not supported - %s"), *RHIName);
+		return {};
 	}
 
-	return FAVEncoderContext::FCapturerInput(InputFrame, OutTexture);
+	return FCapturedInput(InputFrame, OutTexture);
 }
 
 FTexture2DRHIRef FAVEncoderContext::SetBackbufferTextureCUDAVulkan(FVideoEncoderInputFrameType InputFrame)
@@ -324,7 +304,7 @@ FTexture2DRHIRef FAVEncoderContext::SetBackbufferTextureCUDAVulkan(FVideoEncoder
 	// It is recommended to use NT handles where available, but these are only supported from Windows 8 onward, for earliers versions of Windows
 	// we need to use a Win7 style handle. NT handles require us to close them when we are done with them to prevent memory leaks.
 	// Refer to remarks section of https://docs.microsoft.com/en-us/windows/win32/api/dxgi1_2/nf-dxgi1_2-idxgiresource1-createsharedhandle
-	bool bUseNTHandle = IsWindows8OrGreater();
+	const bool bUseNTHandle = IsWindows8OrGreater();
 
 	{
 		// Generate VkMemoryGetWin32HandleInfoKHR
@@ -356,7 +336,7 @@ FTexture2DRHIRef FAVEncoderContext::SetBackbufferTextureCUDAVulkan(FVideoEncoder
 		// generate a cudaExternalMemoryHandleDesc
 		CUDA_EXTERNAL_MEMORY_HANDLE_DESC CudaExtMemHandleDesc = {};
 		CudaExtMemHandleDesc.type = bUseNTHandle ? CU_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_WIN32 : CU_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_WIN32_KMT;
-		CudaExtMemHandleDesc.handle.win32.name = NULL;
+		CudaExtMemHandleDesc.handle.win32.name = nullptr;
 		CudaExtMemHandleDesc.handle.win32.handle = Handle;
 
 		#if ENGINE_MAJOR_VERSION < 5 || ENGINE_MINOR_VERSION == 0
@@ -374,7 +354,7 @@ FTexture2DRHIRef FAVEncoderContext::SetBackbufferTextureCUDAVulkan(FVideoEncoder
 	}
 
 	// Only store handle to be closed on frame destruction if it is an NT handle
-	Handle = bUseNTHandle ? Handle : NULL;
+	Handle = bUseNTHandle ? Handle : nullptr;
 #else
 	void* Handle = nullptr;
 
@@ -385,7 +365,7 @@ FTexture2DRHIRef FAVEncoderContext::SetBackbufferTextureCUDAVulkan(FVideoEncoder
 		// Generate VkMemoryGetFdInfoKHR
 		VkMemoryGetFdInfoKHR MemoryGetFdInfoKHR = {};
 		MemoryGetFdInfoKHR.sType = VK_STRUCTURE_TYPE_MEMORY_GET_FD_INFO_KHR;
-		MemoryGetFdInfoKHR.pNext = NULL;
+		MemoryGetFdInfoKHR.pNext = nullptr;
 
 		#if ENGINE_MAJOR_VERSION < 5 || ENGINE_MINOR_VERSION == 0
 		MemoryGetFdInfoKHR.memory = VulkanTexture->Surface.GetAllocationHandle();
@@ -462,7 +442,7 @@ FTexture2DRHIRef FAVEncoderContext::SetBackbufferTextureCUDAVulkan(FVideoEncoder
 		UE_LOG(LogMillicastPublisher, Error, TEXT("Failed to bind to mip 0."));
 	}
 
-	FCUDAModule::CUDA().cuCtxPopCurrent(NULL);
+	FCUDAModule::CUDA().cuCtxPopCurrent(nullptr);
 
 #if ENGINE_MAJOR_VERSION < 5
 	InputFrame->SetTexture(mappedArray,
@@ -494,14 +474,14 @@ FTexture2DRHIRef FAVEncoderContext::SetBackbufferTextureCUDAVulkan(FVideoEncoder
 
 		if (mappedExternalMemory)
 		{
-			auto result = FCUDAModule::CUDA().cuDestroyExternalMemory(mappedExternalMemory);
-			if (result != CUDA_SUCCESS)
+			const auto Result = FCUDAModule::CUDA().cuDestroyExternalMemory(mappedExternalMemory);
+			if (Result != CUDA_SUCCESS)
 			{
-				UE_LOG(LogMillicastPublisher, Error, TEXT("Failed to destroy mappedExternalMemoryArray: %d"), result);
+				UE_LOG(LogMillicastPublisher, Error, TEXT("Failed to destroy mappedExternalMemoryArray: %d"), Result);
 			}
 		}
 
-		FCUDAModule::CUDA().cuCtxPopCurrent(NULL);
+		FCUDAModule::CUDA().cuCtxPopCurrent(nullptr);
 
 		// finally remove the input frame
 		BackBuffers.Remove(InputFrameRef);

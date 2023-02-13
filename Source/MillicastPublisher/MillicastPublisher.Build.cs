@@ -6,16 +6,16 @@ namespace UnrealBuildTool.Rules
 {
 	using System.IO;
 
-	public class MillicastPublisher: ModuleRules
+    public class MillicastPublisher: ModuleRules
 	{
 		public MillicastPublisher(ReadOnlyTargetRules Target) : base(Target)
 		{
 			PCHUsage = PCHUsageMode.UseExplicitOrSharedPCHs;
 
-			DynamicallyLoadedModuleNames.AddRange(
-				new string[] {
-					"Media",
-				});
+            DynamicallyLoadedModuleNames.AddRange(
+			new string[] {
+				"Media",
+			});
 
 			PublicDependencyModuleNames.AddRange(
 				new string[] {
@@ -56,7 +56,6 @@ namespace UnrealBuildTool.Rules
 					"AudioPlatformConfiguration",
 					"AVEncoder"
 				});
-
 
 			if (ReadOnlyBuildVersion.Current.MajorVersion >= 5)
 			{

@@ -4,6 +4,7 @@
 
 #include "WebRTC/WebRTCInc.h"
 #include "WebRTC/AudioDeviceModule.h"
+#include "WebRTC/Stats.h"
 
 #include "SessionDescriptionObserver.h"
 
@@ -35,7 +36,7 @@ namespace Millicast::Publisher
 		TUniquePtr<FCreateSessionDescriptionObserver> CreateSessionDescription;
 		TUniquePtr<FSetSessionDescriptionObserver>    LocalSessionDescription;
 		TUniquePtr<FSetSessionDescriptionObserver>    RemoteSessionDescription;
-		TUniquePtr<class FRTCStatsCollector>          RTCStatsCollector;
+		TUniquePtr<FRTCStatsCollector>                RTCStatsCollector;
 
 		TSharedPtr<webrtc::BitrateSettings> Bitrates;
 

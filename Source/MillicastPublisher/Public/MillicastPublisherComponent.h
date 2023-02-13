@@ -6,6 +6,7 @@
 #include "RtcCodecsConstants.h"
 
 #include "Components/ActorComponent.h"
+#include "WebRTC/PeerConnection.h"
 
 #include "MillicastPublisherComponent.generated.h"
 
@@ -17,11 +18,6 @@ class IHttpResponse;
 namespace webrtc
 {
 	struct RtpTransceiverInit;
-}
-
-namespace Millicast::Publisher
-{
-	class FWebRTCPeerConnection;
 }
 
 enum class EMillicastPublisherState : uint8
@@ -155,9 +151,9 @@ public:
 	void EnableStats(bool Enable);
 
 #if WITH_EDITOR
-	virtual bool CanEditChange(const FProperty* InProperty) const override;
-	virtual void PostEditChangeChainProperty(FPropertyChangedChainEvent& InPropertyChangedEvent) override;
-#endif
+	bool CanEditChange(const FProperty* InProperty) const override;
+	void PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent) override;
+#endif //WITH_EDITOR
 
 public:
 	/** Called when the response from the Publisher api is successfull */

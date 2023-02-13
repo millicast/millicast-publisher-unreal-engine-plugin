@@ -6,6 +6,8 @@ namespace UnrealBuildTool.Rules
 	{
 		public MillicastPublisherEditor(ReadOnlyTargetRules Target) : base(Target)
 		{
+			PCHUsage = PCHUsageMode.UseExplicitOrSharedPCHs;
+			
 			PublicDependencyModuleNames.AddRange(
 				new string[] {
 					"Core",
