@@ -2,18 +2,9 @@
 
 #include "IMillicastPublisherModule.h"
 
-#include "MillicastPublisherPrivate.h"
 #include "Brushes/SlateImageBrush.h"
 #include "Interfaces/IPluginManager.h"
-#include "Modules/ModuleManager.h"
 #include "Styling/SlateStyle.h"
-#include "WebRTC/WebRTCInc.h"
-
-#include "WebRTC/WebRTCLog.h"
-
-#if PLATFORM_WINDOWS
-#include "Media/WasapiDeviceCapturer.h"
-#endif
 
 
 DEFINE_LOG_CATEGORY(LogMillicastPublisher);
@@ -26,34 +17,14 @@ DEFINE_LOG_CATEGORY(LogMillicastPublisher);
 class FMillicastPublisherModule : public IMillicastPublisherModule
 {
 public:
-
-	virtual TSharedPtr<FSlateStyleSet> GetStyle() override
+	TSharedPtr<FSlateStyleSet> GetStyle() override
 	{
 		return StyleSet;
 	}
 
-public:
-
-	//~ IModuleInterface interface
-	virtual void StartupModule() override
+	void StartupModule() override
 	{
-		rtc::InitializeSSL();
-
-#if PLATFORM_WINDOWS
-		Millicast::Publisher::WasapiDeviceCapturer::ColdInit();
-#endif
 		CreateStyle();
-
-		Millicast::Publisher::RedirectWebRtcLogsToUnreal(rtc::LoggingSeverity::LS_VERBOSE);
-	}
-
-	virtual void ShutdownModule() override 
-	{
-		rtc::CleanupSSL();
-
-#if PLATFORM_WINDOWS
-		Millicast::Publisher::WasapiDeviceCapturer::ColdExit();
-#endif
 	}
 
 private:
