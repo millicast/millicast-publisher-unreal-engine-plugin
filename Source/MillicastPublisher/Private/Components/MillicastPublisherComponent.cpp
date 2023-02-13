@@ -635,22 +635,24 @@ void UMillicastPublisherComponent::CaptureAndAddTracks()
 		init.direction = webrtc::RtpTransceiverDirection::kSendOnly;
 		init.stream_ids = { "unrealstream" };
 
-		webrtc::RtpEncodingParameters Encoding;
-		if (MinimumBitrate.IsSet())
-		{
-			Encoding.min_bitrate_bps = *MinimumBitrate;
-		}
-		if (MaximumBitrate.IsSet())
-		{
-			Encoding.max_bitrate_bps = *MaximumBitrate;
-		}
-		Encoding.max_framerate = 60;
-		Encoding.network_priority = webrtc::Priority::kHigh;
-		init.send_encodings.push_back(Encoding);
-
-		if (Simulcast)
+		if (Track->kind() == webrtc::MediaStreamTrackInterface::kVideoKind && Simulcast)
 		{
 			SetSimulcast(init);
+		}
+		else
+		{
+			webrtc::RtpEncodingParameters Encoding;
+			if (MinimumBitrate.IsSet())
+			{
+				Encoding.min_bitrate_bps = *MinimumBitrate;
+			}
+			if (MaximumBitrate.IsSet())
+			{
+				Encoding.max_bitrate_bps = *MaximumBitrate;
+			}
+			Encoding.max_framerate = 60;
+			Encoding.network_priority = webrtc::Priority::kHigh;
+			init.send_encodings.push_back(Encoding);
 		}
 
 		auto result = (*PeerConnection)->AddTransceiver(Track, init);
@@ -663,9 +665,9 @@ void UMillicastPublisherComponent::CaptureAndAddTracks()
 		else
 		{
 			UE_LOG(LogMillicastPublisher, Error, TEXT("Couldn't add transceiver for %s track %s : %s"), 
-				*FString( Track->kind().c_str() ),
-				*FString( Track->id().c_str() ),
-				*FString( result.error().message()) );
+				*FString(Track->kind().c_str()),
+				*FString(Track->id().c_str()),
+				*FString(result.error().message()));
 		}
 	});
 
