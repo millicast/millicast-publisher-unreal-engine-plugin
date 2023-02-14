@@ -17,6 +17,7 @@ UMillicastViewportCapturerComponent::UMillicastViewportCapturerComponent(const F
 
 void UMillicastViewportCapturerComponent::InitializeComponent()
 {
+	Super::InitializeComponent();
 }
 
 void UMillicastViewportCapturerComponent::UninitializeComponent()

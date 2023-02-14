@@ -110,20 +110,16 @@ int FVideoEncoderNVENC::InitEncode(webrtc::VideoCodec const* codec_settings, Vid
 
 int32 FVideoEncoderNVENC::Encode(webrtc::VideoFrame const& frame, std::vector<webrtc::VideoFrameType> const* frame_types)
 {
-	// Get the frame buffer out of the frame
-	FFrameBufferRHI* VideoFrameBuffer = nullptr;
-
 	// the buffer is modified by a black frame buffer by libwebrtc when the track is muted
 	// So when get the video frame buffer it is no longer a FFrameBufferRHI which lead a segfault later
 	// This condition is to re-create a FFrameBufferRHI with a black frame
-	if (frame.video_frame_buffer()->GetI420() != nullptr)
+	if (frame.video_frame_buffer()->GetI420())
 	{
 		return WEBRTC_VIDEO_CODEC_OK;
 	}
-	else
-	{
-		VideoFrameBuffer = static_cast<FFrameBufferRHI*>(frame.video_frame_buffer().get());
-	}
+
+	// Get the frame buffer out of the frame
+	auto* VideoFrameBuffer = static_cast<FFrameBufferRHI*>(frame.video_frame_buffer().get());
 
 	if (!NVENCEncoder)
 	{
@@ -154,8 +150,7 @@ int32 FVideoEncoderNVENC::Encode(webrtc::VideoFrame const& frame, std::vector<we
 		EncodeOptions.bForceKeyFrame = true;
 	}
 
-	AVEncoder::FVideoEncoderInputFrame* EncoderInputFrame = VideoFrameBuffer->GetFrame();
-
+	TSharedPtr<AVEncoder::FVideoEncoderInputFrame> EncoderInputFrame = VideoFrameBuffer->GetFrame();
 	EncoderInputFrame->SetTimestampRTP(frame.timestamp());
 	
 	// Encode the frame!
@@ -164,58 +159,9 @@ int32 FVideoEncoderNVENC::Encode(webrtc::VideoFrame const& frame, std::vector<we
 	return WEBRTC_VIDEO_CODEC_OK;
 }
 
-void CreateH264FragmentHeader(const uint8* CodedData, size_t CodedDataSize, webrtc::RTPFragmentationHeader& Fragments)
-{
-	// count the number of nal units
-	for (int pass = 0; pass < 2; ++pass)
-	{
-		size_t num_nal = 0;
-		size_t offset = 0;
-		while (offset < CodedDataSize)
-		{
-			// either a 0,0,1 or 0,0,0,1 sequence indicates a new 'nal'
-			size_t nal_maker_length = 3;
-			if (offset < (CodedDataSize - 3) && CodedData[offset] == 0 && CodedData[offset + 1] == 0 && CodedData[offset + 2] == 1)
-			{
-			}
-			else if (offset < (CodedDataSize - 4) && CodedData[offset] == 0 && CodedData[offset + 1] == 0 && CodedData[offset + 2] == 0 && CodedData[offset + 3] == 1)
-			{
-				nal_maker_length = 4;
-			}
-			else
-			{
-				++offset;
-				continue;
-			}
-			if (pass == 1)
-			{
-				Fragments.fragmentationOffset[num_nal] = offset + nal_maker_length;
-				Fragments.fragmentationLength[num_nal] = 0;
-				if (num_nal > 0)
-				{
-					Fragments.fragmentationLength[num_nal - 1] = offset - Fragments.fragmentationOffset[num_nal - 1];
-				}
-			}
-			offset += nal_maker_length;
-			++num_nal;
-		}
-		if (pass == 0)
-		{
-			Fragments.VerifyAndAllocateFragmentationHeader(num_nal);
-		}
-		else if (pass == 1 && num_nal > 0)
-		{
-			Fragments.fragmentationLength[num_nal - 1] = offset - Fragments.fragmentationOffset[num_nal - 1];
-		}
-	}
-}
-
-void OnEncodedPacket(uint32 InLayerIndex, const AVEncoder::FVideoEncoderInputFrame* InFrame, const AVEncoder::FCodecPacket& InPacket, webrtc::EncodedImageCallback* OnEncodedImageCallback)
+void OnEncodedPacket(uint32 InLayerIndex, const TSharedPtr<AVEncoder::FVideoEncoderInputFrame> InFrame, const AVEncoder::FCodecPacket& InPacket, webrtc::EncodedImageCallback* OnEncodedImageCallback)
 {
 	webrtc::EncodedImage Image;
-
-	webrtc::RTPFragmentationHeader FragHeader;
-	CreateH264FragmentHeader(InPacket.Data.Get(), InPacket.DataSize, FragHeader);
 
 	Image.timing_.packetization_finish_ms = FTimespan::FromSeconds(FPlatformTime::Seconds()).GetTotalMilliseconds();
 	Image.timing_.encode_start_ms = InPacket.Timings.StartTs.GetTotalMilliseconds();
@@ -229,7 +175,6 @@ void OnEncodedPacket(uint32 InLayerIndex, const AVEncoder::FVideoEncoderInputFra
 	Image.content_type_ = webrtc::VideoContentType::UNSPECIFIED;
 	Image.qp_ = InPacket.VideoQP;
 	Image.SetSpatialIndex(InLayerIndex);
-	Image._completeFrame = true;
 	Image.rotation_ = webrtc::VideoRotation::kVideoRotation_0;
 	Image.SetTimestamp(InFrame->GetTimestampRTP());
 	Image.capture_time_ms_ = InFrame->GetTimestampUs() / 1000.0;
@@ -248,7 +193,7 @@ void OnEncodedPacket(uint32 InLayerIndex, const AVEncoder::FVideoEncoderInputFra
 	
 	if (OnEncodedImageCallback)
 	{
-		OnEncodedImageCallback->OnEncodedImage(Image, &CodecInfo, &FragHeader);
+		OnEncodedImageCallback->OnEncodedImage(Image, &CodecInfo);
 	}
 }
 
@@ -264,7 +209,7 @@ void FVideoEncoderNVENC::CreateAVEncoder(TSharedPtr<AVEncoder::FVideoEncoderInpu
 		checkf(NVENCEncoder, TEXT("Video encoder creation failed, check encoder config."));
 
 		TWeakPtr<FVideoEncoderNVENC::FSharedContext> WeakContext = SharedContext;
-		NVENCEncoder->SetOnEncodedPacket([WeakContext](uint32 InLayerIndex, const AVEncoder::FVideoEncoderInputFrame* InFrame, const AVEncoder::FCodecPacket& InPacket) {
+		NVENCEncoder->SetOnEncodedPacket([WeakContext](uint32 InLayerIndex, const TSharedPtr<AVEncoder::FVideoEncoderInputFrame> InFrame, const AVEncoder::FCodecPacket& InPacket) {
 			if (TSharedPtr<FVideoEncoderNVENC::FSharedContext> Context = WeakContext.Pin())
 			{
 				FScopeLock Lock(Context->ParentSection);

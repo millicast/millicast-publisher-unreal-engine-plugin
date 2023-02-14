@@ -70,8 +70,6 @@ private:
 	bool Automute = false;
 	
 public:
-	~UMillicastPublisherComponent();
-
 	/**
 		Initialize this component with the media source required for publishing  audio, video to Millicast.
 		Returns false, if the MediaSource is already been set. This is usually the case when this component is
@@ -167,6 +165,8 @@ public:
 	FMillicastPublisherComponentViewerCount OnViewerCount;
 
 private:
+	void EndPlay(EEndPlayReason::Type Reason) override;
+
 	/** Websocket callback */
 	bool StartWebSocketConnection(const FString& url, const FString& jwt);
 	void OnConnected();
@@ -200,12 +200,12 @@ private:
 	FDelegateHandle OnMessageHandle;
 
 	/** WebRTC */
-	Millicast::Publisher::FWebRTCPeerConnection* PeerConnection;
+	Millicast::Publisher::FWebRTCPeerConnection* PeerConnection = nullptr;
 	webrtc::PeerConnectionInterface::RTCConfiguration PeerConnectionConfig;
 
 	/** Publisher */
-	bool bIsPublishing;
-	bool RtcStatsEnabled;
+	bool bIsPublishing = false;
+	bool RtcStatsEnabled = false;
 	TOptional<int> MinimumBitrate; // in bps
 	TOptional<int> MaximumBitrate; // in bps
 	TOptional<int> StartingBitrate; // in bps

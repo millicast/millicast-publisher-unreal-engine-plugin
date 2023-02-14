@@ -6,6 +6,7 @@
 
 namespace Millicast::Publisher
 {
+
 	class FAVEncoderContext
 	{
 	public:
@@ -17,13 +18,13 @@ namespace Millicast::Publisher
 			{
 			}
 
-			FCapturerInput(AVEncoder::FVideoEncoderInputFrame* InFrame, FTexture2DRHIRef InTexture)
+			FCapturerInput(TSharedPtr<AVEncoder::FVideoEncoderInputFrame> InFrame, FTexture2DRHIRef InTexture)
 				: InputFrame(InFrame)
 				, Texture(InTexture)
 			{
 			}
 
-			AVEncoder::FVideoEncoderInputFrame* InputFrame;
+			TSharedPtr<AVEncoder::FVideoEncoderInputFrame> InputFrame;
 			TOptional<FTexture2DRHIRef> Texture;
 		};
 
@@ -42,12 +43,12 @@ namespace Millicast::Publisher
 		void DeleteBackBuffers();
 
 #if PLATFORM_WINDOWS
-		FTexture2DRHIRef SetBackbufferTextureDX11(AVEncoder::FVideoEncoderInputFrame* InputFrame);
-		FTexture2DRHIRef SetBackbufferTextureDX12(AVEncoder::FVideoEncoderInputFrame* InputFrame);
+		FTexture2DRHIRef SetBackbufferTextureDX11(TSharedPtr<AVEncoder::FVideoEncoderInputFrame> InputFrame);
+		FTexture2DRHIRef SetBackbufferTextureDX12(TSharedPtr<AVEncoder::FVideoEncoderInputFrame> InputFrame);
 #endif // PLATFORM_WINDOWS
 
-		FTexture2DRHIRef SetBackbufferTexturePureVulkan(AVEncoder::FVideoEncoderInputFrame* InputFrame);
-		FTexture2DRHIRef SetBackbufferTextureCUDAVulkan(AVEncoder::FVideoEncoderInputFrame* InputFrame);
+		FTexture2DRHIRef SetBackbufferTexturePureVulkan(TSharedPtr<AVEncoder::FVideoEncoderInputFrame> InputFrame);
+		FTexture2DRHIRef SetBackbufferTextureCUDAVulkan(TSharedPtr<AVEncoder::FVideoEncoderInputFrame> InputFrame);
 
 	private:
 		int CaptureWidth;
@@ -56,4 +57,5 @@ namespace Millicast::Publisher
 		TSharedPtr<AVEncoder::FVideoEncoderInput> VideoEncoderInput = nullptr;
 		TMap<AVEncoder::FVideoEncoderInputFrame*, FTexture2DRHIRef> BackBuffers;
 	};
+
 }

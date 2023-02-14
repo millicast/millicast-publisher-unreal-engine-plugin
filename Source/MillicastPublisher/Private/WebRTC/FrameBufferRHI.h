@@ -28,11 +28,12 @@ namespace libyuv
 
 namespace Millicast::Publisher
 {
+
 	class FFrameBufferRHI : public webrtc::VideoFrameBuffer
 	{
 	public:
 		FFrameBufferRHI(FTexture2DRHIRef SourceTexture,
-			AVEncoder::FVideoEncoderInputFrame* InputFrame,
+			TSharedPtr<AVEncoder::FVideoEncoderInputFrame> InputFrame,
 			TSharedPtr<AVEncoder::FVideoEncoderInput> InputVideoEncoderInput)
 			: TextureRef(SourceTexture)
 			, Frame(InputFrame)
@@ -100,17 +101,19 @@ namespace Millicast::Publisher
 			return Buffer;
 		}
 
+
 		virtual const webrtc::I420BufferInterface* GetI420() const override
 		{
 			return nullptr;
 		}
+
 
 		FTexture2DRHIRef GetTextureRHI() const
 		{
 			return TextureRef;
 		}
 
-		AVEncoder::FVideoEncoderInputFrame* GetFrame() const
+		TSharedPtr<AVEncoder::FVideoEncoderInputFrame> GetFrame() const
 		{
 			return Frame;
 		}
@@ -122,7 +125,7 @@ namespace Millicast::Publisher
 
 	private:
 		FTexture2DRHIRef TextureRef;
-		AVEncoder::FVideoEncoderInputFrame* Frame;
+		TSharedPtr<AVEncoder::FVideoEncoderInputFrame> Frame;
 		TSharedPtr<AVEncoder::FVideoEncoderInput> VideoEncoderInput;
 		rtc::scoped_refptr<webrtc::I420Buffer> Buffer;
 		TUniquePtr<FRHIGPUTextureReadback> Readback;

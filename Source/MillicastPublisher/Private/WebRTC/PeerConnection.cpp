@@ -28,8 +28,6 @@ void FWebRTCPeerConnection::CreatePeerConnectionFactory()
 {
 	UE_LOG(LogMillicastPublisher, Log, TEXT("Creating FWebRTCPeerConnectionFactory"));
 
-	rtc::InitializeSSL();
-
 	SignalingThread  = TUniquePtr<rtc::Thread>(rtc::Thread::Create().release());
 	SignalingThread->SetName("WebRTCSignalingThread", nullptr);
 	SignalingThread->Start();
@@ -37,7 +35,7 @@ void FWebRTCPeerConnection::CreatePeerConnectionFactory()
 	TaskQueueFactory = webrtc::CreateDefaultTaskQueueFactory();
 	AudioDeviceModule = FAudioDeviceModule::Create();
 
-	webrtc::AudioProcessing* AudioProcessingModule = webrtc::AudioProcessingBuilder().Create();
+	rtc::scoped_refptr<webrtc::AudioProcessing> AudioProcessingModule = webrtc::AudioProcessingBuilder().Create();
 	webrtc::AudioProcessing::Config ApmConfig;
 
 	ApmConfig.pipeline.multi_channel_capture = true;
@@ -124,12 +122,17 @@ FWebRTCPeerConnection* FWebRTCPeerConnection::Create(const FRTCConfig& Config)
 	FWebRTCPeerConnection * PeerConnectionInstance = new FWebRTCPeerConnection();
 	webrtc::PeerConnectionDependencies deps(PeerConnectionInstance);
 
-	PeerConnectionInstance->PeerConnection =
-			PeerConnectionFactory->CreatePeerConnection(Config,
-														nullptr,
-														nullptr,
-														PeerConnectionInstance);
+	auto result = PeerConnectionFactory->CreatePeerConnectionOrError(Config, std::move(deps));
 
+	if (!result.ok())
+	{
+		UE_LOG(LogMillicastPublisher, Error, TEXT("Could not create peerconnection : %s"), result.error().message());
+		PeerConnectionInstance->PeerConnection = nullptr;
+		return nullptr;
+	}
+
+	PeerConnectionInstance->PeerConnection = result.value();
+			
 	PeerConnectionInstance->CreateSessionDescription =
 			MakeUnique<FCreateSessionDescriptionObserver>();
 	PeerConnectionInstance->LocalSessionDescription  =
@@ -246,7 +249,7 @@ TArray<FString> FWebRTCPeerConnection::GetSupportedCodecs()
 	return codecs;
 }
 
-void FWebRTCPeerConnection::SetBitrates(TSharedPtr<webrtc::PeerConnectionInterface::BitrateParameters> InBitrates)
+void FWebRTCPeerConnection::SetBitrates(TSharedPtr<webrtc::BitrateSettings> InBitrates)
 {
 	Bitrates = InBitrates;
 	PeerConnection->SetBitrate(*Bitrates);
@@ -273,7 +276,7 @@ void FWebRTCPeerConnection::ApplyBitrates(cricket::SessionDescription* Sdp)
 			{
 				// Note: These codec params are in kilobits, not bits!
 				Codec.SetParam(cricket::kCodecParamMinBitrate, Bitrates->min_bitrate_bps.value());
-				Codec.SetParam(cricket::kCodecParamStartBitrate, Bitrates->current_bitrate_bps.value());
+				Codec.SetParam(cricket::kCodecParamStartBitrate, Bitrates->start_bitrate_bps.value());
 				Codec.SetParam(cricket::kCodecParamMaxBitrate, Bitrates->max_bitrate_bps.value());
 			}
 			VideoDescription->set_codecs(CodecsCopy);

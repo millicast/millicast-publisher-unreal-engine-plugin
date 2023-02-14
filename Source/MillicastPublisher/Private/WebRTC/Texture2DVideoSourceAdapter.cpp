@@ -26,11 +26,15 @@ void FTexture2DVideoSourceAdapter::OnFrameReady(const FTexture2DRHIRef& FrameBuf
 	}
 
 	FAVEncoderContext::FCapturerInput CapturerInput = CaptureContext->ObtainCapturerInput();
-	AVEncoder::FVideoEncoderInputFrame* InputFrame = CapturerInput.InputFrame;
+	TSharedPtr<AVEncoder::FVideoEncoderInputFrame> InputFrame = CapturerInput.InputFrame;
 	FTexture2DRHIRef Texture = CapturerInput.Texture.GetValue();
 
 	const int32 FrameId = InputFrame->GetFrameID();
+	FIntPoint FBSize = FrameBuffer->GetSizeXY();
+
 	InputFrame->SetTimestampUs(Timestamp);
+	InputFrame->SetWidth(FBSize.X);
+	InputFrame->SetHeight(FBSize.Y);
 
 	FRHICommandListImmediate& RHICmdList = FRHICommandListExecutor::GetImmediateCommandList();
 	CopyTexture(RHICmdList, FrameBuffer, Texture);
