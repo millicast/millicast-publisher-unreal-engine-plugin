@@ -53,11 +53,6 @@ inline FString ToString(EMillicastAudioCodecs Codec)
 
 UMillicastPublisherComponent::UMillicastPublisherComponent(const FObjectInitializer& ObjectInitializer) : Super(ObjectInitializer)
 {
-	MillicastMediaSource = nullptr;
-	PeerConnection = nullptr;
-	WS = nullptr;
-	bIsPublishing = false;
-
 	// Event received from websocket signaling
 	EventBroadcaster.Emplace("active", [this](TSharedPtr<FJsonObject> Msg) { ParseActiveEvent(Msg); });
 	EventBroadcaster.Emplace("inactive", [this](TSharedPtr<FJsonObject> Msg) { ParseInactiveEvent(Msg); });
@@ -70,10 +65,13 @@ UMillicastPublisherComponent::UMillicastPublisherComponent(const FObjectInitiali
 	MinimumBitrate = 1'000'000;
 }
 
-UMillicastPublisherComponent::~UMillicastPublisherComponent()
+void UMillicastPublisherComponent::EndPlay(EEndPlayReason::Type Reason)
 {
+	Super::EndPlay(Reason);
+
 	UnPublish();
 }
+
 
 /**
 	Initialize this component with the media source required for publishing Millicast audio, video.
@@ -190,8 +188,7 @@ void UMillicastPublisherComponent::ParseDirectorResponse(FHttpResponsePtr Respon
 		FString WsUrl;
 		WebSocketUrlField->TryGetString(WsUrl);
 
-		UE_LOG(LogMillicastPublisher, Log, TEXT("WsUrl : %S \njwt : %S"),
-			*WsUrl, *Jwt);
+		UE_LOG(LogMillicastPublisher, Log, TEXT("WsUrl : %s \njwt : %s"), *WsUrl, *Jwt);
 
 		SetupIceServersFromJson(IceServersField);
 
@@ -240,20 +237,19 @@ bool UMillicastPublisherComponent::Publish()
 	PostHttpRequest->SetContentAsString(SerializedRequestData);
 
 	PostHttpRequest->OnProcessRequestComplete()
-		.BindLambda([this](FHttpRequestPtr Request,
-			FHttpResponsePtr Response,
-			bool bConnectedSuccessfully) {
-		// HTTP request sucessful
-		if (bConnectedSuccessfully && Response->GetResponseCode() == HTTP_OK) 
+		.BindLambda([this](FHttpRequestPtr Request, FHttpResponsePtr Response, bool bConnectedSuccessfully)
+	{
+		if (!bConnectedSuccessfully || Response->GetResponseCode() != HTTP_OK) 
 		{
-			ParseDirectorResponse(Response);
-		}
-		else 
-		{
-			UE_LOG(LogMillicastPublisher, Error, TEXT("Director HTTP request failed %d %s"), Response->GetResponseCode(), *Response->GetContentType());
+			UE_LOG(LogMillicastPublisher, Error, TEXT("Publisher HTTP request failed [code] %d [response] %s \n [body] %s"), Response->GetResponseCode(), *Response->GetContentType(), *Response->GetContentAsString());
+
 			FString ErrorMsg = Response->GetContentAsString();
 			OnAuthenticationFailure.Broadcast(Response->GetResponseCode(), ErrorMsg);
+			return;
 		}
+
+		// HTTP request sucessful
+		ParseDirectorResponse(Response);
 	});
 
 	return PostHttpRequest->ProcessRequest();
@@ -272,8 +268,8 @@ void UMillicastPublisherComponent::UnPublish()
 	FScopeLock Lock(&CriticalSection);
 
 	UE_LOG(LogMillicastPublisher, Display, TEXT("Unpublish"));
+	
 	// Release peerconnection and stop capture
-
 	if(PeerConnection)
 	{
 		delete PeerConnection;
@@ -283,9 +279,15 @@ void UMillicastPublisherComponent::UnPublish()
 	}
 
 	// Close websocket connection
-	if (WS) 
+
+	if (auto* pWS = WS.Get())
 	{
-		WS->Close();
+		pWS->OnConnected().Remove(OnConnectedHandle);
+		pWS->OnConnectionError().Remove(OnConnectionErrorHandle);
+		pWS->OnClosed().Remove(OnClosedHandle);
+		pWS->OnMessage().Remove(OnMessageHandle);
+		pWS->Close();
+		
 		WS = nullptr;
 	}
 
@@ -330,6 +332,12 @@ bool UMillicastPublisherComponent::StartWebSocketConnection(const FString& Url,
 
 bool UMillicastPublisherComponent::PublishToMillicast()
 {
+	if (PeerConnection)
+	{
+		UE_LOG(LogMillicastPublisher, Error, TEXT("[UMillicastPublisherComponent::PublishToMillicast] Called twice in successsion"));
+		return false;
+	}
+
 	using namespace Millicast::Publisher;
 
 	PeerConnection = FWebRTCPeerConnection::Create(PeerConnectionConfig);
@@ -343,13 +351,14 @@ bool UMillicastPublisherComponent::PublishToMillicast()
 	auto * LocalDescriptionObserver  = PeerConnection->GetLocalDescriptionObserver();
 	auto * RemoteDescriptionObserver = PeerConnection->GetRemoteDescriptionObserver();
 
-	CreateSessionDescriptionObserver->SetOnSuccessCallback([WEAK_CAPTURE](const std::string& type, const std::string& sdp) {
+	CreateSessionDescriptionObserver->SetOnSuccessCallback([WEAK_CAPTURE](const std::string& type, const std::string& sdp)
+	{
 		if (!WeakThis.IsValid())
 		{
 			return;
 		}
 
-		UE_LOG(LogMillicastPublisher, Display, TEXT("pc.createOffer() | sucess\nsdp : %S"), sdp.c_str());
+		UE_LOG(LogMillicastPublisher, Display, TEXT("pc.createOffer() | sucess\nsdp : %s"), *FString(sdp.c_str()));
 
 		// Search for this expression and add the stereo flag to enable stereo
 		const std::string s = "minptime=10;useinbandfec=1";
@@ -358,7 +367,8 @@ bool UMillicastPublisherComponent::PublishToMillicast()
 		oss << s << "; stereo=1";
 
 		auto pos = sdp.find(s);
-		if (pos != std::string::npos) {
+		if (pos != std::string::npos)
+		{
 			sdp_non_const.replace(sdp.find(s), s.size(), oss.str());
 		}
 
@@ -369,15 +379,17 @@ bool UMillicastPublisherComponent::PublishToMillicast()
 		}
 	});
 
-	CreateSessionDescriptionObserver->SetOnFailureCallback([WEAK_CAPTURE](const std::string& err) {
+	CreateSessionDescriptionObserver->SetOnFailureCallback([WEAK_CAPTURE](const std::string& err)
+	{
 		if (WeakThis.IsValid())
 		{
-			UE_LOG(LogMillicastPublisher, Error, TEXT("pc.createOffer() | Error: %S"), err.c_str());
+			UE_LOG(LogMillicastPublisher, Error, TEXT("pc.createOffer() | Error: %s"), err.c_str());
 			WeakThis->OnPublishingError.Broadcast(TEXT("Could not create offer"));
 		}
 	});
 
-	LocalDescriptionObserver->SetOnSuccessCallback([WEAK_CAPTURE]() {
+	LocalDescriptionObserver->SetOnSuccessCallback([WEAK_CAPTURE]()
+	{
 		if (!WeakThis.IsValid())
 		{
 			return;
@@ -439,7 +451,7 @@ bool UMillicastPublisherComponent::PublishToMillicast()
 	LocalDescriptionObserver->SetOnFailureCallback([WEAK_CAPTURE](const std::string& err) {
 		if (WeakThis.IsValid())
 		{
-			UE_LOG(LogMillicastPublisher, Error, TEXT("Set local description failed : %s"), *ToString(err));
+			UE_LOG(LogMillicastPublisher, Error, TEXT("Set local description failed : %s"), *FString(err.c_str()));
 			WeakThis->OnPublishingError.Broadcast(TEXT("Could not set local description"));
 		}
 	});
@@ -454,7 +466,7 @@ bool UMillicastPublisherComponent::PublishToMillicast()
 		}
 	});
 	RemoteDescriptionObserver->SetOnFailureCallback([WEAK_CAPTURE](const std::string& err) {
-		UE_LOG(LogMillicastPublisher, Error, TEXT("Set remote description failed : %s"), *ToString(err));
+		UE_LOG(LogMillicastPublisher, Error, TEXT("Set remote description failed : %s"), *FString(err.c_str()));
 		if (WeakThis.IsValid())
 		{
 			WeakThis->OnPublishingError.Broadcast(TEXT("Could not set remote description"));
@@ -504,9 +516,7 @@ void UMillicastPublisherComponent::OnConnectionError(const FString& Error)
 	OnPublishingError.Broadcast(TEXT("Could not connect websocket"));
 }
 
-void UMillicastPublisherComponent::OnClosed(int32 StatusCode,
-                                     const FString& Reason,
-                                     bool bWasClean)
+void UMillicastPublisherComponent::OnClosed(int32 StatusCode, const FString& Reason, bool bWasClean)
 {
 	UE_LOG(LogMillicastPublisher, Log, TEXT("Millicast WebSocket Closed"))
 }
@@ -520,13 +530,17 @@ void UMillicastPublisherComponent::OnMessage(const FString& Msg)
 
 	// Deserialize JSON message
 	bool ok = FJsonSerializer::Deserialize(Reader, ResponseJson);
-	if (!ok) {
+	if (!ok)
+	{
 		UE_LOG(LogMillicastPublisher, Error, TEXT("Could not deserialize JSON"));
 		return;
 	}
 
 	FString Type;
-	if(!ResponseJson->TryGetStringField("type", Type)) return;
+	if (!ResponseJson->TryGetStringField("type", Type))
+	{
+		return;
+	}
 
 	// Signaling response
 	if(Type == "response") 
@@ -594,7 +608,8 @@ void UMillicastPublisherComponent::SetSimulcast(webrtc::RtpTransceiverInit& Tran
 void UMillicastPublisherComponent::CaptureAndAddTracks()
 {
 	// Starts audio and video capture
-	MillicastMediaSource->StartCapture([this](auto&& Track) {
+	MillicastMediaSource->StartCapture([this](auto&& Track)
+	{
 		// Add transceiver with sendonly direction
 		webrtc::RtpTransceiverInit init;
 		init.direction = webrtc::RtpTransceiverDirection::kSendOnly;
@@ -623,7 +638,7 @@ void UMillicastPublisherComponent::CaptureAndAddTracks()
 		if (result.ok())
 		{
 			UE_LOG(LogMillicastPublisher, Log, TEXT("Add transceiver for %s track : %s"), 
-				Track->kind().c_str(), Track->id().c_str());
+				*FString( Track->kind().c_str() ), *FString( Track->id().c_str() ) );
 		}
 		else
 		{
@@ -668,7 +683,7 @@ void UMillicastPublisherComponent::UpdateBitrateSettings()
 
 		if (!error.ok())
 		{
-			UE_LOG(LogMillicastPublisher, Error, TEXT("Could not set maximum bitrate: %S"), error.message());
+			UE_LOG(LogMillicastPublisher, Error, TEXT("Could not set maximum bitrate: %s"), error.message());
 		}
 	}
 }

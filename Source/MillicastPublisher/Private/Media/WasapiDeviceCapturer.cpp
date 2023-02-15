@@ -391,7 +391,7 @@ namespace Millicast::Publisher
 							if (devDesc.isCommunicationDefault)
 							{
 								defId_[LogicalEP::InputVoice] = devDesc.DeviceID;
-								UE_LOG(LogMillicastPublisher, Log, TEXT("System default communications recording device: %S - %S"),
+								UE_LOG(LogMillicastPublisher, Log, TEXT("System default communications recording device: %s - %s"),
 									devDesc.DeviceName.c_str(), devDesc.DeviceID.c_str());
 							}
 
@@ -399,7 +399,7 @@ namespace Millicast::Publisher
 							if (isLineInDefault && !devDesc.isCommunicationDefault)
 							{
 								defId_[LogicalEP::InputMusic] = devDesc.DeviceID;
-								UE_LOG(LogMillicastPublisher, Log, TEXT("System default recording device: %S - %S"),
+								UE_LOG(LogMillicastPublisher, Log, TEXT("System default recording device: %s - %s"),
 									devDesc.DeviceName.c_str(), devDesc.DeviceID.c_str());
 							}
 
@@ -642,7 +642,7 @@ namespace Millicast::Publisher
 
 		if (FAILED(client_->GetDevicePeriod(&Tdef, &Tmin)))
 		{
-			UE_LOG(LogMillicastPublisher, Error, TEXT("AudioDriver::StartStream( %S ): Failed to get device period!"), numChans_ == 2 ? "music input" : "voice input");
+			UE_LOG(LogMillicastPublisher, Error, TEXT("AudioDriver::StartStream( %s ): Failed to get device period!"), numChans_ == 2 ? "music input" : "voice input");
 			return nullptr;
 		}
 
@@ -654,10 +654,10 @@ namespace Millicast::Publisher
 		sWcore.StartTickingStream(this, lep, UINT(Tmin / 10000));
 
 		if (FAILED(client_->Start())) {
-			UE_LOG(LogMillicastPublisher, Error, TEXT("AudioDriver::StartStream( %S ): could not start!"), numChans_ == 2 ? "music input" : "voice input");
+			UE_LOG(LogMillicastPublisher, Error, TEXT("AudioDriver::StartStream( %s ): could not start!"), numChans_ == 2 ? "music input" : "voice input");
 		}
 		else {
-			UE_LOG(LogMillicastPublisher, Log, TEXT("AudioDriver::StartStream( %S ): SUCCESS"), numChans_ == 2 ? "music input" : "voice input");
+			UE_LOG(LogMillicastPublisher, Log, TEXT("AudioDriver::StartStream( %s ): SUCCESS"), numChans_ == 2 ? "music input" : "voice input");
 		}
 
 		CreateRtcSourceTrack();
@@ -819,7 +819,7 @@ namespace Millicast::Publisher
 				default: ErrorMsg = "Unknown reason: " + FString::FromInt(getBufferRet);
 				}
 
-				UE_LOG(LogMillicastPublisher, Error, TEXT("Couldn't get capture buffer : %S"), *ErrorMsg);
+				UE_LOG(LogMillicastPublisher, Error, TEXT("Couldn't get capture buffer : %s"), *ErrorMsg);
 				break;
 			}
 
