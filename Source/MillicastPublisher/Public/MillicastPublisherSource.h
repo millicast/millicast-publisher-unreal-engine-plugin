@@ -39,6 +39,9 @@ class MILLICASTPUBLISHER_API UMillicastPublisherSource : public UStreamMediaSour
 public:
 	UMillicastPublisherSource();
 
+	UFUNCTION(BlueprintCallable, Category = "MillicastPublisher", META = (DisplayName = "Initialize"))
+	void Initialize(const FString& InPublishingToken, const FString& InStreamName, const FString& InSourceId, const FString& InStreamUrl = "https://director.millicast.com/api/director/publish");
+
 	/** The Millicast Stream name. */
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category=Stream, AssetRegistrySearchable)
 	FString StreamName;
