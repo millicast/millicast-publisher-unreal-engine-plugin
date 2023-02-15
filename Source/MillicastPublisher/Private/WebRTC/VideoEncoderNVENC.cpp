@@ -150,7 +150,7 @@ int32 FVideoEncoderNVENC::Encode(webrtc::VideoFrame const& frame, std::vector<we
 		EncodeOptions.bForceKeyFrame = true;
 	}
 
-	TSharedPtr<AVEncoder::FVideoEncoderInputFrame> EncoderInputFrame = VideoFrameBuffer->GetFrame();
+	FVideoEncoderInputFrameType EncoderInputFrame = VideoFrameBuffer->GetFrame();
 	EncoderInputFrame->SetTimestampRTP(frame.timestamp());
 	
 	// Encode the frame!
@@ -159,7 +159,55 @@ int32 FVideoEncoderNVENC::Encode(webrtc::VideoFrame const& frame, std::vector<we
 	return WEBRTC_VIDEO_CODEC_OK;
 }
 
-void OnEncodedPacket(uint32 InLayerIndex, const TSharedPtr<AVEncoder::FVideoEncoderInputFrame> InFrame, const AVEncoder::FCodecPacket& InPacket, webrtc::EncodedImageCallback* OnEncodedImageCallback)
+#if ENGINE_MAJOR_VERSION == 5 && ENGINE_MINOR_VERSION == 0
+void CreateH264FragmentHeader(const uint8* CodedData, size_t CodedDataSize, webrtc::RTPFragmentationHeader& Fragments)
+{
+	// count the number of nal units
+	for (int pass = 0; pass < 2; ++pass)
+	{
+		size_t num_nal = 0;
+		size_t offset = 0;
+		while (offset < CodedDataSize)
+		{
+			// either a 0,0,1 or 0,0,0,1 sequence indicates a new 'nal'
+			size_t nal_maker_length = 3;
+			if (offset < (CodedDataSize - 3) && CodedData[offset] == 0 && CodedData[offset + 1] == 0 && CodedData[offset + 2] == 1)
+			{
+			}
+			else if (offset < (CodedDataSize - 4) && CodedData[offset] == 0 && CodedData[offset + 1] == 0 && CodedData[offset + 2] == 0 && CodedData[offset + 3] == 1)
+			{
+				nal_maker_length = 4;
+			}
+			else
+			{
+				++offset;
+				continue;
+			}
+			if (pass == 1)
+			{
+				Fragments.fragmentationOffset[num_nal] = offset + nal_maker_length;
+				Fragments.fragmentationLength[num_nal] = 0;
+				if (num_nal > 0)
+				{
+					Fragments.fragmentationLength[num_nal - 1] = offset - Fragments.fragmentationOffset[num_nal - 1];
+				}
+			}
+			offset += nal_maker_length;
+			++num_nal;
+		}
+		if (pass == 0)
+		{
+			Fragments.VerifyAndAllocateFragmentationHeader(num_nal);
+		}
+		else if (pass == 1 && num_nal > 0)
+		{
+			Fragments.fragmentationLength[num_nal - 1] = offset - Fragments.fragmentationOffset[num_nal - 1];
+		}
+	}
+}
+#endif
+
+void OnEncodedPacket(uint32 InLayerIndex, const FVideoEncoderInputFrameType InFrame, const AVEncoder::FCodecPacket& InPacket, webrtc::EncodedImageCallback* OnEncodedImageCallback)
 {
 	webrtc::EncodedImage Image;
 
@@ -179,6 +227,10 @@ void OnEncodedPacket(uint32 InLayerIndex, const TSharedPtr<AVEncoder::FVideoEnco
 	Image.SetTimestamp(InFrame->GetTimestampRTP());
 	Image.capture_time_ms_ = InFrame->GetTimestampUs() / 1000.0;
 
+#if ENGINE_MAJOR_VERSION == 5 && ENGINE_MINOR_VERSION == 0
+	Image._completeFrame = true;
+#endif
+
 	webrtc::CodecSpecificInfo CodecInfo;
 	CodecInfo.codecType = webrtc::VideoCodecType::kVideoCodecH264;
 	CodecInfo.codecSpecific.H264.packetization_mode = webrtc::H264PacketizationMode::NonInterleaved;
@@ -193,7 +245,14 @@ void OnEncodedPacket(uint32 InLayerIndex, const TSharedPtr<AVEncoder::FVideoEnco
 	
 	if (OnEncodedImageCallback)
 	{
+#if ENGINE_MAJOR_VERSION == 5 && ENGINE_MINOR_VERSION == 0
+		webrtc::RTPFragmentationHeader FragHeader;
+		CreateH264FragmentHeader(InPacket.Data.Get(), InPacket.DataSize, FragHeader);
+
+		OnEncodedImageCallback->OnEncodedImage(Image, &CodecInfo, &FragHeader);
+#else
 		OnEncodedImageCallback->OnEncodedImage(Image, &CodecInfo);
+#endif
 	}
 }
 
@@ -209,13 +268,14 @@ void FVideoEncoderNVENC::CreateAVEncoder(TSharedPtr<AVEncoder::FVideoEncoderInpu
 		checkf(NVENCEncoder, TEXT("Video encoder creation failed, check encoder config."));
 
 		TWeakPtr<FVideoEncoderNVENC::FSharedContext> WeakContext = SharedContext;
-		NVENCEncoder->SetOnEncodedPacket([WeakContext](uint32 InLayerIndex, const TSharedPtr<AVEncoder::FVideoEncoderInputFrame> InFrame, const AVEncoder::FCodecPacket& InPacket) {
+		NVENCEncoder->SetOnEncodedPacket([WeakContext](uint32 InLayerIndex, const FVideoEncoderInputFrameType InputFrame, const AVEncoder::FCodecPacket& InPacket)
+		{
 			if (TSharedPtr<FVideoEncoderNVENC::FSharedContext> Context = WeakContext.Pin())
 			{
 				FScopeLock Lock(Context->ParentSection);
-				OnEncodedPacket(InLayerIndex, InFrame, InPacket, Context->OnEncodedImageCallback);
+				OnEncodedPacket(InLayerIndex, InputFrame, InPacket, Context->OnEncodedImageCallback);
 			}
-			});
+		});
 	}
 }
 
