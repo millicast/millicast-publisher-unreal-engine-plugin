@@ -77,6 +77,7 @@ public:
 		Returns false, if the MediaSource is already been set. This is usually the case when this component is
 		initialized in Blueprints.
 	*/
+	UFUNCTION(BlueprintCallable, Category = "MillicastPublisher", META = (DisplayName = "Initialize"))
 	bool Initialize(UMillicastPublisherSource* InMediaSource = nullptr);
 
 	/**

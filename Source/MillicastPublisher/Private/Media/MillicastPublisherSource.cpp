@@ -32,6 +32,14 @@ void UMillicastPublisherSource::BeginDestroy()
 	Super::BeginDestroy();
 }
 
+void UMillicastPublisherSource::Initialize(const FString& InPublishingToken, const FString& InStreamName, const FString& InSourceId,const FString& InStreamUrl)
+{
+	PublishingToken = InPublishingToken;
+	SourceId = InSourceId;
+	StreamName = InStreamName;
+	StreamUrl = InStreamUrl;
+}
+
 /*
  * IMediaOptions interface
  */
