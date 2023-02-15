@@ -643,9 +643,9 @@ void UMillicastPublisherComponent::CaptureAndAddTracks()
 		else
 		{
 			UE_LOG(LogMillicastPublisher, Error, TEXT("Couldn't add transceiver for %s track %s : %s"), 
-				Track->kind().c_str(),
-				Track->id().c_str(),
-				result.error().message());
+				*FString( Track->kind().c_str() ),
+				*FString( Track->id().c_str() ),
+				*FString( result.error().message()) );
 		}
 	});
 
@@ -683,7 +683,7 @@ void UMillicastPublisherComponent::UpdateBitrateSettings()
 
 		if (!error.ok())
 		{
-			UE_LOG(LogMillicastPublisher, Error, TEXT("Could not set maximum bitrate: %s"), error.message());
+			UE_LOG(LogMillicastPublisher, Error, TEXT("Could not set maximum bitrate: %s"), *FString(error.message()));
 		}
 	}
 }
