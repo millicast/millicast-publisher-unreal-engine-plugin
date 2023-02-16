@@ -7,10 +7,9 @@
 
 namespace Millicast::Publisher
 {
-
 	class AudioCapturerBase : public IMillicastAudioSource, rtc::RefCountedObject<webrtc::LocalAudioSource>
 	{
-		uint8 NumChannels; // TODO: Make it configurable
+		uint8 NumChannels = 2; // TODO: Make it configurable
 		int32 NumSamples;
 		uint16 BitPerSample;
 
@@ -20,7 +19,7 @@ namespace Millicast::Publisher
 		static constexpr int TimePerFrameMs = 10; // 10 ms audio frame for webrtc
 		static constexpr int SamplePerSecond = 48000;
 
-		FStreamTrackInterface                            RtcAudioTrack;
+		FStreamTrackInterface RtcAudioTrack = nullptr;
 
 		TSet<webrtc::AudioTrackSinkInterface*> Sinks;
 		TArray<FSample> AudioBuffer;
@@ -41,5 +40,4 @@ namespace Millicast::Publisher
 		uint8 GetNumChannel() const { return NumChannels; }
 		void SetNumChannel(uint8 InNumChannel);
 	};
-
 }

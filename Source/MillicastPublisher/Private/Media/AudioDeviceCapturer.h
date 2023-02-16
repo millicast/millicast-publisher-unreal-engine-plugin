@@ -11,17 +11,12 @@ namespace Millicast::Publisher
 	/** Class to capture audio from a system audio device */
 	class AudioDeviceCapturer : public AudioCapturerBase
 	{
-		static TArray<Audio::FCaptureDeviceInfo> CaptureDevices;
-
 		int32                     DeviceIndex;
 		Audio::FAudioCapture      AudioCapture;
 
-		float VolumeMultiplier; // dB
+		float VolumeMultiplier = 0.0f; // dB
 
 	public:
-		AudioDeviceCapturer() noexcept;
-		virtual ~AudioDeviceCapturer() override = default;
-
 		FStreamTrackInterface StartCapture() override;
 		void StopCapture() override;
 

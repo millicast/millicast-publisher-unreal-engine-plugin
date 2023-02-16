@@ -34,7 +34,7 @@ IMillicastAudioSource* IMillicastAudioSource::Create(AudioCapturerType CapturerT
 namespace Millicast::Publisher
 {
 
-AudioCapturerBase::AudioCapturerBase() noexcept : NumChannels(2), RtcAudioTrack(nullptr)
+AudioCapturerBase::AudioCapturerBase() noexcept
 {
 	AddRef(); // Add ref so it is not released by libwebrtc (ref count) when destroying the track.
 
