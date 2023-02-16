@@ -12,22 +12,6 @@
 
 #include "MillicastPublisherSource.generated.h"
 
-USTRUCT(BlueprintType)
-struct FAudioCaptureInfo
-{
-	GENERATED_BODY()
-
-	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category=Audio, DisplayName = "DeviceName")
-	FString DeviceName;
-	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = Audio)
-	FString DeviceId;
-
-	FAudioCaptureInfo() noexcept = default;
-
-	FAudioCaptureInfo(FString InDeviceName, FString InDeviceId) noexcept :
-		DeviceName(MoveTemp(InDeviceName)), DeviceId(MoveTemp(InDeviceId)) {}
-};
-
 /**
  * Media source description for Millicast Publisher.
  */
@@ -37,7 +21,7 @@ class MILLICASTPUBLISHER_API UMillicastPublisherSource : public UStreamMediaSour
 {
 	GENERATED_BODY()
 public:
-	UMillicastPublisherSource();
+	UMillicastPublisherSource(const FObjectInitializer& ObjectInitializer);
 
 	UFUNCTION(BlueprintCallable, Category = "MillicastPublisher", META = (DisplayName = "Initialize"))
 	void Initialize(const FString& InPublishingToken, const FString& InStreamName, const FString& InSourceId, const FString& InStreamUrl = "https://director.millicast.com/api/director/publish");
@@ -74,10 +58,6 @@ public:
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = Audio, AssetRegistrySearchable)
 	USoundSubmix* Submix;
 
-	/** Devices info */
-	UPROPERTY(BlueprintReadWrite, VisibleInstanceOnly, EditFixedSize, Category = Audio, AssetRegistrySearchable)
-	TArray<FAudioCaptureInfo> CaptureDevicesName;
-
 	/** Capture device index  */
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = Audio, AssetRegistrySearchable)
 	int32 CaptureDeviceIndex; // UMETA(ArrayClamp = "CaptureDevicesName");
@@ -102,15 +82,11 @@ public:
 
 	/** Set the audio capture device by its id */
 	UFUNCTION(BlueprintCallable, Category = "MillicastPublisher", META = (DisplayName = "SetAudioDeviceById"))
-	void SetAudioDeviceById(FString Id);
+	void SetAudioDeviceById(const FString& Id);
 
 	/** Set the audio capture device by its name */
 	UFUNCTION(BlueprintCallable, Category = "MillicastPublisher", META = (DisplayName = "SetAudioDeviceByName"))
-	void SetAudioDeviceByName(FString Name);
-
-	/** Refresh the audio capture devices list */
-	UFUNCTION(BlueprintCallable, Category = "MillicastPublisher", META = (DisplayName = "RefreshAudioDevicesList"))
-	void RefreshAudioDevicesList();
+	void SetAudioDeviceByName(const FString& Name);
 
 	/** Apply a volume multiplier for the recorded data in dB */
 	UFUNCTION(BlueprintCallable, Category = "MillicastPublisher", META = (DisplayName = "SetVolumeMultiplier"))
