@@ -6,22 +6,13 @@
 #include <EngineModule.h>
 #include <LegacyScreenPercentageDriver.h>
 
-UMillicastViewportCapturerComponent::UMillicastViewportCapturerComponent(const FObjectInitializer& ObjectInitializer) :
-	bIsInitialized(false)
+UMillicastViewportCapturerComponent::UMillicastViewportCapturerComponent(const FObjectInitializer& ObjectInitializer)
+	: Super(ObjectInitializer)
 {
 	bWantsInitializeComponent = true;
 	CaptureSource = ESceneCaptureSource::SCS_FinalToneCurveHDR;
 	PostProcessSettings.bOverride_DepthOfFieldFocalDistance = true;
 	PostProcessSettings.DepthOfFieldFocalDistance = 10000.f;
-}
-
-void UMillicastViewportCapturerComponent::InitializeComponent()
-{
-	Super::InitializeComponent();
-}
-
-void UMillicastViewportCapturerComponent::UninitializeComponent()
-{
 }
 
 void UMillicastViewportCapturerComponent::UpdateSceneCaptureContents(FSceneInterface* Scene)
@@ -36,19 +27,4 @@ void UMillicastViewportCapturerComponent::UpdateSceneCaptureContents(FSceneInter
 
 	// Do the actual capturing
 	Super::UpdateSceneCaptureContents(Scene);
-}
-
-void UMillicastViewportCapturerComponent::Activate(bool bReset)
-{
-	Super::Activate(bReset);
-}
-
-void UMillicastViewportCapturerComponent::Deactivate()
-{
-	Super::Deactivate();
-}
-
-void UMillicastViewportCapturerComponent::EndPlay(const EEndPlayReason::Type EndPlayReason)
-{
-	Super::EndPlay(EndPlayReason);
 }
