@@ -16,16 +16,22 @@
 
 namespace Millicast::Publisher
 {
-#if ENGINE_MAJOR_VERSION == 5 && ENGINE_MINOR_VERSION == 0
-#define H264NameSpace(x) webrtc::H264:: ## x
+//#if ENGINE_MAJOR_VERSION == 5 && ENGINE_MINOR_VERSION == 0
+#if WEBRTC_VERSION < 96
+#define H264_Level webrtc::H264::Level
+#define H264_Profile webrtc::H264::Profile
+#define H264_ProfileLevelId webrtc::H264::ProfileLevelId
+#define H264_ProfileLevelIdToString webrtc::H264::ProfileLevelIdToString
 #else
-#define H264NameSpace(x) webrtc::H264 ## x
+#define H264_Level webrtc::H264Level
+#define H264_Profile webrtc::H264Profile
+#define H264_ProfileLevelId webrtc::H264ProfileLevelId
+#define H264_ProfileLevelIdToString webrtc::H264ProfileLevelIdToString
 #endif
 
-webrtc::SdpVideoFormat CreateH264Format(H264NameSpace(Profile) profile, H264NameSpace(Level) level)
+webrtc::SdpVideoFormat CreateH264Format(H264_Profile profile, H264_Level level)
 {
-	const absl::optional<std::string> profile_string =
-		H264NameSpace(ProfileLevelIdToString)( H264NameSpace(ProfileLevelId)(profile, level) );
+	const absl::optional<std::string> profile_string = H264_ProfileLevelIdToString(H264_ProfileLevelId(profile, level) );
 	check(profile_string);
 	
 	return webrtc::SdpVideoFormat( cricket::kH264CodecName,
@@ -39,7 +45,7 @@ webrtc::SdpVideoFormat CreateH264Format(H264NameSpace(Profile) profile, H264Name
 std::vector<webrtc::SdpVideoFormat> FMillicastVideoEncoderFactory::GetSupportedFormats() const
 {
 	std::vector<webrtc::SdpVideoFormat> VideoFormats;
-	VideoFormats.push_back(CreateH264Format(H264NameSpace(Profile)::kProfileMain, H264NameSpace(Level)::kLevel1));
+	VideoFormats.push_back(CreateH264Format(H264_Profile::kProfileMain, H264_Level::kLevel1));
 	VideoFormats.push_back(webrtc::SdpVideoFormat(cricket::kVp8CodecName));
 	VideoFormats.push_back(webrtc::SdpVideoFormat(cricket::kVp9CodecName));
 	return VideoFormats;
@@ -50,7 +56,8 @@ FMillicastVideoEncoderFactory::CodecInfo FMillicastVideoEncoderFactory::QueryVid
 	CodecInfo codec_info;
 	codec_info.has_internal_source = false;
 
-#if ENGINE_MAJOR_VERSION == 5 && ENGINE_MINOR_VERSION == 0
+//#if ENGINE_MAJOR_VERSION == 5 && ENGINE_MINOR_VERSION == 0
+#if WEBRTC_VERSION < 96
 	if (absl::EqualsIgnoreCase(format.name, cricket::kVp8CodecName)
 		|| absl::EqualsIgnoreCase(format.name, cricket::kVp9CodecName))
 	{
