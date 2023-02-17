@@ -522,13 +522,17 @@ void UMillicastPublisherComponent::OnConnected()
 
 void UMillicastPublisherComponent::OnConnectionError(const FString& Error)
 {
+	State = EMillicastPublisherState::Disconnected;
+
 	UE_LOG(LogMillicastPublisher, Log, TEXT("Millicast WebSocket Connection error : %s"), *Error);
 	OnPublishingError.Broadcast(TEXT("Could not connect websocket"));
 }
 
 void UMillicastPublisherComponent::OnClosed(int32 StatusCode, const FString& Reason, bool bWasClean)
 {
-	UE_LOG(LogMillicastPublisher, Log, TEXT("Millicast WebSocket Closed"))
+	State = EMillicastPublisherState::Disconnected;
+
+	UE_LOG(LogMillicastPublisher, Log, TEXT("Millicast WebSocket Closed"));
 }
 
 void UMillicastPublisherComponent::OnMessage(const FString& Msg)
