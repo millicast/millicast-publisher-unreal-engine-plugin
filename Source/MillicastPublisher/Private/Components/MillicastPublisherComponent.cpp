@@ -709,6 +709,30 @@ void UMillicastPublisherComponent::SetStartingBitrate(int Bps)
 	UpdateBitrateSettings();
 }
 
+bool UMillicastPublisherComponent::SetVideoCodec(EMillicastVideoCodecs InVideoCodec)
+{
+	if (IsPublishing())
+	{
+		UE_LOG(LogMillicastPublisher, Error, TEXT("Cannot set video codec while publishing"));
+		return false;
+	}
+
+	SelectedVideoCodec = InVideoCodec;
+	return true;
+}
+
+bool UMillicastPublisherComponent::SetAudioCodec(EMillicastAudioCodecs InAudioCodec)
+{
+	if (IsPublishing())
+	{
+		UE_LOG(LogMillicastPublisher, Error, TEXT("Cannot set audio codec while publishing"));
+		return false;
+	}
+
+	SelectedAudioCodec = InAudioCodec;
+	return true;
+}
+
 void UMillicastPublisherComponent::EnableStats(bool Enable)
 {
 	RtcStatsEnabled = Enable;
