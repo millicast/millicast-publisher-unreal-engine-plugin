@@ -125,6 +125,20 @@ public:
 	void SetStartingBitrate(int Bps);
 
 	/**
+	 * Set the video codec, must be called before Publish
+	 * Return true if the video codec is set successfully, false if it is not set
+	 */
+	UFUNCTION(BlueprintCallable, Category = "MillicastPublisher", META = (DisplayName = "SetVideoCodec"))
+	bool SetVideoCodec(EMillicastVideoCodecs InVideoCodec);
+
+	/**
+	 * Set the audio codec
+	 * Return true if the video codec is set successfully, false if it is not set
+	 */
+	UFUNCTION(BlueprintCallable, Category = "MillicastPublisher", META = (DisplayName = "SetAudioCodec"))
+	bool SetAudioCodec(EMillicastAudioCodecs InAudioCodec);
+
+	/**
 	* Enable RTC stats gathering
 	* Enter the cmd: ``stat millicast_publisher`` in order to display them
 	*/
