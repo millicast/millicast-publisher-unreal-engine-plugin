@@ -389,7 +389,7 @@ bool UMillicastPublisherComponent::PublishToMillicast()
 		if (WeakThis.IsValid())
 		{
 			UE_LOG(LogMillicastPublisher, Error, TEXT("pc.createOffer() | Error: %s"), err.c_str());
-			WeakThis->OnPublishingError.Broadcast(TEXT("Could not create offer"));
+			WeakThis->HandleError("Could not create offer");
 		}
 	});
 
@@ -407,8 +407,7 @@ bool UMillicastPublisherComponent::PublishToMillicast()
 		if (!WeakThis->WS || !WeakThis->WS.IsValid() || !WeakThis->PeerConnection)
 		{
 			UE_LOG(LogMillicastPublisher, Warning, TEXT("WebSocket is closed, can not send SDP"));
-			WeakThis->OnPublishingError.Broadcast(TEXT("Websocket is closed. Can not send SDP to server."));
-
+			WeakThis->HandleError("Websocket is closed. Can not send SDP to server.");
 			return;
 		}
 		 
@@ -457,7 +456,7 @@ bool UMillicastPublisherComponent::PublishToMillicast()
 		if (WeakThis.IsValid())
 		{
 			UE_LOG(LogMillicastPublisher, Error, TEXT("Set local description failed : %s"), *FString(err.c_str()));
-			WeakThis->OnPublishingError.Broadcast(TEXT("Could not set local description"));
+			WeakThis->HandleError("Could not set local description");
 		}
 	});
 
@@ -474,7 +473,7 @@ bool UMillicastPublisherComponent::PublishToMillicast()
 		UE_LOG(LogMillicastPublisher, Error, TEXT("Set remote description failed : %s"), *FString(err.c_str()));
 		if (WeakThis.IsValid())
 		{
-			WeakThis->OnPublishingError.Broadcast(TEXT("Could not set remote description"));
+			WeakThis->HandleError("Could not set remote description");
 		}
 	});
 
@@ -525,7 +524,7 @@ void UMillicastPublisherComponent::OnConnectionError(const FString& Error)
 	State = EMillicastPublisherState::Disconnected;
 
 	UE_LOG(LogMillicastPublisher, Log, TEXT("Millicast WebSocket Connection error : %s"), *Error);
-	OnPublishingError.Broadcast(TEXT("Could not connect websocket"));
+	HandleError("Could not connect websocket");
 }
 
 void UMillicastPublisherComponent::OnClosed(int32 StatusCode, const FString& Reason, bool bWasClean)
@@ -754,6 +753,12 @@ void UMillicastPublisherComponent::EnableStats(bool Enable)
 	{
 		PeerConnection->EnableStats(Enable);
 	}
+}
+
+void UMillicastPublisherComponent::HandleError(const FString& Message)
+{
+	State = EMillicastPublisherState::Disconnected;
+	OnPublishingError.Broadcast(Message);
 }
 
 #if WITH_EDITOR

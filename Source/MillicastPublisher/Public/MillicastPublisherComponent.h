@@ -215,6 +215,8 @@ private:
 
 	bool IsConnectionActive() const;
 
+	void HandleError(const FString& Message);
+
 private:
 	/** WebSocket Connection */
 	TSharedPtr<IWebSocket> WS;
