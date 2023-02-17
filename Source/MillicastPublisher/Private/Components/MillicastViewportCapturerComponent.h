@@ -27,17 +27,9 @@ private:
 	FIntPoint TargetSize = FIntPoint(1280, 720);
 
 protected:
-	void EndPlay(const EEndPlayReason::Type EndPlayReason);
-
-	void Activate(bool bReset)   override;
-	void Deactivate() override;
-
-	void InitializeComponent() override;
-	void UninitializeComponent() override;
-
 	void UpdateSceneCaptureContents(FSceneInterface* Scene) override;
 
 private:
 	FCriticalSection UpdateRenderContext;
-	bool bIsInitialized;
+	bool bIsInitialized = false;
 };

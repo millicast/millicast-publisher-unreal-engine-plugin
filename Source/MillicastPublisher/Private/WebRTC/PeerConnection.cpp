@@ -122,8 +122,14 @@ FWebRTCPeerConnection* FWebRTCPeerConnection::Create(const FRTCConfig& Config)
 	FWebRTCPeerConnection * PeerConnectionInstance = new FWebRTCPeerConnection();
 	webrtc::PeerConnectionDependencies deps(PeerConnectionInstance);
 
+#if ENGINE_MAJOR_VERSION == 5 && ENGINE_MINOR_VERSION == 0
+	PeerConnectionInstance->PeerConnection =
+		PeerConnectionFactory->CreatePeerConnection(Config,
+			nullptr,
+			nullptr,
+			PeerConnectionInstance);
+#else
 	auto result = PeerConnectionFactory->CreatePeerConnectionOrError(Config, std::move(deps));
-
 	if (!result.ok())
 	{
 		UE_LOG(LogMillicastPublisher, Error, TEXT("Could not create peerconnection : %s"), result.error().message());
@@ -132,7 +138,8 @@ FWebRTCPeerConnection* FWebRTCPeerConnection::Create(const FRTCConfig& Config)
 	}
 
 	PeerConnectionInstance->PeerConnection = result.value();
-			
+#endif
+
 	PeerConnectionInstance->CreateSessionDescription =
 			MakeUnique<FCreateSessionDescriptionObserver>();
 	PeerConnectionInstance->LocalSessionDescription  =
