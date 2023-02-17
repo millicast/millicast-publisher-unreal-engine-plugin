@@ -265,9 +265,15 @@ bool UMillicastPublisherComponent::PublishWithWsAndJwt(const FString& WsUrl, con
 */
 void UMillicastPublisherComponent::UnPublish()
 {
-	FScopeLock Lock(&CriticalSection);
+	if (!IsConnectionActive())
+	{
+		return;
+	}
+	State = EMillicastPublisherState::Disconnected;
 
 	UE_LOG(LogMillicastPublisher, Display, TEXT("Unpublish"));
+
+	FScopeLock Lock(&CriticalSection);
 	
 	// Release peerconnection and stop capture
 	if(PeerConnection)
@@ -290,13 +296,11 @@ void UMillicastPublisherComponent::UnPublish()
 		
 		WS = nullptr;
 	}
-
-	bIsPublishing = false;
 }
 
 bool UMillicastPublisherComponent::IsPublishing() const
 {
-	return bIsPublishing;
+	return State == EMillicastPublisherState::Connected;
 }
 
 bool UMillicastPublisherComponent::StartWebSocketConnection(const FString& Url,
@@ -332,11 +336,12 @@ bool UMillicastPublisherComponent::StartWebSocketConnection(const FString& Url,
 
 bool UMillicastPublisherComponent::PublishToMillicast()
 {
-	if (PeerConnection)
+	if (IsConnectionActive())
 	{
 		UE_LOG(LogMillicastPublisher, Error, TEXT("[UMillicastPublisherComponent::PublishToMillicast] Called twice in successsion"));
 		return false;
 	}
+	State = EMillicastPublisherState::Connecting;
 
 	using namespace Millicast::Publisher;
 
@@ -461,7 +466,7 @@ bool UMillicastPublisherComponent::PublishToMillicast()
 		{
 			UE_LOG(LogMillicastPublisher, Log, TEXT("Set remote description suceeded"));
 
-			WeakThis->bIsPublishing = true;
+			WeakThis->State = EMillicastPublisherState::Connected;
 			WeakThis->OnPublishing.Broadcast();
 		}
 	});
@@ -499,6 +504,11 @@ bool UMillicastPublisherComponent::PublishToMillicast()
 	PeerConnection->EnableStats(RtcStatsEnabled);
 
 	return true;
+}
+
+bool UMillicastPublisherComponent::IsConnectionActive() const
+{
+	return State != EMillicastPublisherState::Disconnected;
 }
 
 /* WebSocket Callback
@@ -711,7 +721,7 @@ void UMillicastPublisherComponent::SetStartingBitrate(int Bps)
 
 bool UMillicastPublisherComponent::SetVideoCodec(EMillicastVideoCodecs InVideoCodec)
 {
-	if (IsPublishing())
+	if (IsConnectionActive())
 	{
 		UE_LOG(LogMillicastPublisher, Error, TEXT("Cannot set video codec while publishing"));
 		return false;
@@ -723,7 +733,7 @@ bool UMillicastPublisherComponent::SetVideoCodec(EMillicastVideoCodecs InVideoCo
 
 bool UMillicastPublisherComponent::SetAudioCodec(EMillicastAudioCodecs InAudioCodec)
 {
-	if (IsPublishing())
+	if (IsConnectionActive())
 	{
 		UE_LOG(LogMillicastPublisher, Error, TEXT("Cannot set audio codec while publishing"));
 		return false;

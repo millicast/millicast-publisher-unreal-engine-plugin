@@ -22,6 +22,13 @@ namespace Millicast::Publisher
 	class FWebRTCPeerConnection;
 }
 
+enum class EMillicastPublisherState : uint8
+{
+	Disconnected,
+	Connecting,
+	Connected
+};
+
 // Event declaration
 DECLARE_DYNAMIC_MULTICAST_SPARSE_DELEGATE(FMillicastPublisherComponentAuthenticated, UMillicastPublisherComponent, OnAuthenticated);
 DECLARE_DYNAMIC_MULTICAST_SPARSE_DELEGATE_TwoParams(FMillicastPublisherComponentAuthenticationFailure, UMillicastPublisherComponent, OnAuthenticationFailure, int, Code, const FString&, Msg);
@@ -206,6 +213,8 @@ private:
 
 	void UpdateBitrateSettings();
 
+	bool IsConnectionActive() const;
+
 private:
 	/** WebSocket Connection */
 	TSharedPtr<IWebSocket> WS;
@@ -219,7 +228,7 @@ private:
 	webrtc::PeerConnectionInterface::RTCConfiguration PeerConnectionConfig;
 
 	/** Publisher */
-	bool bIsPublishing = false;
+	TAtomic<EMillicastPublisherState> State = EMillicastPublisherState::Disconnected;
 	bool RtcStatsEnabled = false;
 	TOptional<int> MinimumBitrate; // in bps
 	TOptional<int> MaximumBitrate; // in bps
