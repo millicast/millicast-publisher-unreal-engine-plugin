@@ -35,13 +35,13 @@ namespace Millicast::Publisher
 		double VideoTargetBitrate; // bps
 		size_t VideoTotalSent; // bytes
 		size_t AudioTotalSent; // bytes
-		int VideoPacketRetransmitted; // num packets
-		int AudioPacketRetransmitted; // num packets
+		int32 VideoPacketRetransmitted; // num packets
+		int32 AudioPacketRetransmitted; // num packets
 		FString VideoCodec; // mimetype
 		FString AudioCodec; // mimetype
-		int FramesDropped;
-		int VideoNackCount;
-		int AudioNackCount;
+		int32 FramesDropped;
+		int32 VideoNackCount;
+		int32 AudioNackCount;
 
 		double TotalEncodedFrames;
 		double AvgEncodeTime;
