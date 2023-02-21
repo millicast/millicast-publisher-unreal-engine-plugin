@@ -12,6 +12,7 @@
 
 // Forward declarations
 class FJsonValue;
+class FJsonObject;
 class IWebSocket;
 class IHttpResponse;
 
