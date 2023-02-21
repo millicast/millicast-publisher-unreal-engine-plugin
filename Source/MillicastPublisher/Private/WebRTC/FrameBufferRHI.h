@@ -127,7 +127,7 @@ namespace Millicast::Publisher
 		FTexture2DRHIRef TextureRef;
 		FVideoEncoderInputFrameType Frame;
 		TSharedPtr<AVEncoder::FVideoEncoderInput> VideoEncoderInput;
-		rtc::scoped_refptr<webrtc::I420Buffer> Buffer;
+		rtc::scoped_refptr<webrtc::I420Buffer> Buffer = nullptr;
 		TUniquePtr<FRHIGPUTextureReadback> Readback;
 		void* TextureData = nullptr;
 		int PitchPixels = 0;
@@ -143,6 +143,11 @@ namespace Millicast::Publisher
 			RHICmdList.BlockUntilGPUIdle();
 			check(Readback->IsReady());
 			TextureData = Readback->Lock(PitchPixels);
+
+#if ENGINE_MAJOR_VERSION < 5
+			int Width = TextureRef->GetSizeX();
+			PitchPixels = Width;
+#endif
 
 			Readback->Unlock();
 		}
