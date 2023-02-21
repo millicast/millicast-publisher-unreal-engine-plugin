@@ -66,7 +66,6 @@ namespace UnrealBuildTool.Rules
 			}
 			else
 			{
-				PrivatePCHHeaderFile = "Private/PCH_UE4.h";
 				CppStandard = CppStandardVersion.Cpp17;
 			}
 
