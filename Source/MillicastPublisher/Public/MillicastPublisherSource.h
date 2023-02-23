@@ -1,16 +1,35 @@
 // Copyright Millicast 2022. All Rights Reserved.
 #pragma once
 
-#include "UObject/ObjectMacros.h"
-#include "Materials/MaterialInstanceDynamic.h"
-#include "StreamMediaSource.h"
-#include "IMillicastSource.h"
-#include "Sound/SoundSubmix.h"
 #include "AudioCaptureDeviceInterface.h"
-#include "Engine/TextureRenderTarget2D.h"
+#include "IMillicastSource.h"
 #include "RtcCodecsConstants.h"
+#include "StreamMediaSource.h"
+
+#include "Engine/TextureRenderTarget2D.h"
+#include "Kismet/KismetRenderingLibrary.h"
+#include "Materials/MaterialInstanceDynamic.h"
+#include "UObject/ObjectMacros.h"
+#include "Sound/SoundSubmix.h"
 
 #include "MillicastPublisherSource.generated.h"
+
+USTRUCT(BlueprintType)
+struct FMillicastLayeredTexture
+{
+	GENERATED_BODY()
+
+	UPROPERTY(BlueprintReadWrite, EditAnywhere)
+	const UTexture* Texture = nullptr;
+
+	UPROPERTY(BlueprintReadWrite, EditAnywhere)
+	FVector2D Position;
+
+	UPROPERTY(BlueprintReadWrite, EditAnywhere)
+	FVector2D Size;
+};
+
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnFrameRendered, UCanvas*, Canvas);
 
 /**
  * Media source description for Millicast Publisher.
@@ -20,11 +39,33 @@ UCLASS(BlueprintType, hideCategories=(Platforms,Object),
 class MILLICASTPUBLISHER_API UMillicastPublisherSource : public UStreamMediaSource
 {
 	GENERATED_BODY()
+
+public:
+	UPROPERTY(BlueprintAssignable)
+	FOnFrameRendered OnFrameRendered;
+
+	/* Can be set if no layered textures are provided to expose a canvas anyway */
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = Video)
+	bool bSupportCustomDrawCanvas = false;
+
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = Video)
+	TArray<FMillicastLayeredTexture> LayeredTextures;
+
+
 public:
 	UMillicastPublisherSource(const FObjectInitializer& ObjectInitializer);
 
 	UFUNCTION(BlueprintCallable, Category = "MillicastPublisher", META = (DisplayName = "Initialize"))
 	void Initialize(const FString& InPublishingToken, const FString& InStreamName, const FString& InSourceId, const FString& InStreamUrl = "https://director.millicast.com/api/director/publish");
+
+	/* Required for watermark feature */
+	UFUNCTION(BlueprintCallable, Category = "MillicastPublisher", meta = (WorldContext = "WorldContextObject"))
+	void RegisterWorldContext(UObject* WorldContextObject);
+
+	UFUNCTION(BlueprintCallable, Category = "MillicastPublisher")
+	void UnregisterWorldContext();
+	/* Watermark feature over */
+
 
 	/** The Millicast Stream name. */
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category=Stream, AssetRegistrySearchable)
@@ -129,6 +170,19 @@ public:
 	void StopCapture();
 
 private:
+	void TryInitRenderTargetCanvas();
+
+private:
 	TSharedPtr<IMillicastVideoSource> VideoSource;
 	TSharedPtr<IMillicastAudioSource> AudioSource;
+
+	// Custom DrawCanvas
+	UPROPERTY()
+	UCanvas* RenderTargetCanvas = nullptr;
+
+	FDrawToRenderTargetContext RenderTargetCanvasCtx;
+	bool bRenderTargetInitialized = false; // TODO [RW] atomic enum with 3 stages for absolute state management would be best, but won't touch the bool now unless it becomes problematic
+
+	UObject* WorldContext = nullptr;
+	// Custom DrawCanvas End
 };

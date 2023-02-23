@@ -1,15 +1,17 @@
 // Copyright Millicast 2022. All Rights Reserved.
 
 #include "MillicastPublisherSource.h"
-#include "MillicastPublisherPrivate.h"
-#include "Subsystems/MillicastAudioDeviceCaptureSubsystem.h"
 
+#include "AudioDeviceCapturer.h"
+#include "AudioSubmixCapturer.h"
+
+#include "MillicastPublisherPrivate.h"
 #include "RenderTargetCapturer.h"
 
+#include "Engine/Canvas.h"
+#include "Subsystems/MillicastAudioDeviceCaptureSubsystem.h"
 #include "WebRTC/PeerConnection.h"
 
-#include "AudioSubmixCapturer.h"
-#include "AudioDeviceCapturer.h"
 
 #include <RenderTargetPool.h>
 
@@ -210,6 +212,48 @@ void UMillicastPublisherSource::StartCapture(TFunction<void(IMillicastSource::FS
 			VideoSource = IMillicastVideoSource::Create();
 		}
 
+		//
+		if (VideoSource && RenderTarget)
+		{
+			auto* RenderTargetVideoSource = static_cast<Millicast::Publisher::RenderTargetCapturer*>(VideoSource.Get());
+			RenderTargetVideoSource->OnFrameRendered.AddLambda([this]()
+			{
+				if (LayeredTextures.IsEmpty() && !bSupportCustomDrawCanvas)
+				{
+					return;
+				}
+
+				TryInitRenderTargetCanvas();
+				
+				if (!RenderTargetCanvas)
+				{
+					return;
+				}
+
+				OnFrameRendered.Broadcast(RenderTargetCanvas);
+
+				// Render Layered Textures
+				for (const auto& Texture : LayeredTextures)
+				{
+					// TODO [RW] Engine API mistake. Function param should be const UTexture*
+					const FVector2D CoordinatePosition;
+					RenderTargetCanvas->K2_DrawTexture(const_cast<UTexture*>(Texture.Texture), Texture.Position, Texture.Size, CoordinatePosition);
+				}
+
+				/*FRHICommandListImmediate& RHICmdList = FRHICommandListExecutor::GetImmediateCommandList();
+
+				for (auto& LTexture : LayeredTexture)
+				{
+					if (LTexture.Texture)
+					{
+						auto DestTexture = RenderTarget->GetResource()->GetTexture2DRHI();
+						auto SourceTexture = LTexture.Texture->GetResource()->GetTexture2DRHI();
+						CopyTexture(RHICmdList, SourceTexture, DestTexture, true, LTexture.Position);
+					}
+				}*/
+			});
+		}
+		
 		// Starts the capture and notify observers
 		if (VideoSource && Callback)
 		{
@@ -261,6 +305,58 @@ void UMillicastPublisherSource::StopCapture()
 		AudioSource->StopCapture();
 		AudioSource = nullptr;
 	}
+}
+
+
+void UMillicastPublisherSource::RegisterWorldContext(UObject* WorldContextObject)
+{
+	WorldContext = WorldContextObject;
+}
+
+void UMillicastPublisherSource::UnregisterWorldContext()
+{
+	WorldContext = nullptr;
+
+	// Called at Endplay, so we also stop the canvas here
+	UKismetRenderingLibrary::EndDrawCanvasToRenderTarget(WorldContext, RenderTargetCanvasCtx);
+
+	bRenderTargetInitialized = false;
+	RenderTargetCanvas = nullptr;
+	RenderTargetCanvasCtx = {};
+}
+
+void UMillicastPublisherSource::TryInitRenderTargetCanvas()
+{
+	if (bRenderTargetInitialized)
+	{
+		return;
+	}
+
+	if (LayeredTextures.IsEmpty() && !bSupportCustomDrawCanvas)
+	{
+		return;
+	}
+
+	if (!WorldContext)
+	{
+		return;
+	}
+
+	// NOTE [RW] This means we currently only support 1 world with this approach.
+	// A more flexible API would need to be developed later
+
+	AsyncTask(ENamedThreads::GameThread, [this]()
+	{
+		UWorld* World = GEngine->GetWorldFromContextObject(WorldContext, EGetWorldErrorMode::LogAndReturnNull);
+		if (!World)
+		{
+			bRenderTargetInitialized = false;
+			return;
+		}
+
+		FVector2D DummySize;
+		UKismetRenderingLibrary::BeginDrawCanvasToRenderTarget(World, RenderTarget, RenderTargetCanvas, DummySize, RenderTargetCanvasCtx);
+	});
 }
 
 void UMillicastPublisherSource::ChangeRenderTarget(UTextureRenderTarget2D* InRenderTarget)
