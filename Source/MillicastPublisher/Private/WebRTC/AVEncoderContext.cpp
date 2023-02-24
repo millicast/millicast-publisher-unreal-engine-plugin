@@ -39,7 +39,7 @@ void FAVEncoderContext::DeleteBackBuffers()
 
 bool FAVEncoderContext::IsFixedResolution() const
 {
-#if ENGINE_MAJOR_VERSION == 5 && ENGINE_MINOR_VERSION == 0
+#if ENGINE_MAJOR_VERSION < 5 || ENGINE_MINOR_VERSION == 0
 	return bFixedResolution;
 #else
 	return false;
@@ -63,7 +63,7 @@ TSharedPtr<AVEncoder::FVideoEncoderInput> FAVEncoderContext::GetVideoEncoderInpu
 
 void FAVEncoderContext::SetCaptureResolution(int NewCaptureWidth, int NewCaptureHeight)
 {
-#if ENGINE_MAJOR_VERSION == 5 && ENGINE_MINOR_VERSION == 0
+#if ENGINE_MAJOR_VERSION < 5 || ENGINE_MINOR_VERSION == 0
 	// Don't change resolution if we are in a fixed resolution capturer or the user has indicated they do not want this behaviour.
 	if (bFixedResolution)
 	{
@@ -83,7 +83,7 @@ void FAVEncoderContext::SetCaptureResolution(int NewCaptureWidth, int NewCapture
 	CaptureWidth = NewCaptureWidth;
 	CaptureHeight = NewCaptureHeight;
 	
-#if ENGINE_MAJOR_VERSION == 5 && ENGINE_MINOR_VERSION == 0
+#if ENGINE_MAJOR_VERSION < 5 || ENGINE_MINOR_VERSION == 0
 	VideoEncoderInput->SetResolution(CaptureWidth, CaptureHeight);
 #else
 	// VideoEncoderInput->SetCaptureResolution(CaptureWidth, CaptureHeight);
@@ -103,7 +103,7 @@ TSharedPtr<AVEncoder::FVideoEncoderInput> FAVEncoderContext::CreateVideoEncoderI
 
 	FString RHIName = GDynamicRHI->GetName();
 
-#if ENGINE_MAJOR_VERSION == 5 && ENGINE_MINOR_VERSION == 0
+#if ENGINE_MAJOR_VERSION < 5 || ENGINE_MINOR_VERSION == 0
 	bool bIsResizable = !bInFixedResolution;
 #else
 	bool bIsResizable = true;
@@ -113,7 +113,7 @@ TSharedPtr<AVEncoder::FVideoEncoderInput> FAVEncoderContext::CreateVideoEncoderI
 	{
 		if (IsRHIDeviceAMD())
 		{
-#if ENGINE_MAJOR_VERSION == 5 && ENGINE_MINOR_VERSION == 0
+#if ENGINE_MAJOR_VERSION < 5 || ENGINE_MINOR_VERSION == 0
 			FVulkanDynamicRHI* DynamicRHI = static_cast<FVulkanDynamicRHI*>(GDynamicRHI);
 			AVEncoder::FVulkanDataStruct VulkanData = { DynamicRHI->GetInstance(), DynamicRHI->GetDevice()->GetPhysicalHandle(), DynamicRHI->GetDevice()->GetInstanceHandle() };
 
@@ -129,7 +129,7 @@ TSharedPtr<AVEncoder::FVideoEncoderInput> FAVEncoderContext::CreateVideoEncoderI
 		{
 			if (FModuleManager::Get().IsModuleLoaded("CUDA"))
 			{
-#if ENGINE_MAJOR_VERSION == 5 && ENGINE_MINOR_VERSION == 0
+#if ENGINE_MAJOR_VERSION < 5 || ENGINE_MINOR_VERSION == 0
 				return AVEncoder::FVideoEncoderInput::CreateForCUDA(FModuleManager::GetModuleChecked<FCUDAModule>("CUDA").GetCudaContext(), InWidth, InHeight, bIsResizable);
 #else
 				return AVEncoder::FVideoEncoderInput::CreateForCUDA(FModuleManager::GetModuleChecked<FCUDAModule>("CUDA").GetCudaContext(), bIsResizable);
@@ -145,7 +145,7 @@ TSharedPtr<AVEncoder::FVideoEncoderInput> FAVEncoderContext::CreateVideoEncoderI
 #if PLATFORM_WINDOWS
 	else if (RHIName == TEXT("D3D11"))
 	{
-		#if ENGINE_MAJOR_VERSION == 5 && ENGINE_MINOR_VERSION == 0
+		#if ENGINE_MAJOR_VERSION < 5 || ENGINE_MINOR_VERSION == 0
 		return AVEncoder::FVideoEncoderInput::CreateForD3D11(GDynamicRHI->RHIGetNativeDevice(), InWidth, InHeight, bIsResizable, IsRHIDeviceAMD());
 		#else
 		return AVEncoder::FVideoEncoderInput::CreateForD3D11(GDynamicRHI->RHIGetNativeDevice(), bIsResizable, IsRHIDeviceAMD());
@@ -153,7 +153,7 @@ TSharedPtr<AVEncoder::FVideoEncoderInput> FAVEncoderContext::CreateVideoEncoderI
 	}
 	else if (RHIName == TEXT("D3D12"))
 	{
-		#if ENGINE_MAJOR_VERSION == 5 && ENGINE_MINOR_VERSION == 0
+		#if ENGINE_MAJOR_VERSION < 5 || ENGINE_MINOR_VERSION == 0
 		return AVEncoder::FVideoEncoderInput::CreateForD3D12(GDynamicRHI->RHIGetNativeDevice(), InWidth, InHeight, bIsResizable, IsRHIDeviceNVIDIA());
 		#else
 		return AVEncoder::FVideoEncoderInput::CreateForD3D12(GDynamicRHI->RHIGetNativeDevice(), bIsResizable, IsRHIDeviceNVIDIA());
@@ -168,7 +168,7 @@ TSharedPtr<AVEncoder::FVideoEncoderInput> FAVEncoderContext::CreateVideoEncoderI
 #if PLATFORM_WINDOWS
 FTexture2DRHIRef FAVEncoderContext::SetBackbufferTextureDX11(FVideoEncoderInputFrameType InputFrame)
 {
-#if ENGINE_MAJOR_VERSION == 5 && ENGINE_MINOR_VERSION == 0
+#if ENGINE_MAJOR_VERSION < 5 || ENGINE_MINOR_VERSION == 0
 	FRHIResourceCreateInfo CreateInfo(TEXT("VideoCapturerBackBuffer"));
 	FTexture2DRHIRef Texture = GDynamicRHI->RHICreateTexture2D(CaptureWidth, CaptureHeight, EPixelFormat::PF_B8G8R8A8, 1, 1, TexCreate_Shared | TexCreate_RenderTargetable, ERHIAccess::CopyDest, CreateInfo);
 #else
@@ -188,7 +188,7 @@ FTexture2DRHIRef FAVEncoderContext::SetBackbufferTextureDX11(FVideoEncoderInputF
 
 FTexture2DRHIRef FAVEncoderContext::SetBackbufferTextureDX12(FVideoEncoderInputFrameType InputFrame)
 {
-#if ENGINE_MAJOR_VERSION == 5 && ENGINE_MINOR_VERSION == 0
+#if ENGINE_MAJOR_VERSION < 5 || ENGINE_MINOR_VERSION == 0
 	FRHIResourceCreateInfo CreateInfo(TEXT("VideoCapturerBackBuffer"));
 	FTexture2DRHIRef Texture = GDynamicRHI->RHICreateTexture2D(CaptureWidth, CaptureHeight, EPixelFormat::PF_B8G8R8A8, 1, 1, TexCreate_Shared | TexCreate_RenderTargetable, ERHIAccess::CopyDest, CreateInfo);
 #else
@@ -208,7 +208,7 @@ FTexture2DRHIRef FAVEncoderContext::SetBackbufferTextureDX12(FVideoEncoderInputF
 
 FTexture2DRHIRef FAVEncoderContext::SetBackbufferTexturePureVulkan(FVideoEncoderInputFrameType InputFrame)
 {
-#if ENGINE_MAJOR_VERSION == 5 && ENGINE_MINOR_VERSION == 0
+#if ENGINE_MAJOR_VERSION < 5 || ENGINE_MINOR_VERSION == 0
 	FRHIResourceCreateInfo CreateInfo(TEXT("VideoCapturerBackBuffer"));
 	FTexture2DRHIRef Texture =
 		GDynamicRHI->RHICreateTexture2D(CaptureWidth, CaptureHeight, EPixelFormat::PF_B8G8R8A8, 1, 1, TexCreate_Shared | TexCreate_RenderTargetable | TexCreate_UAV, ERHIAccess::Present, CreateInfo);
@@ -301,7 +301,7 @@ FAVEncoderContext::FCapturerInput FAVEncoderContext::ObtainCapturerInput()
 FTexture2DRHIRef FAVEncoderContext::SetBackbufferTextureCUDAVulkan(FVideoEncoderInputFrameType InputFrame)
 {
 	// Create a texture that can be exposed to external memory
-#if ENGINE_MAJOR_VERSION == 5 && ENGINE_MINOR_VERSION == 0
+#if ENGINE_MAJOR_VERSION < 5 || ENGINE_MINOR_VERSION == 0
 	FRHIResourceCreateInfo CreateInfo(TEXT("VideoCapturerBackBuffer"));
 	FTexture2DRHIRef Texture = GDynamicRHI->RHICreateTexture2D(CaptureWidth, CaptureHeight, EPixelFormat::PF_B8G8R8A8, 1, 1, TexCreate_Shared | TexCreate_RenderTargetable | TexCreate_UAV, ERHIAccess::Present, CreateInfo);
 	FVulkanTexture2D* VulkanTexture = static_cast<FVulkanTexture2D*>(Texture.GetReference());
@@ -332,7 +332,7 @@ FTexture2DRHIRef FAVEncoderContext::SetBackbufferTextureCUDAVulkan(FVideoEncoder
 		MemoryGetHandleInfoKHR.sType = VK_STRUCTURE_TYPE_MEMORY_GET_WIN32_HANDLE_INFO_KHR;
 		MemoryGetHandleInfoKHR.pNext = NULL;
 
-		#if ENGINE_MAJOR_VERSION == 5 && ENGINE_MINOR_VERSION == 0
+		#if ENGINE_MAJOR_VERSION < 5 || ENGINE_MINOR_VERSION == 0
 		MemoryGetHandleInfoKHR.memory = VulkanTexture->Surface.GetAllocationHandle();
 		#else
 		MemoryGetHandleInfoKHR.memory = VulkanTexture->GetAllocationHandle();
@@ -359,7 +359,7 @@ FTexture2DRHIRef FAVEncoderContext::SetBackbufferTextureCUDAVulkan(FVideoEncoder
 		CudaExtMemHandleDesc.handle.win32.name = NULL;
 		CudaExtMemHandleDesc.handle.win32.handle = Handle;
 
-		#if ENGINE_MAJOR_VERSION == 5 && ENGINE_MINOR_VERSION == 0
+		#if ENGINE_MAJOR_VERSION < 5 || ENGINE_MINOR_VERSION == 0
 		CudaExtMemHandleDesc.size = VulkanTexture->Surface.GetAllocationOffset() + VulkanTexture->Surface.GetMemorySize();
 		#else
 		CudaExtMemHandleDesc.size = VulkanTexture->GetAllocationOffset() + VulkanTexture->GetMemorySize();
@@ -387,7 +387,7 @@ FTexture2DRHIRef FAVEncoderContext::SetBackbufferTextureCUDAVulkan(FVideoEncoder
 		MemoryGetFdInfoKHR.sType = VK_STRUCTURE_TYPE_MEMORY_GET_FD_INFO_KHR;
 		MemoryGetFdInfoKHR.pNext = NULL;
 
-		#if ENGINE_MAJOR_VERSION == 5 && ENGINE_MINOR_VERSION == 0
+		#if ENGINE_MAJOR_VERSION < 5 || ENGINE_MINOR_VERSION == 0
 		MemoryGetFdInfoKHR.memory = VulkanTexture->Surface.GetAllocationHandle();
 		#else
 		MemoryGetFdInfoKHR.memory = VulkanTexture->GetAllocationHandle();
@@ -413,7 +413,7 @@ FTexture2DRHIRef FAVEncoderContext::SetBackbufferTextureCUDAVulkan(FVideoEncoder
 		CudaExtMemHandleDesc.type = CU_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_FD;
 		CudaExtMemHandleDesc.handle.fd = Fd;
 
-		#if ENGINE_MAJOR_VERSION == 5 && ENGINE_MINOR_VERSION == 0
+		#if ENGINE_MAJOR_VERSION < 5 || ENGINE_MINOR_VERSION == 0
 		CudaExtMemHandleDesc.size = VulkanTexture->Surface.GetAllocationOffset() + VulkanTexture->Surface.GetMemorySize();
 		#else
 		CudaExtMemHandleDesc.size = VulkanTexture->GetAllocationOffset() + VulkanTexture->GetMemorySize();
@@ -435,7 +435,7 @@ FTexture2DRHIRef FAVEncoderContext::SetBackbufferTextureCUDAVulkan(FVideoEncoder
 	{
 		CUDA_EXTERNAL_MEMORY_MIPMAPPED_ARRAY_DESC mipmapDesc = {};
 		mipmapDesc.numLevels = 1;
-#if ENGINE_MAJOR_VERSION == 5 && ENGINE_MINOR_VERSION == 0
+#if ENGINE_MAJOR_VERSION < 5 || ENGINE_MINOR_VERSION == 0
 		mipmapDesc.offset = VulkanTexture->Surface.GetAllocationOffset();
 #else
 		mipmapDesc.offset = VulkanTexture->GetAllocationOffset();
@@ -464,7 +464,13 @@ FTexture2DRHIRef FAVEncoderContext::SetBackbufferTextureCUDAVulkan(FVideoEncoder
 
 	FCUDAModule::CUDA().cuCtxPopCurrent(NULL);
 
-	InputFrame->SetTexture(mappedArray, AVEncoder::FVideoEncoderInputFrame::EUnderlyingRHI::Vulkan, Handle, [this, mappedArray, mappedMipArray, mappedExternalMemory, InputFrame](CUarray NativeTexture) {
+#if ENGINE_MAJOR_VERSION < 5
+	InputFrame->SetTexture(mappedArray,
+#else
+	InputFrame->SetTexture(mappedArray, AVEncoder::FVideoEncoderInputFrame::EUnderlyingRHI::Vulkan, Handle, 
+#endif
+	[this, mappedArray, mappedMipArray, mappedExternalMemory, InputFrame](CUarray NativeTexture)
+	{
 		// free the cuda types
 		FCUDAModule::CUDA().cuCtxPushCurrent(FModuleManager::GetModuleChecked<FCUDAModule>("CUDA").GetCudaContext());
 

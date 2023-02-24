@@ -49,7 +49,12 @@ inline void CopyTexture(FRHICommandList& RHICmdList, FTexture2DRHIRef SourceText
 			GraphicsPSOInit.BoundShaderState.VertexShaderRHI = VertexShader.GetVertexShader();
 			GraphicsPSOInit.BoundShaderState.PixelShaderRHI = PixelShader.GetPixelShader();
 			GraphicsPSOInit.PrimitiveType = PT_TriangleList;
+
+			#if ENGINE_MAJOR_VERSION < 5
+			SetGraphicsPipelineState(RHICmdList, GraphicsPSOInit);
+			#else
 			SetGraphicsPipelineState(RHICmdList, GraphicsPSOInit, 0);
+			#endif
 
 			PixelShader->SetParameters(RHICmdList, TStaticSamplerState<SF_Bilinear>::GetRHI(), SourceTexture);
 

@@ -6,9 +6,13 @@
 #include <Components/ActorComponent.h>
 #include "MillicastPublisherSource.h"
 #include "RtcCodecsConstants.h"
+
+
 #include "MillicastPublisherComponent.generated.h"
 
 // Forward declarations
+class FJsonValue;
+class FJsonObject;
 class IWebSocket;
 class IHttpResponse;
 

@@ -5,7 +5,7 @@
 #include "modules/video_coding/codecs/vp8/include/vp8.h"
 #include "modules/video_coding/codecs/vp9/include/vp9.h"
 
-#if ENGINE_MAJOR_VERSION == 5 && ENGINE_MINOR_VERSION == 0
+#if ENGINE_MAJOR_VERSION < 5 || ENGINE_MINOR_VERSION == 0
 #include "media/base/h264_profile_level_id.h"
 #else
 #include "api/video_codecs/h264_profile_level_id.h"
@@ -16,7 +16,7 @@
 
 namespace Millicast::Publisher
 {
-//#if ENGINE_MAJOR_VERSION == 5 && ENGINE_MINOR_VERSION == 0
+//#if ENGINE_MAJOR_VERSION < 5 || ENGINE_MINOR_VERSION == 0
 #if WEBRTC_VERSION < 96
 #define H264_Level webrtc::H264::Level
 #define H264_Profile webrtc::H264::Profile
@@ -56,7 +56,7 @@ FMillicastVideoEncoderFactory::CodecInfo FMillicastVideoEncoderFactory::QueryVid
 	CodecInfo codec_info;
 	codec_info.has_internal_source = false;
 
-//#if ENGINE_MAJOR_VERSION == 5 && ENGINE_MINOR_VERSION == 0
+//#if ENGINE_MAJOR_VERSION < 5 || ENGINE_MINOR_VERSION == 0
 #if WEBRTC_VERSION < 96
 	if (absl::EqualsIgnoreCase(format.name, cricket::kVp8CodecName)
 		|| absl::EqualsIgnoreCase(format.name, cricket::kVp9CodecName))

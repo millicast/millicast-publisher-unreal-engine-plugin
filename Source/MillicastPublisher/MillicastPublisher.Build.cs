@@ -54,9 +54,20 @@ namespace UnrealBuildTool.Rules
 					"InputCore",
 					"libOpus",
 					"AudioPlatformConfiguration",
-					"AVEncoder",
+					"AVEncoder"
+				});
+
+
+			if (ReadOnlyBuildVersion.Current.MajorVersion >= 5)
+			{
+				PrivateDependencyModuleNames.AddRange(new string[] {
 					"RHICore"
 				});
+			}
+			else
+			{
+				CppStandard = CppStandardVersion.Cpp17;
+			}
 
 			PrivateIncludePathModuleNames.AddRange(
 				new string[] {

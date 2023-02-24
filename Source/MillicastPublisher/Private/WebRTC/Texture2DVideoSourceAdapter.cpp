@@ -33,7 +33,7 @@ void FTexture2DVideoSourceAdapter::OnFrameReady(const FTexture2DRHIRef& FrameBuf
 	
 	InputFrame->SetTimestampUs(Timestamp);
 	
-#if ENGINE_MAJOR_VERSION == 5 && ENGINE_MINOR_VERSION == 0
+#if ENGINE_MAJOR_VERSION < 5 || ENGINE_MINOR_VERSION == 0
 #else
 	const FIntPoint FBSize = FrameBuffer->GetSizeXY();
 	InputFrame->SetWidth(FBSize.X);
