@@ -92,6 +92,7 @@ namespace Millicast::Publisher
 			// Convert it to WebRTC video frame
 			if (texture)
 			{
+				OnFrameRendered.Broadcast();
 				RtcVideoSource->OnFrameReady(texture);
 			}
 		}

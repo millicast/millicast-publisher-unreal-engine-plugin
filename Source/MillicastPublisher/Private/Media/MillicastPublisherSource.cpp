@@ -1,30 +1,31 @@
 // Copyright Millicast 2022. All Rights Reserved.
 
 #include "MillicastPublisherSource.h"
-#include "MillicastPublisherPrivate.h"
 
+#include "AudioDeviceCapturer.h"
+#include "AudioSubmixCapturer.h"
+
+#include "MillicastPublisherPrivate.h"
 #include "RenderTargetCapturer.h"
 
+#include "Engine/Canvas.h"
+#include "Subsystems/MillicastAudioDeviceCaptureSubsystem.h"
 #include "WebRTC/PeerConnection.h"
 
-#include "AudioSubmixCapturer.h"
-#include "AudioDeviceCapturer.h"
 
 #include <RenderTargetPool.h>
 
-UMillicastPublisherSource::UMillicastPublisherSource() : VideoSource(nullptr), AudioSource(nullptr)
+UMillicastPublisherSource::UMillicastPublisherSource(const FObjectInitializer& ObjectInitializer)
+	: Super(ObjectInitializer)
 {
 	// Add default StreamUrl
 	StreamUrl = "https://director.millicast.com/api/director/publish";
-
-	UE_LOG(LogMillicastPublisher, Log, TEXT("Fetch available audio devices"));
-	
-	RefreshAudioDevicesList();
 }
 
 void UMillicastPublisherSource::BeginDestroy()
 {
 	UE_LOG(LogMillicastPublisher, Display, TEXT("Destroy MillicastPublisher Source"));
+
 	// Stop the capture before destroying the object
 	StopCapture();
 
@@ -46,32 +47,36 @@ void UMillicastPublisherSource::Initialize(const FString& InPublishingToken, con
 
 void UMillicastPublisherSource::MuteVideo(bool Muted)
 {
-	if (VideoSource)
+	if (!VideoSource)
 	{
-		if (Muted)
-		{
-			UE_LOG(LogMillicastPublisher, Log, TEXT("Mute video"));
-		}
-		else
-		{
-			UE_LOG(LogMillicastPublisher, Log, TEXT("Unmute video"));
-		}
-
-		auto track = VideoSource->GetTrack();
-		track->set_enabled(!Muted);
+		return;
 	}
+
+	if (Muted)
+	{
+		UE_LOG(LogMillicastPublisher, Log, TEXT("Mute video"));
+	}
+	else
+	{
+		UE_LOG(LogMillicastPublisher, Log, TEXT("Unmute video"));
+	}
+
+	auto Track = VideoSource->GetTrack();
+	Track->set_enabled(!Muted);
 }
 
 void UMillicastPublisherSource::MuteAudio(bool Muted)
 {
-	if (AudioSource)
+	if (!AudioSource)
 	{
-		auto track = AudioSource->GetTrack();
-		track->set_enabled(!Muted);
+		return;
 	}
+
+	auto Track = AudioSource->GetTrack();
+	Track->set_enabled(!Muted);
 }
 
-void UMillicastPublisherSource::SetAudioDeviceById(FString Id)
+void UMillicastPublisherSource::SetAudioDeviceById(const FString& Id)
 {
 	if (!CaptureAudio || AudioCaptureType != AudioCapturerType::DEVICE)
 	{
@@ -86,19 +91,31 @@ void UMillicastPublisherSource::SetAudioDeviceById(FString Id)
 		return;
 	}
 
-	auto it = CaptureDevicesName.IndexOfByPredicate([&Id](const auto& e) { return Id == e.DeviceId;  });
-	if (it != INDEX_NONE)
+	// Set CaptureDeviceIndex
 	{
-		CaptureDeviceIndex = it;
+		auto* Subsystem = GEngine->GetEngineSubsystem<UMillicastAudioDeviceCaptureSubsystem>();
+		if (!Subsystem)
+		{
+			UE_LOG(LogMillicastPublisher, Warning, TEXT("[UMillicastPublisherSource::SetAudioDeviceById] UMillicastAudioDeviceCaptureSubsystem not found"));
+			return;
+		}
+
+		const auto Index = Subsystem->Devices.IndexOfByPredicate([&Id](const auto& e) { return Id == e.DeviceId; });
+		if (Index == INDEX_NONE)
+		{
+			UE_LOG(LogMillicastPublisher, Warning, TEXT("[UMillicastPublisherSource::SetAudioDeviceById] Device not found: %s"), *Id);
+			return;
+		}
+
+		CaptureDeviceIndex = Index;
 	}
 }
 
-void UMillicastPublisherSource::SetAudioDeviceByName(FString Name)
+void UMillicastPublisherSource::SetAudioDeviceByName(const FString& Name)
 {
 	if (!CaptureAudio || AudioCaptureType != AudioCapturerType::DEVICE)
 	{
-		UE_LOG(LogMillicastPublisher, Warning,
-			TEXT("You must enable the audio capture and set the Device audio capturer type first"));
+		UE_LOG(LogMillicastPublisher, Warning, TEXT("You must enable the audio capture and set the Device audio capturer type first"));
 		return;
 	}
 
@@ -108,21 +125,23 @@ void UMillicastPublisherSource::SetAudioDeviceByName(FString Name)
 		return;
 	}
 
-	auto it = CaptureDevicesName.IndexOfByPredicate([&Name](const auto& e) { return Name == e.DeviceName;  });
-	if (it != INDEX_NONE)
+	// Set CaptureDeviceIndex
 	{
-		CaptureDeviceIndex = it;
-	}
-}
+		auto* Subsystem = GEngine->GetEngineSubsystem<UMillicastAudioDeviceCaptureSubsystem>();
+		if (!Subsystem)
+		{
+			UE_LOG(LogMillicastPublisher, Warning, TEXT("[UMillicastPublisherSource::SetAudioDeviceByName] UMillicastAudioDeviceCaptureSubsystem not found"));
+			return;
+		}
 
-void UMillicastPublisherSource::RefreshAudioDevicesList()
-{
-	CaptureDevicesName.Empty();
-	auto& CaptureDevices = Millicast::Publisher::AudioDeviceCapturer::GetCaptureDevicesAvailable();
+		const auto Index = Subsystem->Devices.IndexOfByPredicate([&Name](const auto& e) { return Name == e.DeviceName; });
+		if (Index == INDEX_NONE)
+		{
+			UE_LOG(LogMillicastPublisher, Warning, TEXT("[UMillicastPublisherSource::SetAudioDeviceByName] Device not found: %s"), *Name);
+			return;
+		}
 
-	for (auto& elt : CaptureDevices)
-	{
-		CaptureDevicesName.Emplace(elt.DeviceName, elt.DeviceId);
+		CaptureDeviceIndex = Index;
 	}
 }
 
@@ -142,17 +161,18 @@ FString UMillicastPublisherSource::GetMediaOption(const FName& Key, const FStrin
 	{
 		return StreamName;
 	}
+	
 	if (Key == MillicastPublisherOption::PublishingToken)
 	{
 		return PublishingToken;
 	}
+
 	return Super::GetMediaOption(Key, DefaultValue);
 }
 
 bool UMillicastPublisherSource::HasMediaOption(const FName& Key) const
 {
-	if (Key == MillicastPublisherOption::StreamName || 
-		Key == MillicastPublisherOption::PublishingToken)
+	if (Key == MillicastPublisherOption::StreamName || Key == MillicastPublisherOption::PublishingToken)
 	{
 		return true;
 	}
@@ -178,6 +198,7 @@ bool UMillicastPublisherSource::Validate() const
 void UMillicastPublisherSource::StartCapture(TFunction<void(IMillicastSource::FStreamTrackInterface)> Callback)
 {
 	UE_LOG(LogMillicastPublisher, Log, TEXT("Start capture"));
+
 	// If video is enabled, create video capturer
 	if (CaptureVideo)
 	{
@@ -191,12 +212,55 @@ void UMillicastPublisherSource::StartCapture(TFunction<void(IMillicastSource::FS
 			VideoSource = IMillicastVideoSource::Create();
 		}
 
+		//
+		if (VideoSource && RenderTarget)
+		{
+			auto* RenderTargetVideoSource = static_cast<Millicast::Publisher::RenderTargetCapturer*>(VideoSource.Get());
+			RenderTargetVideoSource->OnFrameRendered.AddLambda([this]()
+			{
+				if (LayeredTextures.IsEmpty() && !bSupportCustomDrawCanvas)
+				{
+					return;
+				}
+
+				TryInitRenderTargetCanvas();
+				
+				if (!RenderTargetCanvas)
+				{
+					return;
+				}
+
+				OnFrameRendered.Broadcast(RenderTargetCanvas);
+
+				// Render Layered Textures
+				for (const auto& Texture : LayeredTextures)
+				{
+					// TODO [RW] Engine API mistake. Function param should be const UTexture*
+					const FVector2D CoordinatePosition;
+					RenderTargetCanvas->K2_DrawTexture(const_cast<UTexture*>(Texture.Texture), Texture.Position, Texture.Size, CoordinatePosition);
+				}
+
+				/*FRHICommandListImmediate& RHICmdList = FRHICommandListExecutor::GetImmediateCommandList();
+
+				for (auto& LTexture : LayeredTexture)
+				{
+					if (LTexture.Texture)
+					{
+						auto DestTexture = RenderTarget->GetResource()->GetTexture2DRHI();
+						auto SourceTexture = LTexture.Texture->GetResource()->GetTexture2DRHI();
+						CopyTexture(RHICmdList, SourceTexture, DestTexture, true, LTexture.Position);
+					}
+				}*/
+			});
+		}
+		
 		// Starts the capture and notify observers
 		if (VideoSource && Callback)
 		{
 			Callback(VideoSource->StartCapture());
 		}
 	}
+
 	// If audio is enabled, create audio capturer
 	if (CaptureAudio)
 	{
@@ -227,18 +291,72 @@ void UMillicastPublisherSource::StartCapture(TFunction<void(IMillicastSource::FS
 void UMillicastPublisherSource::StopCapture()
 {
 	UE_LOG(LogMillicastPublisher, Display, TEXT("Stop capture"));
+
 	// Stop video capturer
 	if (VideoSource) 
 	{
 		VideoSource->StopCapture();
 		VideoSource = nullptr;
 	}
+
 	// Stop audio capturer
 	if (AudioSource)
 	{
 		AudioSource->StopCapture();
 		AudioSource = nullptr;
 	}
+}
+
+
+void UMillicastPublisherSource::RegisterWorldContext(UObject* WorldContextObject)
+{
+	WorldContext = WorldContextObject;
+}
+
+void UMillicastPublisherSource::UnregisterWorldContext()
+{
+	WorldContext = nullptr;
+
+	// Called at Endplay, so we also stop the canvas here
+	UKismetRenderingLibrary::EndDrawCanvasToRenderTarget(WorldContext, RenderTargetCanvasCtx);
+
+	bRenderTargetInitialized = false;
+	RenderTargetCanvas = nullptr;
+	RenderTargetCanvasCtx = {};
+}
+
+void UMillicastPublisherSource::TryInitRenderTargetCanvas()
+{
+	if (bRenderTargetInitialized)
+	{
+		return;
+	}
+
+	if (LayeredTextures.IsEmpty() && !bSupportCustomDrawCanvas)
+	{
+		return;
+	}
+
+	if (!WorldContext)
+	{
+		return;
+	}
+
+	// NOTE [RW] This means we currently only support 1 world with this approach.
+	// A more flexible API would need to be developed later
+
+	AsyncTask(ENamedThreads::GameThread, [this]()
+	{
+		UWorld* World = GEngine->GetWorldFromContextObject(WorldContext, EGetWorldErrorMode::LogAndReturnNull);
+		if (!World)
+		{
+			bRenderTargetInitialized = false;
+			return;
+		}
+
+		FVector2D DummySize;
+		UKismetRenderingLibrary::BeginDrawCanvasToRenderTarget(World, RenderTarget, RenderTargetCanvas, DummySize, RenderTargetCanvasCtx);
+	});
 }
 
 void UMillicastPublisherSource::ChangeRenderTarget(UTextureRenderTarget2D* InRenderTarget)

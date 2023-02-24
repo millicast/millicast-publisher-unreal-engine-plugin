@@ -58,7 +58,7 @@ private:
 	TMap <FString, TFunction<void(TSharedPtr<FJsonObject>)>> EventBroadcaster;
 
 	/** The Millicast Media Source representing the configuration of the network source */
-	UPROPERTY(EditDefaultsOnly, Category = "Properties",
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Properties",
 			  META = (DisplayName = "Millicast Publisher Source", AllowPrivateAccess = true))
 	UMillicastPublisherSource* MillicastMediaSource = nullptr;
 
