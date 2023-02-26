@@ -11,6 +11,8 @@ DEFINE_LOG_CATEGORY(LogMillicastPublisherStats);
 
 CSV_DEFINE_CATEGORY(Millicast_Publisher, false);
 
+#define MILLI_STAT(StatName, Value) CSV_CUSTOM_STAT(Millicast_Publisher, StatName, Value, ECsvCustomStatOp::Set )
+
 namespace Millicast::Publisher
 {
 
@@ -134,25 +136,24 @@ int32 FPublisherStats::OnRenderStats(UWorld* World, FViewport* Viewport, FCanvas
 		GEngine->AddOnScreenDebugMessage(MessageKey++, 0.0f, FColor::Green, FString::Printf(TEXT("Server = %s"), *Collector->Server()), true);
 		GEngine->AddOnScreenDebugMessage(MessageKey++, 0.0f, FColor::Green, FString::Printf(TEXT("Stats Collector %d"), i), true);
 
-		CSV_CUSTOM_STAT(Millicast_Publisher, Rtt, Collector->Rtt, ECsvCustomStatOp::Set);
-		CSV_CUSTOM_STAT(Millicast_Publisher, Width, (int)Collector->Width, ECsvCustomStatOp::Set);
-		CSV_CUSTOM_STAT(Millicast_Publisher, Height, (int)Collector->Height, ECsvCustomStatOp::Set);
-		CSV_CUSTOM_STAT(Millicast_Publisher, FramePerSecond, (int)Collector->FramePerSecond, ECsvCustomStatOp::Set);
-		CSV_CUSTOM_STAT(Millicast_Publisher, VideoBitrate, Collector->VideoBitrate, ECsvCustomStatOp::Set);
-		CSV_CUSTOM_STAT(Millicast_Publisher, AudioBitrate, Collector->AudioBitrate, ECsvCustomStatOp::Set);
-		CSV_CUSTOM_STAT(Millicast_Publisher, VideoTotalSent, (int)Collector->VideoTotalSent, ECsvCustomStatOp::Set);
-		CSV_CUSTOM_STAT(Millicast_Publisher, AudioTotalSent, (int)Collector->AudioTotalSent, ECsvCustomStatOp::Set);
-		CSV_CUSTOM_STAT(Millicast_Publisher, VideoPacketRetransmitted, Collector->VideoPacketRetransmitted, ECsvCustomStatOp::Set);
-		CSV_CUSTOM_STAT(Millicast_Publisher, AudioPacketRetransmitted, Collector->AudioPacketRetransmitted, ECsvCustomStatOp::Set);
-		CSV_CUSTOM_STAT(Millicast_Publisher, TotalEncodedFrames, Collector->TotalEncodedFrames, ECsvCustomStatOp::Set);
-		CSV_CUSTOM_STAT(Millicast_Publisher, TotalEncodeTime, Collector->TotalEncodeTime, ECsvCustomStatOp::Set);
-		CSV_CUSTOM_STAT(Millicast_Publisher, AvgEncodeTime, Collector->AvgEncodeTime, ECsvCustomStatOp::Set);
-		CSV_CUSTOM_STAT(Millicast_Publisher, FramesDropped, Collector->FramesDropped, ECsvCustomStatOp::Set);
-		CSV_CUSTOM_STAT(Millicast_Publisher, QualityLimitationResolutionChange, (int)Collector->QualityLimitationResolutionChange, ECsvCustomStatOp::Set);
-		CSV_CUSTOM_STAT(Millicast_Publisher, Timestamp, Collector->Timestamp, ECsvCustomStatOp::Set);
-		CSV_CUSTOM_STAT(Millicast_Publisher, FramesDropped, Collector->FramesDropped, ECsvCustomStatOp::Set);
-		CSV_CUSTOM_STAT(Millicast_Publisher, AudioNackCount, Collector->AudioNackCount, ECsvCustomStatOp::Set);
-		CSV_CUSTOM_STAT(Millicast_Publisher, VideoNackCount, Collector->VideoNackCount, ECsvCustomStatOp::Set);
+		MILLI_STAT(AudioBitrate, static_cast<float>(Collector->AudioBitrate));
+		MILLI_STAT(AudioNackCount, Collector->AudioNackCount);
+		MILLI_STAT(AudioPacketRetransmitted, Collector->AudioPacketRetransmitted);
+		MILLI_STAT(AudioTotalSent, static_cast<int32>(Collector->AudioTotalSent));
+		MILLI_STAT(AvgEncodeTime, static_cast<float>(Collector->AvgEncodeTime));
+		MILLI_STAT(FramePerSecond, static_cast<int32>(Collector->FramePerSecond));
+		MILLI_STAT(FramesDropped, Collector->FramesDropped);
+		MILLI_STAT(Height, static_cast<int32>(Collector->Height));
+		MILLI_STAT(QualityLimitationResolutionChange, static_cast<int32>(Collector->QualityLimitationResolutionChange));
+		MILLI_STAT(Rtt, static_cast<float>(Collector->Rtt));
+		MILLI_STAT(Timestamp, static_cast<float>(Collector->Timestamp));
+		MILLI_STAT(TotalEncodedFrames, static_cast<float>(Collector->TotalEncodedFrames));
+		MILLI_STAT(TotalEncodeTime, static_cast<float>(Collector->TotalEncodeTime));
+		MILLI_STAT(VideoBitrate, static_cast<float>(Collector->VideoBitrate));
+		MILLI_STAT(VideoNackCount, Collector->VideoNackCount);
+		MILLI_STAT(VideoPacketRetransmitted, Collector->VideoPacketRetransmitted);
+		MILLI_STAT(VideoTotalSent, static_cast<int32>(Collector->VideoTotalSent));
+		MILLI_STAT(Width, static_cast<int32>(Collector->Width));
 
 		++i;
 	}

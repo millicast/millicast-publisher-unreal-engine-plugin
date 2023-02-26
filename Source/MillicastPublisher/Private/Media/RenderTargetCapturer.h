@@ -15,6 +15,10 @@ namespace Millicast::Publisher
 		rtc::scoped_refptr<FTexture2DVideoSourceAdapter> RtcVideoSource;
 
 	public:
+		DECLARE_EVENT(RenderTargetCapturer, FMillicastSourceOnFrameRendered)
+		FMillicastSourceOnFrameRendered OnFrameRendered;
+
+	public:
 		explicit RenderTargetCapturer(UTextureRenderTarget2D* InRenderTarget) noexcept;
 		~RenderTargetCapturer() noexcept;
 

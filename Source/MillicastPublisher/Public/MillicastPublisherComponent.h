@@ -6,9 +6,13 @@
 #include <Components/ActorComponent.h>
 #include "MillicastPublisherSource.h"
 #include "RtcCodecsConstants.h"
+
+
 #include "MillicastPublisherComponent.generated.h"
 
 // Forward declarations
+class FJsonValue;
+class FJsonObject;
 class IWebSocket;
 class IHttpResponse;
 
@@ -21,6 +25,13 @@ namespace Millicast::Publisher
 {
 	class FWebRTCPeerConnection;
 }
+
+enum class EMillicastPublisherState : uint8
+{
+	Disconnected,
+	Connecting,
+	Connected
+};
 
 // Event declaration
 DECLARE_DYNAMIC_MULTICAST_SPARSE_DELEGATE(FMillicastPublisherComponentAuthenticated, UMillicastPublisherComponent, OnAuthenticated);
@@ -47,7 +58,7 @@ private:
 	TMap <FString, TFunction<void(TSharedPtr<FJsonObject>)>> EventBroadcaster;
 
 	/** The Millicast Media Source representing the configuration of the network source */
-	UPROPERTY(EditDefaultsOnly, Category = "Properties",
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Properties",
 			  META = (DisplayName = "Millicast Publisher Source", AllowPrivateAccess = true))
 	UMillicastPublisherSource* MillicastMediaSource = nullptr;
 
@@ -70,13 +81,12 @@ private:
 	bool Automute = false;
 	
 public:
-	~UMillicastPublisherComponent();
-
 	/**
 		Initialize this component with the media source required for publishing  audio, video to Millicast.
 		Returns false, if the MediaSource is already been set. This is usually the case when this component is
 		initialized in Blueprints.
 	*/
+	UFUNCTION(BlueprintCallable, Category = "MillicastPublisher", META = (DisplayName = "Initialize"))
 	bool Initialize(UMillicastPublisherSource* InMediaSource = nullptr);
 
 	/**
@@ -126,6 +136,20 @@ public:
 	void SetStartingBitrate(int Bps);
 
 	/**
+	 * Set the video codec, must be called before Publish
+	 * Return true if the video codec is set successfully, false if it is not set
+	 */
+	UFUNCTION(BlueprintCallable, Category = "MillicastPublisher", META = (DisplayName = "SetVideoCodec"))
+	bool SetVideoCodec(EMillicastVideoCodecs InVideoCodec);
+
+	/**
+	 * Set the audio codec
+	 * Return true if the video codec is set successfully, false if it is not set
+	 */
+	UFUNCTION(BlueprintCallable, Category = "MillicastPublisher", META = (DisplayName = "SetAudioCodec"))
+	bool SetAudioCodec(EMillicastAudioCodecs InAudioCodec);
+
+	/**
 	* Enable RTC stats gathering
 	* Enter the cmd: ``stat millicast_publisher`` in order to display them
 	*/
@@ -167,6 +191,8 @@ public:
 	FMillicastPublisherComponentViewerCount OnViewerCount;
 
 private:
+	void EndPlay(EEndPlayReason::Type Reason) override;
+
 	/** Websocket callback */
 	bool StartWebSocketConnection(const FString& url, const FString& jwt);
 	void OnConnected();
@@ -191,6 +217,10 @@ private:
 
 	void UpdateBitrateSettings();
 
+	bool IsConnectionActive() const;
+
+	void HandleError(const FString& Message);
+
 private:
 	/** WebSocket Connection */
 	TSharedPtr<IWebSocket> WS;
@@ -200,12 +230,12 @@ private:
 	FDelegateHandle OnMessageHandle;
 
 	/** WebRTC */
-	Millicast::Publisher::FWebRTCPeerConnection* PeerConnection;
+	Millicast::Publisher::FWebRTCPeerConnection* PeerConnection = nullptr;
 	webrtc::PeerConnectionInterface::RTCConfiguration PeerConnectionConfig;
 
 	/** Publisher */
-	bool bIsPublishing;
-	bool RtcStatsEnabled;
+	TAtomic<EMillicastPublisherState> State = EMillicastPublisherState::Disconnected;
+	bool RtcStatsEnabled = false;
 	TOptional<int> MinimumBitrate; // in bps
 	TOptional<int> MaximumBitrate; // in bps
 	TOptional<int> StartingBitrate; // in bps

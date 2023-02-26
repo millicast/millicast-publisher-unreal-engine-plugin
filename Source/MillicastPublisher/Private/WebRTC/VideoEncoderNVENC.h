@@ -44,8 +44,5 @@ namespace Millicast::Publisher
 		TSharedPtr<AVEncoder::FVideoEncoder> NVENCEncoder;
 		AVEncoder::FVideoEncoder::FLayerConfig EncoderConfig;
 		TOptional<RateControlParameters> PendingRateChange;
-		TUniquePtr<FAVEncoderContext> CaptureContext;
 	};
-
 }
-
