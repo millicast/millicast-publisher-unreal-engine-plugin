@@ -265,6 +265,18 @@ bool UMillicastPublisherComponent::PublishWithWsAndJwt(const FString& WsUrl, con
 */
 void UMillicastPublisherComponent::UnPublish()
 {
+	// Close websocket connection, can exist in inactive connection state
+	if (auto* pWS = WS.Get())
+	{
+		pWS->OnConnected().Remove(OnConnectedHandle);
+		pWS->OnConnectionError().Remove(OnConnectionErrorHandle);
+		pWS->OnClosed().Remove(OnClosedHandle);
+		pWS->OnMessage().Remove(OnMessageHandle);
+		pWS->Close();
+
+		WS = nullptr;
+	}
+
 	if (!IsConnectionActive())
 	{
 		return;
@@ -278,23 +290,26 @@ void UMillicastPublisherComponent::UnPublish()
 	// Release peerconnection and stop capture
 	if(PeerConnection)
 	{
+		if (auto* CreateSessionDescriptionObserver = PeerConnection->GetCreateDescriptionObserver())
+		{
+			 CreateSessionDescriptionObserver->OnSuccessEvent.Remove(CreateSessionSuccessHandle);
+			 CreateSessionDescriptionObserver->OnFailureEvent.Remove(CreateSessionFailureHandle);
+		}
+		if (auto* LocalDescriptionObserver = PeerConnection->GetLocalDescriptionObserver())
+		{
+			LocalDescriptionObserver->OnSuccessEvent.Remove(LocalSuccessHandle);
+			LocalDescriptionObserver->OnFailureEvent.Remove(LocalFailureHandle);
+		}
+		if (auto* RemoteDescriptionObserver = PeerConnection->GetRemoteDescriptionObserver())
+		{
+			RemoteDescriptionObserver->OnSuccessEvent.Remove(RemoteSuccessHandle);
+			RemoteDescriptionObserver->OnFailureEvent.Remove(RemoteFailureHandle);
+		}
+
 		delete PeerConnection;
 		PeerConnection = nullptr;
 
 		MillicastMediaSource->StopCapture();
-	}
-
-	// Close websocket connection
-
-	if (auto* pWS = WS.Get())
-	{
-		pWS->OnConnected().Remove(OnConnectedHandle);
-		pWS->OnConnectionError().Remove(OnConnectionErrorHandle);
-		pWS->OnClosed().Remove(OnClosedHandle);
-		pWS->OnMessage().Remove(OnMessageHandle);
-		pWS->Close();
-		
-		WS = nullptr;
 	}
 }
 
@@ -303,8 +318,7 @@ bool UMillicastPublisherComponent::IsPublishing() const
 	return State == EMillicastPublisherState::Connected;
 }
 
-bool UMillicastPublisherComponent::StartWebSocketConnection(const FString& Url,
-                                                     const FString& Jwt)
+bool UMillicastPublisherComponent::StartWebSocketConnection(const FString& Url, const FString& Jwt)
 {
 	UE_LOG(LogMillicastPublisher, Log, TEXT("Start WebSocket connection"));
 	// Check if WebSocket module is loaded. It may crash otherwise.
@@ -356,13 +370,8 @@ bool UMillicastPublisherComponent::PublishToMillicast()
 	auto * LocalDescriptionObserver  = PeerConnection->GetLocalDescriptionObserver();
 	auto * RemoteDescriptionObserver = PeerConnection->GetRemoteDescriptionObserver();
 
-	CreateSessionDescriptionObserver->SetOnSuccessCallback([WEAK_CAPTURE](const std::string& type, const std::string& sdp)
+	CreateSessionSuccessHandle = CreateSessionDescriptionObserver->OnSuccessEvent.AddLambda([this](const std::string& type, const std::string& sdp)
 	{
-		if (!WeakThis.IsValid())
-		{
-			return;
-		}
-
 		UE_LOG(LogMillicastPublisher, Display, TEXT("pc.createOffer() | sucess\nsdp : %s"), *FString(sdp.c_str()));
 
 		// Search for this expression and add the stereo flag to enable stereo
@@ -379,45 +388,37 @@ bool UMillicastPublisherComponent::PublishToMillicast()
 
 		// Set local description
 		{
-			FScopeLock Lock(&WeakThis->CriticalSection);
-			WeakThis->PeerConnection->SetLocalDescription(sdp_non_const, type);
+			FScopeLock Lock(&CriticalSection);
+			PeerConnection->SetLocalDescription(sdp_non_const, type);
 		}
 	});
 
-	CreateSessionDescriptionObserver->SetOnFailureCallback([WEAK_CAPTURE](const std::string& err)
+	CreateSessionFailureHandle = CreateSessionDescriptionObserver->OnFailureEvent.AddLambda([this](const std::string& err)
 	{
-		if (WeakThis.IsValid())
-		{
-			UE_LOG(LogMillicastPublisher, Error, TEXT("pc.createOffer() | Error: %s"), err.c_str());
-			WeakThis->HandleError("Could not create offer");
-		}
+		UE_LOG(LogMillicastPublisher, Error, TEXT("pc.createOffer() | Error: %s"), err.c_str());
+		HandleError("Could not create offer");
 	});
 
-	LocalDescriptionObserver->SetOnSuccessCallback([WEAK_CAPTURE]()
+	LocalSuccessHandle = LocalDescriptionObserver->OnSuccessEvent.AddLambda([this]()
 	{
-		if (!WeakThis.IsValid())
-		{
-			return;
-		}
-
-		FScopeLock Lock(&WeakThis->CriticalSection);
+		FScopeLock Lock(&CriticalSection);
 
 		UE_LOG(LogMillicastPublisher, Log, TEXT("pc.setLocalDescription() | sucess"));
 
-		if (!WeakThis->WS || !WeakThis->WS.IsValid() || !WeakThis->PeerConnection)
+		if (!WS || !WS.IsValid() || !PeerConnection)
 		{
 			UE_LOG(LogMillicastPublisher, Warning, TEXT("WebSocket is closed, can not send SDP"));
-			WeakThis->HandleError("Websocket is closed. Can not send SDP to server.");
+			HandleError("Websocket is closed. Can not send SDP to server.");
 			return;
 		}
 		 
 		std::string sdp;
-		(*WeakThis->PeerConnection)->local_description()->ToString(&sdp);
+		(*PeerConnection)->local_description()->ToString(&sdp);
 
 		// Add events we want to receive from millicast
 		TArray<TSharedPtr<FJsonValue>> eventsJson;
 		TArray<FString> EvKeys;
-		WeakThis->EventBroadcaster.GetKeys(EvKeys);
+		EventBroadcaster.GetKeys(EvKeys);
 
 		for (auto& ev : EvKeys) 
 		{
@@ -426,15 +427,15 @@ bool UMillicastPublisherComponent::PublishToMillicast()
 
 		// Fill signaling data
 		auto DataJson = MakeShared<FJsonObject>();
-		DataJson->SetStringField("name", WeakThis->MillicastMediaSource->StreamName);
+		DataJson->SetStringField("name", MillicastMediaSource->StreamName);
 		DataJson->SetStringField("sdp", ToString(sdp));
-		DataJson->SetStringField("codec", ToString(WeakThis->SelectedVideoCodec));
+		DataJson->SetStringField("codec", ToString(SelectedVideoCodec));
 		DataJson->SetArrayField("events", eventsJson);
 
 		// If multisource feature
-		if (!WeakThis->MillicastMediaSource->SourceId.IsEmpty())
+		if (!MillicastMediaSource->SourceId.IsEmpty())
 		{
-			DataJson->SetStringField("sourceId", WeakThis->MillicastMediaSource->SourceId);
+			DataJson->SetStringField("sourceId", MillicastMediaSource->SourceId);
 		}
 
 		auto Payload = MakeShared<FJsonObject>();
@@ -447,34 +448,29 @@ bool UMillicastPublisherComponent::PublishToMillicast()
 		auto Writer = TJsonWriterFactory<>::Create(&StringStream);
 		FJsonSerializer::Serialize(Payload, Writer);
 
-		WeakThis->WS->Send(StringStream);
+		WS->Send(StringStream);
 
 		UE_LOG(LogMillicastPublisher, Log, TEXT("WebSocket publish payload : %s"), *StringStream);
 	});
 
-	LocalDescriptionObserver->SetOnFailureCallback([WEAK_CAPTURE](const std::string& err) {
-		if (WeakThis.IsValid())
-		{
-			UE_LOG(LogMillicastPublisher, Error, TEXT("Set local description failed : %s"), *FString(err.c_str()));
-			WeakThis->HandleError("Could not set local description");
-		}
+	LocalFailureHandle = LocalDescriptionObserver->OnFailureEvent.AddLambda([this](const std::string& err)
+	{
+		UE_LOG(LogMillicastPublisher, Error, TEXT("Set local description failed : %s"), *FString(err.c_str()));
+		HandleError("Could not set local description");
 	});
 
-	RemoteDescriptionObserver->SetOnSuccessCallback([WEAK_CAPTURE]() {
-		if (WeakThis.IsValid())
-		{
-			UE_LOG(LogMillicastPublisher, Log, TEXT("Set remote description suceeded"));
+	RemoteSuccessHandle = RemoteDescriptionObserver->OnSuccessEvent.AddLambda([this]()
+	{
+		UE_LOG(LogMillicastPublisher, Log, TEXT("Set remote description suceeded"));
 
-			WeakThis->State = EMillicastPublisherState::Connected;
-			WeakThis->OnPublishing.Broadcast();
-		}
+		State = EMillicastPublisherState::Connected;
+		OnPublishing.Broadcast();
 	});
-	RemoteDescriptionObserver->SetOnFailureCallback([WEAK_CAPTURE](const std::string& err) {
+
+	RemoteFailureHandle = RemoteDescriptionObserver->OnFailureEvent.AddLambda([this](const std::string& err)
+	{
 		UE_LOG(LogMillicastPublisher, Error, TEXT("Set remote description failed : %s"), *FString(err.c_str()));
-		if (WeakThis.IsValid())
-		{
-			WeakThis->HandleError("Could not set remote description");
-		}
+		HandleError("Could not set remote description");
 	});
 
 	// Send only

@@ -222,6 +222,13 @@ private:
 	void HandleError(const FString& Message);
 
 private:
+	FDelegateHandle CreateSessionSuccessHandle;
+	FDelegateHandle CreateSessionFailureHandle;
+	FDelegateHandle LocalSuccessHandle;
+	FDelegateHandle LocalFailureHandle;
+	FDelegateHandle RemoteSuccessHandle;
+	FDelegateHandle RemoteFailureHandle;
+
 	/** WebSocket Connection */
 	TSharedPtr<IWebSocket> WS;
 	FDelegateHandle OnConnectedHandle;
