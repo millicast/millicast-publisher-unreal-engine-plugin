@@ -39,10 +39,7 @@ namespace Millicast::Publisher
 
 		TSharedPtr<webrtc::BitrateSettings> Bitrates;
 
-		template<typename Callback>
-		webrtc::SessionDescriptionInterface* CreateDescription(const std::string&,
-			const std::string&,
-			Callback&&);
+		webrtc::SessionDescriptionInterface* CreateDescription(const std::string&, const std::string&, std::string& Error);
 
 		static rtc::scoped_refptr<webrtc::PeerConnectionFactoryInterface> PeerConnectionFactory;
 		static void CreatePeerConnectionFactory();

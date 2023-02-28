@@ -200,15 +200,13 @@ void FWebRTCPeerConnection::CreateOffer()
 	});
 }
 
-template<typename Callback>
 webrtc::SessionDescriptionInterface* FWebRTCPeerConnection::CreateDescription(const std::string& Type,
 									const std::string& Sdp,
-									Callback&& Failed)
+									std::string& Error)
 {
 	if (Type.empty() || Sdp.empty())
 	{
-		std::string Msg = "Wrong input parameter, type or sdp missing";
-		Failed(Msg);
+		Error = "Wrong input parameter, type or sdp missing";
 		return nullptr;
 	}
 
@@ -221,8 +219,7 @@ webrtc::SessionDescriptionInterface* FWebRTCPeerConnection::CreateDescription(co
 		oss << "Can't parse received session description message. SdpParseError line "
 			<< ParseError.line <<  " : " + ParseError.description;
 
-		Failed(oss.str());
-
+		Error = oss.str();
 		return nullptr;
 	}
 
@@ -294,11 +291,14 @@ void FWebRTCPeerConnection::ApplyBitrates(cricket::SessionDescription* Sdp)
 void FWebRTCPeerConnection::SetLocalDescription(const std::string& Sdp,
 												const std::string& Type)
 {
-	auto * SessionDescription = CreateDescription(Type,
-													Sdp,
-													std::ref(LocalSessionDescription->OnFailureCallback));
+	std::string Error;
+	auto * SessionDescription = CreateDescription(Type, Sdp, Error);
 
-	if(!SessionDescription) return;
+	if (!SessionDescription)
+	{
+		LocalSessionDescription->OnFailureEvent.Broadcast(Error);
+		return;
+	}
 
 	ApplyBitrates(SessionDescription->description());
 
@@ -309,11 +309,14 @@ void FWebRTCPeerConnection::SetLocalDescription(const std::string& Sdp,
 void FWebRTCPeerConnection::SetRemoteDescription(const std::string& Sdp,
 												 const std::string& Type)
 {
-	auto * SessionDescription = CreateDescription(Type,
-												  Sdp,
-												  std::ref(RemoteSessionDescription->OnFailureCallback));
+	std::string Error;
+	auto * SessionDescription = CreateDescription(Type, Sdp, Error);
 
-	if(!SessionDescription) return;
+	if (!SessionDescription)
+	{
+		RemoteSessionDescription->OnFailureEvent.Broadcast(Error);
+		return;
+	}
 
 	ApplyBitrates(SessionDescription->description());
 
