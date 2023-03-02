@@ -4,28 +4,28 @@
 
 #include "WebRTC/WebRTCInc.h"
 
+DECLARE_MULTICAST_DELEGATE_OneParam(FOnFailure, const std::string&);
+DECLARE_MULTICAST_DELEGATE_TwoParams(FOnSuccess, const std::string&, const std::string&);
+DECLARE_MULTICAST_DELEGATE(FOnSetSessionSuccess);
+
 namespace Millicast::Publisher
 {
-	class FWebRTCPeerConnection;
-
 	namespace detail
 	{
 		template<typename T>
 		class TSessionDescriptionObserver : public rtc::RefCountedObject<T>
 		{
-		        friend class Millicast::Publisher::FWebRTCPeerConnection;
-			TFunction<void(const std::string&)> OnFailureCallback;
 		public:
-			TSessionDescriptionObserver() : OnFailureCallback(nullptr) {}
+			FOnFailure OnFailureEvent;
 
-			void OnFailure(webrtc::RTCError Error) override {
-				if (OnFailureCallback) OnFailureCallback(Error.message());
-			}
-
-			template<typename Callback>
-			void SetOnFailureCallback(Callback&& c)
+			void OnFailure(webrtc::RTCError Error) override
 			{
-				OnFailureCallback = std::forward<Callback>(c);
+				if (!OnFailureEvent.IsBound())
+				{
+					return;
+				}
+
+				OnFailureEvent.Broadcast(Error.message());
 			}
 		};
 	}
@@ -37,47 +37,27 @@ namespace Millicast::Publisher
 	class TSessionDescriptionObserver<webrtc::CreateSessionDescriptionObserver> :
 		public detail::TSessionDescriptionObserver<webrtc::CreateSessionDescriptionObserver>
 	{
-		friend class FWebRTCPeerConnection;
-		// Type, Sdp
-		TFunction<void(const std::string&, const std::string&)> OnSuccessCallback;
-
 	public:
+		FOnSuccess OnSuccessEvent;
 
-		void OnSuccess(webrtc::SessionDescriptionInterface* Desc) override {
+		void OnSuccess(webrtc::SessionDescriptionInterface* Desc) override
+		{
 			std::string Sdp;
 			Desc->ToString(&Sdp);
 
-			if (OnSuccessCallback) OnSuccessCallback(Desc->type(), Sdp);
-		}
-
-		template<typename Callback>
-		void SetOnSuccessCallback(Callback&& c)
-		{
-			OnSuccessCallback = std::forward<Callback>(c);
+			OnSuccessEvent.Broadcast(Desc->type(), Sdp);
 		}
 	};
-
-	template<typename T>
-	class TSessionDescriptionObserver;
 
 	template<>
 	class TSessionDescriptionObserver<webrtc::SetSessionDescriptionObserver> :
 		public detail::TSessionDescriptionObserver<webrtc::SetSessionDescriptionObserver>
 	{
-		friend class FWebRTCPeerConnection;
-		TFunction<void()> OnSuccessCallback;
-
 	public:
+		FOnSetSessionSuccess OnSuccessEvent;
 
 		void OnSuccess() override {
-			if (OnSuccessCallback) OnSuccessCallback();
-		}
-
-		template<typename Callback>
-		void SetOnSuccessCallback(Callback&& c)
-		{
-			OnSuccessCallback = std::forward<Callback>(c);
+			OnSuccessEvent.Broadcast();
 		}
 	};
-
 }
