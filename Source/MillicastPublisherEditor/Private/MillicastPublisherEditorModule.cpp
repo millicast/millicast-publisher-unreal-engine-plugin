@@ -1,7 +1,7 @@
 // Copyright Millicast 2022. All Rights Reserved.
 
-#include <IPlacementModeModule.h>
-#include "CoreMinimal.h"
+#include "IPlacementModeModule.h"
+
 #include "Brushes/SlateImageBrush.h"
 #include "Interfaces/IPluginManager.h"
 #include "Modules/ModuleInterface.h"
@@ -94,8 +94,6 @@ private:
 		PlacementModeModule.UnregisterPlacementCategory(PLACEMENT_CATEGORY);
 	}
 };
-
-
 
 IMPLEMENT_MODULE(FMillicastPublisherEditorModule, MillicastPublisherEditor);
 

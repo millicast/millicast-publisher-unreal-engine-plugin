@@ -1,6 +1,6 @@
 #pragma once
 
-#include <CoreMinimal.h>
+#include "CoreMinimal.h"
 
 UENUM()
 enum class EMillicastVideoCodecs : uint8

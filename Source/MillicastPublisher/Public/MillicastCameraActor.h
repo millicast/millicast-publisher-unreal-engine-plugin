@@ -2,8 +2,8 @@
 
 #pragma once
 
-#include <CoreMinimal.h>
 #include "GameFramework/Actor.h"
+
 #include "MillicastCameraActor.generated.h"
 
 class UMillicastViewportCapturerComponent;
@@ -20,7 +20,4 @@ class MILLICASTPUBLISHER_API AMillicastCameraActor : public AActor
 public:
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = Viewport, AssetRegistrySearchable)
 	UMillicastViewportCapturerComponent* ViewportCapturer;
-
-public:
-	virtual void BeginPlay() override;
 };

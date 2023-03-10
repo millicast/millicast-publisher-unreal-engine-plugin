@@ -6,10 +6,15 @@
 #include "Interfaces/IPluginManager.h"
 #include "Styling/SlateStyle.h"
 
-
 DEFINE_LOG_CATEGORY(LogMillicastPublisher);
 
 #define LOCTEXT_NAMESPACE "MillicastPublisherModule"
+
+IMillicastPublisherModule& IMillicastPublisherModule::Get()
+{
+	static const FName ModuleName = "MillicastPublisher";
+	return FModuleManager::LoadModuleChecked<IMillicastPublisherModule>(ModuleName);
+}
 
 /**
  * Implements the Millicast Publisher module.

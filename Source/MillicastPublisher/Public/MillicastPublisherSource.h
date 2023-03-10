@@ -3,12 +3,10 @@
 
 #include "AudioCaptureDeviceInterface.h"
 #include "IMillicastSource.h"
-#include "RtcCodecsConstants.h"
 #include "StreamMediaSource.h"
 
 #include "Engine/TextureRenderTarget2D.h"
 #include "Kismet/KismetRenderingLibrary.h"
-#include "Materials/MaterialInstanceDynamic.h"
 #include "UObject/ObjectMacros.h"
 #include "Sound/SoundSubmix.h"
 
@@ -51,7 +49,6 @@ public:
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = Video)
 	TArray<FMillicastLayeredTexture> LayeredTextures;
 
-
 public:
 	UMillicastPublisherSource(const FObjectInitializer& ObjectInitializer);
 
@@ -93,7 +90,7 @@ public:
 
 	/** Which audio capturer to use */
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = Audio, AssetRegistrySearchable)
-	TEnumAsByte<AudioCapturerType> AudioCaptureType;
+	EAudioCapturerType AudioCaptureType;
 
 	/** Audio submix */
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = Audio, AssetRegistrySearchable)
@@ -131,19 +128,20 @@ public:
 
 	/** Apply a volume multiplier for the recorded data in dB */
 	UFUNCTION(BlueprintCallable, Category = "MillicastPublisher", META = (DisplayName = "SetVolumeMultiplier"))
-	void SetVolumeMultiplier(float f);
+	void SetVolumeMultiplier(float Multiplier);
 
 public:
-	//~ IMediaOptions interface
-
+	// IMediaOptions interface
 	FString GetMediaOption(const FName& Key, const FString& DefaultValue) const override;
 	bool HasMediaOption(const FName& Key) const override;
+	//~ IMediaOptions interface
 
 public:
-	//~ UMediaSource interface
+	// UMediaSource interface
 	FString GetUrl() const override;
 	bool Validate() const override;
-
+	//~ UMediaSource interface
+	
 public:
 	/**
 	   Called before destroying the object.  This is called immediately upon deciding to destroy the object,
@@ -155,7 +153,7 @@ public:
 	//~ UObject interface
 #if WITH_EDITOR
 	virtual bool CanEditChange(const FProperty* InProperty) const override;
-	virtual void PostEditChangeChainProperty(struct FPropertyChangedChainEvent& InPropertyChangedEvent) override;
+	virtual void PostEditChangeChainProperty(FPropertyChangedChainEvent& InPropertyChangedEvent) override;
 #endif //WITH_EDITOR
 	//~ End UObject interface
 

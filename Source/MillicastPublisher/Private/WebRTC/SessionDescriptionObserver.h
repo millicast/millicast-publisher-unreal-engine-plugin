@@ -10,7 +10,7 @@ DECLARE_MULTICAST_DELEGATE(FOnSetSessionSuccess);
 
 namespace Millicast::Publisher
 {
-	namespace detail
+	namespace Detail
 	{
 		template<typename T>
 		class TSessionDescriptionObserver : public rtc::RefCountedObject<T>
@@ -35,7 +35,7 @@ namespace Millicast::Publisher
 
 	template<>
 	class TSessionDescriptionObserver<webrtc::CreateSessionDescriptionObserver> :
-		public detail::TSessionDescriptionObserver<webrtc::CreateSessionDescriptionObserver>
+		public Detail::TSessionDescriptionObserver<webrtc::CreateSessionDescriptionObserver>
 	{
 	public:
 		FOnSuccess OnSuccessEvent;
@@ -51,7 +51,7 @@ namespace Millicast::Publisher
 
 	template<>
 	class TSessionDescriptionObserver<webrtc::SetSessionDescriptionObserver> :
-		public detail::TSessionDescriptionObserver<webrtc::SetSessionDescriptionObserver>
+		public Detail::TSessionDescriptionObserver<webrtc::SetSessionDescriptionObserver>
 	{
 	public:
 		FOnSetSessionSuccess OnSuccessEvent;

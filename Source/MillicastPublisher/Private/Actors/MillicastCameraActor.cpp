@@ -10,8 +10,3 @@ AMillicastCameraActor::AMillicastCameraActor(const FObjectInitializer& ObjectIni
 		);
 	ViewportCapturer->AttachToComponent(RootComponent, FAttachmentTransformRules::KeepRelativeTransform);
 }
-
-void AMillicastCameraActor::BeginPlay()
-{
-	Super::BeginPlay();
-}

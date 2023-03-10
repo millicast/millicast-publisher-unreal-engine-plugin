@@ -55,11 +55,11 @@ public:
 };
 
 UENUM(BlueprintType)
-enum AudioCapturerType
+enum class EAudioCapturerType : uint8
 {
-	SUBMIX   UMETA(DisplayName = "Submix"),
-	DEVICE   UMETA(DisplayName = "Device"),
-	LOOPBACK UMETA(DisplayName = "Loopback (windows only)"),
+	Submix   UMETA(DisplayName = "Submix"),
+	Device   UMETA(DisplayName = "Device"),
+	Loopback UMETA(DisplayName = "Loopback (windows only)"),
 };
 
 /**
@@ -75,7 +75,7 @@ public:
 	using FAudioTrackInterface = rtc::scoped_refptr<webrtc::AudioTrackInterface>;
 
 	/** Create audio source to capture audio from the main audio device */
-	static IMillicastAudioSource* Create(AudioCapturerType CapturerType);
+	static IMillicastAudioSource* Create(EAudioCapturerType CapturerType);
 
 	virtual ~IMillicastAudioSource() override = default;
 };

@@ -78,7 +78,7 @@ void UMillicastPublisherSource::MuteAudio(bool Muted)
 
 void UMillicastPublisherSource::SetAudioDeviceById(const FString& Id)
 {
-	if (!CaptureAudio || AudioCaptureType != AudioCapturerType::DEVICE)
+	if (!CaptureAudio || AudioCaptureType != EAudioCapturerType::Device)
 	{
 		UE_LOG(LogMillicastPublisher, Warning, 
 			TEXT("You must enable the audio capture and set the Device audio capturer type first"));
@@ -113,7 +113,7 @@ void UMillicastPublisherSource::SetAudioDeviceById(const FString& Id)
 
 void UMillicastPublisherSource::SetAudioDeviceByName(const FString& Name)
 {
-	if (!CaptureAudio || AudioCaptureType != AudioCapturerType::DEVICE)
+	if (!CaptureAudio || AudioCaptureType != EAudioCapturerType::Device)
 	{
 		UE_LOG(LogMillicastPublisher, Warning, TEXT("You must enable the audio capture and set the Device audio capturer type first"));
 		return;
@@ -145,13 +145,13 @@ void UMillicastPublisherSource::SetAudioDeviceByName(const FString& Name)
 	}
 }
 
-void UMillicastPublisherSource::SetVolumeMultiplier(float f) 
+void UMillicastPublisherSource::SetVolumeMultiplier(float Multiplier)
 {
-	VolumeMultiplier = f;
+	VolumeMultiplier = Multiplier;
 	if (AudioSource) 
 	{
-		auto* src = static_cast<Millicast::Publisher::AudioDeviceCapturer*>(AudioSource.Get());
-		src->SetVolumeMultiplier(f);
+		auto* Source = static_cast<Millicast::Publisher::AudioDeviceCapturer*>(AudioSource.Get());
+		Source->SetVolumeMultiplier(Multiplier);
 	}
 }
 
@@ -268,13 +268,13 @@ void UMillicastPublisherSource::StartCapture(TFunction<void(IMillicastSource::FS
 
 		AudioSource = TSharedPtr<IMillicastAudioSource>(IMillicastAudioSource::Create(AudioCaptureType));
 
-		if (AudioCaptureType == AudioCapturerType::DEVICE)
+		if (AudioCaptureType == EAudioCapturerType::Device)
 		{
 			auto source = static_cast<AudioDeviceCapturer*>(AudioSource.Get());
 			source->SetAudioCaptureDevice(CaptureDeviceIndex);
 			source->SetVolumeMultiplier(VolumeMultiplier);
 		}
-		else if (AudioCaptureType == AudioCapturerType::SUBMIX)
+		else if (AudioCaptureType == EAudioCapturerType::Submix)
 		{
 			auto source = static_cast<AudioSubmixCapturer*>(AudioSource.Get());
 			source->SetAudioSubmix(Submix);
@@ -385,11 +385,11 @@ bool UMillicastPublisherSource::CanEditChange(const FProperty* InProperty) const
 
 	if (Name == MillicastPublisherOption::CaptureDeviceIndex.ToString())
 	{
-		return CaptureAudio && AudioCaptureType == AudioCapturerType::DEVICE;
+		return CaptureAudio && AudioCaptureType == EAudioCapturerType::Device;
 	}
 	if (Name == MillicastPublisherOption::Submix.ToString())
 	{
-		return CaptureAudio && AudioCaptureType == AudioCapturerType::SUBMIX;
+		return CaptureAudio && AudioCaptureType == EAudioCapturerType::Submix;
 	}
 	if (Name == MillicastPublisherOption::AudioCaptureType.ToString())
 	{
@@ -397,13 +397,13 @@ bool UMillicastPublisherSource::CanEditChange(const FProperty* InProperty) const
 	}
 	if (Name == MillicastPublisherOption::VolumeMultiplier.ToString())
 	{
-		return  CaptureAudio && AudioCaptureType == AudioCapturerType::DEVICE;
+		return  CaptureAudio && AudioCaptureType == EAudioCapturerType::Device;
 	}
 
 	return Super::CanEditChange(InProperty);
 }
 
-void UMillicastPublisherSource::PostEditChangeChainProperty(struct FPropertyChangedChainEvent& InPropertyChangedEvent)
+void UMillicastPublisherSource::PostEditChangeChainProperty(FPropertyChangedChainEvent& InPropertyChangedEvent)
 {
 	Super::PostEditChangeChainProperty(InPropertyChangedEvent);
 }
