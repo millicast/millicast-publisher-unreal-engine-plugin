@@ -7,9 +7,6 @@
 
 #define LOCTEXT_NAMESPACE "MillicastPublisherEditorMediaSenderFactory"
 
-/* UMillicastPublisherSourceFactoryNew structors
- *****************************************************************************/
-
 UMillicastPublisherSourceFactoryNew::UMillicastPublisherSourceFactoryNew(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer)
 {
@@ -17,10 +14,6 @@ UMillicastPublisherSourceFactoryNew::UMillicastPublisherSourceFactoryNew(const F
 	bCreateNew = true;
 	bEditAfterNew = true;
 }
-
-
-/* UFactory overrides
- *****************************************************************************/
 
 FText UMillicastPublisherSourceFactoryNew::GetDisplayName() const
 {
@@ -32,12 +25,10 @@ UObject* UMillicastPublisherSourceFactoryNew::FactoryCreateNew(UClass* InClass, 
 	return NewObject<UMillicastPublisherSource>(InParent, InClass, InName, Flags);
 }
 
-
 uint32 UMillicastPublisherSourceFactoryNew::GetMenuCategories() const
 {
 	return EAssetTypeCategories::Media;
 }
-
 
 bool UMillicastPublisherSourceFactoryNew::ShouldShowInNewMenu() const
 {

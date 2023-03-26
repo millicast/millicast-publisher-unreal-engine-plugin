@@ -7,10 +7,6 @@
 
 namespace Millicast::Publisher
 {
-
-	AudioSubmixCapturer::AudioSubmixCapturer() noexcept : Submix(nullptr)
-	{}
-
 	inline FAudioDevice* GetUEAudioDevice()
 	{
 		if (!GEngine)

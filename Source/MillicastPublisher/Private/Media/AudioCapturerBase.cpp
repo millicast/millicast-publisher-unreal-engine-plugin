@@ -1,4 +1,5 @@
 // Copyright Millicast 2022. All Rights Reserved.
+
 #include "AudioCapturerBase.h"
 #include "AudioSubmixCapturer.h"
 #include "AudioDeviceCapturer.h"
@@ -7,24 +8,24 @@
 #include "WasapiDeviceCapturer.h"
 #endif
 
-#include "MillicastPublisherPrivate.h"
 #include "WebRTC/PeerConnection.h"
 #include "common_audio/include/audio_util.h"
 
 #include "Util.h"
 
-IMillicastAudioSource* IMillicastAudioSource::Create(AudioCapturerType CapturerType)
+IMillicastAudioSource* IMillicastAudioSource::Create(EAudioCapturerType CapturerType)
 {
 	using namespace Millicast::Publisher;
 
 	switch (CapturerType)
 	{
-	case AudioCapturerType::SUBMIX: return new AudioSubmixCapturer;
-	case AudioCapturerType::DEVICE: return new AudioDeviceCapturer;
+	case EAudioCapturerType::Submix: return new AudioSubmixCapturer;
+	case EAudioCapturerType::Device: return new AudioDeviceCapturer;
+	case EAudioCapturerType::Loopback:
 #if PLATFORM_WINDOWS
-	case AudioCapturerType::LOOPBACK: return new WasapiDeviceCapturer(10, true);
+		return new WasapiDeviceCapturer(10, true);
 #else
-	case AudioCapturerType::LOOPBACK: return nullptr;
+		return nullptr;
 #endif
 	}
 

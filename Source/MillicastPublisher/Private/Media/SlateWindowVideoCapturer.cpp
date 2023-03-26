@@ -4,8 +4,8 @@
 #include "Util.h"
 
 #include "Async/Async.h"
-#include "Framework/Application/SlateApplication.h"
 #include "WebRTC/PeerConnection.h"
+#include "Widgets/SViewport.h"
 
 TSharedPtr<IMillicastVideoSource> IMillicastVideoSource::Create()
 {

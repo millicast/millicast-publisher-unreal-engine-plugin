@@ -2,15 +2,13 @@
 
 #pragma once
 
-#include <CoreMinimal.h>
-#include <Components/ActorComponent.h>
 #include "MillicastPublisherSource.h"
 #include "RtcCodecsConstants.h"
 
+#include "Components/ActorComponent.h"
 
 #include "MillicastPublisherComponent.generated.h"
 
-// Forward declarations
 class FJsonValue;
 class FJsonObject;
 class IWebSocket;
@@ -158,7 +156,7 @@ public:
 
 #if WITH_EDITOR
 	virtual bool CanEditChange(const FProperty* InProperty) const override;
-	virtual void PostEditChangeChainProperty(struct FPropertyChangedChainEvent& InPropertyChangedEvent) override;
+	virtual void PostEditChangeChainProperty(FPropertyChangedChainEvent& InPropertyChangedEvent) override;
 #endif
 
 public:
@@ -194,7 +192,7 @@ private:
 	void EndPlay(EEndPlayReason::Type Reason) override;
 
 	/** Websocket callback */
-	bool StartWebSocketConnection(const FString& url, const FString& jwt);
+	bool StartWebSocketConnection(const FString& Url, const FString& Jwt);
 	void OnConnected();
 	void OnConnectionError(const FString& Error);
 	void OnClosed(int32 StatusCode, const FString& Reason, bool bWasClean);

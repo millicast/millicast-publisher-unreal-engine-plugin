@@ -3,7 +3,6 @@
 #pragma once
 
 #include "VideoEncoder.h"
-#include "CodecPacket.h"
 
 namespace Millicast::Publisher
 {

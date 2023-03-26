@@ -94,42 +94,49 @@ void UMillicastPublisherComponent::SetupIceServersFromJson(TArray<TSharedPtr<FJs
 	using namespace Millicast::Publisher;
 
 	PeerConnectionConfig.servers.clear();
-	for (auto& elt : IceServersField)
+	for (const auto& Server : IceServersField)
 	{
+		// Grab Ice Server Details
 		const TSharedPtr<FJsonObject>* IceServerJson;
-		bool ok = elt->TryGetObject(IceServerJson);
-
-		if (!ok)
+		if (!Server->TryGetObject(IceServerJson))
 		{
 			UE_LOG(LogMillicastPublisher, Warning, TEXT("Could not read ice server json"));
 			continue;
 		}
 
-		TArray<FString> iceServerUrls;
-		FString iceServerPassword, iceServerUsername;
+		webrtc::PeerConnectionInterface::IceServer IceServer;
 
-		bool hasUrls = (*IceServerJson)->TryGetStringArrayField("urls", iceServerUrls);
-		bool hasUsername = (*IceServerJson)->TryGetStringField("username", iceServerUsername);
-		bool hasPassword = (*IceServerJson)->TryGetStringField("credential", iceServerPassword);
-
-		webrtc::PeerConnectionInterface::IceServer iceServer;
-		if (hasUrls)
+		// Grab urls
 		{
-			for (auto& url : iceServerUrls)
+			TArray<FString> IceServerUrls;
+			if( (*IceServerJson)->TryGetStringArrayField("urls", IceServerUrls) )
 			{
-				iceServer.urls.push_back(to_string(url));
+				for (const auto& Url : IceServerUrls)
+				{
+					IceServer.urls.push_back(to_string(Url));
+				}
 			}
 		}
-		if (hasUsername)
+
+		// Grab username
 		{
-			iceServer.username = to_string(iceServerUsername);
-		}
-		if (hasPassword)
-		{
-			iceServer.password = to_string(iceServerPassword);
+			FString IceServerUsername;
+			if( (*IceServerJson)->TryGetStringField("username", IceServerUsername) )
+			{
+				IceServer.username = to_string(IceServerUsername);
+			}
 		}
 
-		PeerConnectionConfig.servers.push_back(iceServer);
+		// Grab credentials
+		{
+			FString IceServerPassword;
+			if( (*IceServerJson)->TryGetStringField("credential", IceServerPassword) )
+			{
+				IceServer.password = to_string(IceServerPassword);
+			}
+		}
+
+		PeerConnectionConfig.servers.push_back(IceServer);
 	}
 }
 
@@ -160,30 +167,29 @@ void UMillicastPublisherComponent::ParseInactiveEvent(TSharedPtr<FJsonObject> Js
 
 void UMillicastPublisherComponent::ParseViewerCountEvent(TSharedPtr<FJsonObject> JsonMsg)
 {
-	auto DataJson = JsonMsg->GetObjectField("data");
-
-	int Count = DataJson->GetIntegerField("viewercount");
+	const auto DataJson = JsonMsg->GetObjectField("data");
+	const auto Count = DataJson->GetIntegerField("viewercount");
 
 	OnViewerCount.Broadcast(Count);
 }
 
 void UMillicastPublisherComponent::ParseDirectorResponse(FHttpResponsePtr Response)
 {
-	FString ResponseDataString = Response->GetContentAsString();
+	const FString& ResponseDataString = Response->GetContentAsString();
 	UE_LOG(LogMillicastPublisher, Log, TEXT("Director response : \n %s \n"), *ResponseDataString);
 
 	TSharedPtr<FJsonObject> ResponseDataJson;
-	auto JsonReader = TJsonReaderFactory<>::Create(ResponseDataString);
+	const auto JsonReader = TJsonReaderFactory<>::Create(ResponseDataString);
 
 	// Deserialize received JSON message
 	if (FJsonSerializer::Deserialize(JsonReader, ResponseDataJson)) 
 	{
-		TSharedPtr<FJsonObject> DataField = ResponseDataJson->GetObjectField("data");
+		const auto* DataField = ResponseDataJson->GetObjectField("data").Get();
 
 		// Extract JSON WebToken, Websocket URL and ice servers configuration
-		auto Jwt = DataField->GetStringField("jwt");
-		auto WebSocketUrlField = DataField->GetArrayField("urls")[0];
-		auto IceServersField = DataField->GetArrayField("iceServers");
+		const auto& Jwt = DataField->GetStringField("jwt");
+		const auto& WebSocketUrlField = DataField->GetArrayField("urls")[0];
+		const auto& IceServersField = DataField->GetArrayField("iceServers");
 
 		FString WsUrl;
 		WebSocketUrlField->TryGetString(WsUrl);
@@ -215,14 +221,17 @@ bool UMillicastPublisherComponent::Publish()
 	}
 	
 	UE_LOG(LogMillicastPublisher, Log, TEXT("Making HTTP director request"));
+
 	// Create an HTTP request
-	auto PostHttpRequest = FHttpModule::Get().CreateRequest();
+	const auto PostHttpRequestShared = FHttpModule::Get().CreateRequest();
+	auto& PostHttpRequest = PostHttpRequestShared.Get();
+
 	// Request parameters
-	PostHttpRequest->SetURL(MillicastMediaSource->GetUrl());
-	PostHttpRequest->SetVerb("POST");
+	PostHttpRequest.SetURL(MillicastMediaSource->GetUrl());
+	PostHttpRequest.SetVerb("POST");
 	// Fill HTTP request headers
-	PostHttpRequest->SetHeader("Content-Type", "application/json");
-	PostHttpRequest->SetHeader("Authorization", "Bearer " + MillicastMediaSource->PublishingToken);
+	PostHttpRequest.SetHeader("Content-Type", "application/json");
+	PostHttpRequest.SetHeader("Authorization", "Bearer " + MillicastMediaSource->PublishingToken);
 
 	// Creates JSON data fro the request
 	auto RequestData = MakeShared<FJsonObject>();
@@ -234,9 +243,9 @@ bool UMillicastPublisherComponent::Publish()
 	FJsonSerializer::Serialize(RequestData, JsonWriter);
 
 	// Fill HTTP request data
-	PostHttpRequest->SetContentAsString(SerializedRequestData);
+	PostHttpRequest.SetContentAsString(SerializedRequestData);
 
-	PostHttpRequest->OnProcessRequestComplete()
+	PostHttpRequest.OnProcessRequestComplete()
 		.BindLambda([this](FHttpRequestPtr Request, FHttpResponsePtr Response, bool bConnectedSuccessfully)
 	{
 		if (!bConnectedSuccessfully || Response->GetResponseCode() != HTTP_OK) 
@@ -252,7 +261,7 @@ bool UMillicastPublisherComponent::Publish()
 		ParseDirectorResponse(Response);
 	});
 
-	return PostHttpRequest->ProcessRequest();
+	return PostHttpRequest.ProcessRequest();
 }
 
 bool UMillicastPublisherComponent::PublishWithWsAndJwt(const FString& WsUrl, const FString& Jwt)
@@ -395,7 +404,7 @@ bool UMillicastPublisherComponent::PublishToMillicast()
 
 	CreateSessionFailureHandle = CreateSessionDescriptionObserver->OnFailureEvent.AddLambda([this](const std::string& err)
 	{
-		UE_LOG(LogMillicastPublisher, Error, TEXT("pc.createOffer() | Error: %s"), err.c_str());
+		UE_LOG(LogMillicastPublisher, Error, TEXT("pc.createOffer() | Error: %s"), *FString(err.c_str()));
 		HandleError("Could not create offer");
 	});
 
@@ -570,21 +579,20 @@ void UMillicastPublisherComponent::OnMessage(const FString& Msg)
 	}
 	else if(Type == "error") // Error in the request data sent to millicast
 	{
-		FString errorMessage;
-		auto dataJson = ResponseJson->TryGetStringField("data", errorMessage);
-
-		UE_LOG(LogMillicastPublisher, Error, TEXT("WebSocket error : %s"), *errorMessage);
+		FString ErrorMessage;
+		ResponseJson->TryGetStringField("data", ErrorMessage);
+		UE_LOG(LogMillicastPublisher, Error, TEXT("WebSocket error : %s"), *ErrorMessage);
 	}
 	else if(Type == "event") // Events received from millicast
 	{
-		FString eventName;
-		ResponseJson->TryGetStringField("name", eventName);
+		FString EventName;
+		ResponseJson->TryGetStringField("name", EventName);
 
-		UE_LOG(LogMillicastPublisher, Log, TEXT("Received event : %s"), *eventName);
+		UE_LOG(LogMillicastPublisher, Log, TEXT("Received event : %s"), *EventName);
 
-		if (EventBroadcaster.Contains(eventName))
+		if (EventBroadcaster.Contains(EventName))
 		{
-			EventBroadcaster[eventName](ResponseJson);
+			EventBroadcaster[EventName](ResponseJson);
 		}
 	}
 	else 
@@ -688,11 +696,10 @@ void UMillicastPublisherComponent::UpdateBitrateSettings()
 			BitrateParameters.start_bitrate_bps = *StartingBitrate;
 		}
 
-		auto error = (*PeerConnection)->SetBitrate(BitrateParameters);
-
-		if (!error.ok())
+		const auto Error = (*PeerConnection)->SetBitrate(BitrateParameters);
+		if (!Error.ok())
 		{
-			UE_LOG(LogMillicastPublisher, Error, TEXT("Could not set maximum bitrate: %s"), *FString(error.message()));
+			UE_LOG(LogMillicastPublisher, Error, TEXT("Could not set maximum bitrate: %s"), *FString(Error.message()));
 		}
 	}
 }
@@ -772,7 +779,7 @@ bool UMillicastPublisherComponent::CanEditChange(const FProperty* InProperty) co
 	return Super::CanEditChange(InProperty);
 }
 
-void UMillicastPublisherComponent::PostEditChangeChainProperty(struct FPropertyChangedChainEvent& InPropertyChangedEvent)
+void UMillicastPublisherComponent::PostEditChangeChainProperty(FPropertyChangedChainEvent& InPropertyChangedEvent)
 {
 	Super::PostEditChangeChainProperty(InPropertyChangedEvent);
 }

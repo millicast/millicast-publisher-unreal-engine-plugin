@@ -5,7 +5,6 @@
 
 namespace Millicast::Publisher
 {
-
 	inline std::string to_string(const FString& Str)
 	{
 		auto Ansi = StringCast<ANSICHAR>(*Str, Str.Len());
@@ -19,5 +18,4 @@ namespace Millicast::Publisher
 		FString Res{ Conv.Length(), Conv.Get() };
 		return Res;
 	}
-
 }

@@ -56,11 +56,6 @@ void FTexture2DVideoSourceAdapter::OnFrameReady(const FTexture2DRHIRef& FrameBuf
 	FPublisherStats::Get().FrameRendered();
 }
 
-webrtc::MediaSourceInterface::SourceState FTexture2DVideoSourceAdapter::state() const
-{
-	return webrtc::MediaSourceInterface::kLive;
-}
-
 bool FTexture2DVideoSourceAdapter::AdaptVideoFrame(int64 TimestampUs, FIntPoint Resolution)
 {
 	int out_width, out_height, crop_width, crop_height, crop_x, crop_y;
