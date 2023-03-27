@@ -43,7 +43,7 @@ namespace Millicast::Publisher
 
 			//FPublisherStats::Get().TextureReadbackStart();
 			FRHICommandListImmediate& RHICmdList = FRHICommandListExecutor::GetImmediateCommandList();
-			if (GDynamicRHI && GDynamicRHI->GetName() == FString(TEXT("D3D12")))
+			if (GDynamicRHI && (GDynamicRHI->GetName() == FString(TEXT("D3D12")) || GDynamicRHI->GetName() == FString(TEXT("Vulkan"))))
 			{
 				ReadTextureDX12(RHICmdList);
 			}
