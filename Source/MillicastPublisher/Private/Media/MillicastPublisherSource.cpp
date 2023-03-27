@@ -7,30 +7,17 @@
 
 #include "MillicastPublisherPrivate.h"
 #include "RenderTargetCapturer.h"
+#include "RenderTargetPool.h"
 
 #include "Engine/Canvas.h"
 #include "Subsystems/MillicastAudioDeviceCaptureSubsystem.h"
 #include "WebRTC/PeerConnection.h"
-
-
-#include <RenderTargetPool.h>
 
 UMillicastPublisherSource::UMillicastPublisherSource(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer)
 {
 	// Add default StreamUrl
 	StreamUrl = "https://director.millicast.com/api/director/publish";
-}
-
-void UMillicastPublisherSource::BeginDestroy()
-{
-	UE_LOG(LogMillicastPublisher, Display, TEXT("Destroy MillicastPublisher Source"));
-
-	// Stop the capture before destroying the object
-	StopCapture();
-
-	// Call parent Destroyer
-	Super::BeginDestroy();
 }
 
 void UMillicastPublisherSource::Initialize(const FString& InPublishingToken, const FString& InStreamName, const FString& InSourceId,const FString& InStreamUrl)
@@ -195,8 +182,15 @@ bool UMillicastPublisherSource::Validate() const
 	return !StreamName.IsEmpty() && !PublishingToken.IsEmpty();
 }
 
-void UMillicastPublisherSource::StartCapture(TFunction<void(IMillicastSource::FStreamTrackInterface)> Callback)
+void UMillicastPublisherSource::StartCapture(UWorld* InWorld, TFunction<void(IMillicastSource::FStreamTrackInterface)> Callback)
 {
+	if (IsCapturing())
+	{
+		UE_LOG(LogMillicastPublisher, Error, TEXT("UMillicastPublisherSource::StartCapture called when already capturing"));
+		return;
+	}
+	World = InWorld;
+
 	UE_LOG(LogMillicastPublisher, Log, TEXT("Start capture"));
 
 	// If video is enabled, create video capturer
@@ -215,43 +209,13 @@ void UMillicastPublisherSource::StartCapture(TFunction<void(IMillicastSource::FS
 		//
 		if (VideoSource && RenderTarget)
 		{
-			auto* RenderTargetVideoSource = static_cast<Millicast::Publisher::RenderTargetCapturer*>(VideoSource.Get());
-			RenderTargetVideoSource->OnFrameRendered.AddLambda([this]()
+			if (!LayeredTextures.IsEmpty() || bSupportCustomDrawCanvas)
 			{
-				if (LayeredTextures.IsEmpty() && !bSupportCustomDrawCanvas)
-				{
-					return;
-				}
-
 				TryInitRenderTargetCanvas();
-				
-				if (!RenderTargetCanvas)
-				{
-					return;
-				}
 
-				OnFrameRendered.Broadcast(RenderTargetCanvas);
-
-				// Render Layered Textures
-				for (const auto& Texture : LayeredTextures)
-				{
-					// TODO [RW] Engine API mistake. Function param should be const UTexture*
-					const FVector2D CoordinatePosition;
-					RenderTargetCanvas->K2_DrawTexture(const_cast<UTexture*>(Texture.Texture), Texture.Position, Texture.Size, CoordinatePosition);
-				}
-
-				/*FRHICommandListImmediate& RHICmdList = FRHICommandListExecutor::GetImmediateCommandList();
-
-				for (auto& LTexture : LayeredTexture)
-				{
-					if (LTexture.Texture)
-					{
-						auto DestTexture = RenderTarget->GetResource()->GetTexture2DRHI();
-						auto SourceTexture = LTexture.Texture->GetResource()->GetTexture2DRHI();
-						CopyTexture(RHICmdList, SourceTexture, DestTexture, true, LTexture.Position);
-					}
-				}*/
-			});
+				auto* RenderTargetVideoSource = static_cast<Millicast::Publisher::RenderTargetCapturer*>(VideoSource.Get());
+				RenderTargetVideoSource->OnFrameRendered.AddUObject(this, &UMillicastPublisherSource::HandleFrameRendered);
+			}
 		}
 		
 		// Starts the capture and notify observers
@@ -288,8 +252,14 @@ void UMillicastPublisherSource::StartCapture(TFunction<void(IMillicastSource::FS
 	}
 }
 
-void UMillicastPublisherSource::StopCapture()
+void UMillicastPublisherSource::StopCapture(bool bDestroyLayeredTexturesCanvas)
 {
+	if (!IsCapturing())
+	{
+		UE_LOG(LogMillicastPublisher, Warning, TEXT("UMillicastPublisherSource::StopCapture called when not capturing"));
+		return;
+	}
+
 	UE_LOG(LogMillicastPublisher, Display, TEXT("Stop capture"));
 
 	// Stop video capturer
@@ -305,24 +275,55 @@ void UMillicastPublisherSource::StopCapture()
 		AudioSource->StopCapture();
 		AudioSource = nullptr;
 	}
+
+	if (bDestroyLayeredTexturesCanvas && bRenderTargetInitialized)
+	{
+		UKismetRenderingLibrary::EndDrawCanvasToRenderTarget(World, RenderTargetCanvasCtx);
+
+		bRenderTargetInitialized = false;
+		RenderTargetCanvas = nullptr;
+		RenderTargetCanvasCtx = {};
+	}
+
+	World = nullptr;
 }
 
-
-void UMillicastPublisherSource::RegisterWorldContext(UObject* WorldContextObject)
+void UMillicastPublisherSource::HandleFrameRendered()
 {
-	WorldContext = WorldContextObject;
+	if (!RenderTargetCanvas)
+	{
+		return;
+	}
+
+	OnFrameRendered.Broadcast(RenderTargetCanvas);
+
+	// Render Layered Textures
+	for (const auto& Texture : LayeredTextures)
+	{
+		// TODO [RW] Engine API mistake. Function param should be const UTexture*
+		const FVector2D CoordinatePosition;
+		RenderTargetCanvas->K2_DrawTexture(const_cast<UTexture*>(Texture.Texture), Texture.Position, Texture.Size, CoordinatePosition);
+	}
 }
 
-void UMillicastPublisherSource::UnregisterWorldContext()
+void UMillicastPublisherSource::HandleCleanupWorld(UWorld* InWorld, bool bSessionEnded, bool bCleanupResources)
 {
-	WorldContext = nullptr;
+	HandleRemoveWorld(InWorld);
+}
 
-	// Called at Endplay, so we also stop the canvas here
-	UKismetRenderingLibrary::EndDrawCanvasToRenderTarget(WorldContext, RenderTargetCanvasCtx);
+void UMillicastPublisherSource::HandleRemoveWorld(UWorld* InWorld)
+{
+	if (!World || World != InWorld)
+	{
+		return;
+	}
 
-	bRenderTargetInitialized = false;
-	RenderTargetCanvas = nullptr;
-	RenderTargetCanvasCtx = {};
+	StopCapture(true);
+
+	WorldDelegatesBound = false;
+	FWorldDelegates::OnWorldCleanup.RemoveAll(this);
+	FWorldDelegates::OnWorldBeginTearDown.RemoveAll(this);
+	FWorldDelegates::OnPreWorldFinishDestroy.RemoveAll(this);
 }
 
 void UMillicastPublisherSource::TryInitRenderTargetCanvas()
@@ -337,21 +338,27 @@ void UMillicastPublisherSource::TryInitRenderTargetCanvas()
 		return;
 	}
 
-	if (!WorldContext)
-	{
-		return;
-	}
+	bRenderTargetInitialized = true;
 
 	// NOTE [RW] This means we currently only support 1 world with this approach.
 	// A more flexible API would need to be developed later
 
 	AsyncTask(ENamedThreads::GameThread, [this]()
 	{
-		UWorld* World = GEngine->GetWorldFromContextObject(WorldContext, EGetWorldErrorMode::LogAndReturnNull);
-		if (!World)
+		if (!IsValid(World))
 		{
 			bRenderTargetInitialized = false;
 			return;
+		}
+
+		// Setup static WorldEvent listeners in case that we haven't already
+		if (!WorldDelegatesBound)
+		{
+			WorldDelegatesBound = true;
+
+			FWorldDelegates::OnWorldCleanup.AddUObject(this, &UMillicastPublisherSource::HandleCleanupWorld);
+			FWorldDelegates::OnWorldBeginTearDown.AddUObject(this, &UMillicastPublisherSource::HandleRemoveWorld);
+			FWorldDelegates::OnPreWorldFinishDestroy.AddUObject(this, &UMillicastPublisherSource::HandleRemoveWorld);
 		}
 
 		FVector2D DummySize;
@@ -387,25 +394,23 @@ bool UMillicastPublisherSource::CanEditChange(const FProperty* InProperty) const
 	{
 		return CaptureAudio && AudioCaptureType == EAudioCapturerType::Device;
 	}
+
 	if (Name == MillicastPublisherOption::Submix.ToString())
 	{
 		return CaptureAudio && AudioCaptureType == EAudioCapturerType::Submix;
 	}
+
 	if (Name == MillicastPublisherOption::AudioCaptureType.ToString())
 	{
 		return CaptureAudio;
 	}
+
 	if (Name == MillicastPublisherOption::VolumeMultiplier.ToString())
 	{
 		return  CaptureAudio && AudioCaptureType == EAudioCapturerType::Device;
 	}
 
 	return Super::CanEditChange(InProperty);
-}
-
-void UMillicastPublisherSource::PostEditChangeChainProperty(FPropertyChangedChainEvent& InPropertyChangedEvent)
-{
-	Super::PostEditChangeChainProperty(InPropertyChangedEvent);
 }
 
 #endif //WITH_EDITOR

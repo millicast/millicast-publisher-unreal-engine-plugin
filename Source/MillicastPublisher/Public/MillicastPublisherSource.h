@@ -52,16 +52,10 @@ public:
 public:
 	UMillicastPublisherSource(const FObjectInitializer& ObjectInitializer);
 
+	bool IsCapturing() const { return World != nullptr; }
+	
 	UFUNCTION(BlueprintCallable, Category = "MillicastPublisher", META = (DisplayName = "Initialize"))
 	void Initialize(const FString& InPublishingToken, const FString& InStreamName, const FString& InSourceId, const FString& InStreamUrl = "https://director.millicast.com/api/director/publish");
-
-	/* Required for watermark feature */
-	UFUNCTION(BlueprintCallable, Category = "MillicastPublisher", meta = (WorldContext = "WorldContextObject"))
-	void RegisterWorldContext(UObject* WorldContextObject);
-
-	UFUNCTION(BlueprintCallable, Category = "MillicastPublisher")
-	void UnregisterWorldContext();
-	/* Watermark feature over */
 
 
 	/** The Millicast Stream name. */
@@ -141,19 +135,11 @@ public:
 	FString GetUrl() const override;
 	bool Validate() const override;
 	//~ UMediaSource interface
-	
-public:
-	/**
-	   Called before destroying the object.  This is called immediately upon deciding to destroy the object,
-	   to allow the object to begin an asynchronous cleanup process.
-	 */
-	void BeginDestroy() override;
 
 public:
 	//~ UObject interface
 #if WITH_EDITOR
 	virtual bool CanEditChange(const FProperty* InProperty) const override;
-	virtual void PostEditChangeChainProperty(FPropertyChangedChainEvent& InPropertyChangedEvent) override;
 #endif //WITH_EDITOR
 	//~ End UObject interface
 
@@ -162,12 +148,19 @@ public:
 	* Create a capturer from the configuration set for video and audio and start the capture
 	* You can set a callback to get the track returns by the capturer when starting the capture
 	*/
-	void StartCapture(TFunction<void(IMillicastSource::FStreamTrackInterface)> Callback = nullptr);
+	void StartCapture(UWorld* InWorld, TFunction<void(IMillicastSource::FStreamTrackInterface)> Callback = nullptr);
 
-	/** Stop the capture and destroy all capturers */
-	void StopCapture();
+	/**
+	* Stop the capture and destroy all capturers
+	* @param bDestroyLayeredTexturesCanvas If true will destroy the canvas created for layered textures.
+	*										If you plan on quickly switching between sources, it is advised to have it be false.
+	*/
+	void StopCapture(bool bDestroyLayeredTexturesCanvas = false);
 
 private:
+	void HandleFrameRendered();
+	void HandleCleanupWorld(UWorld* InWorld, bool bSessionEnded, bool bCleanupResources);
+	void HandleRemoveWorld(UWorld* InWorld);
 	void TryInitRenderTargetCanvas();
 
 private:
@@ -181,6 +174,7 @@ private:
 	FDrawToRenderTargetContext RenderTargetCanvasCtx;
 	bool bRenderTargetInitialized = false; // TODO [RW] atomic enum with 3 stages for absolute state management would be best, but won't touch the bool now unless it becomes problematic
 
-	UObject* WorldContext = nullptr;
+	UWorld* World = nullptr;
+	bool WorldDelegatesBound = false;
 	// Custom DrawCanvas End
 };
