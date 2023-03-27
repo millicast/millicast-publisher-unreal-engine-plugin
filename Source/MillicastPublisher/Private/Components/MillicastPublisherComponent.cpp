@@ -318,7 +318,11 @@ void UMillicastPublisherComponent::UnPublish()
 		delete PeerConnection;
 		PeerConnection = nullptr;
 
-		MillicastMediaSource->StopCapture();
+		// Check here as the PublisherSource code has already been moved to not rely on cleanup handling by the ActorComponent anymore
+		if( MillicastMediaSource->IsCapturing() )
+		{
+			MillicastMediaSource->StopCapture();
+		}
 	}
 }
 
@@ -625,7 +629,7 @@ void UMillicastPublisherComponent::SetSimulcast(webrtc::RtpTransceiverInit& Tran
 void UMillicastPublisherComponent::CaptureAndAddTracks()
 {
 	// Starts audio and video capture
-	MillicastMediaSource->StartCapture([this](auto&& Track)
+	MillicastMediaSource->StartCapture(GetWorld(), [this](auto&& Track)
 	{
 		// Add transceiver with sendonly direction
 		webrtc::RtpTransceiverInit init;
