@@ -56,8 +56,6 @@ namespace Millicast::Publisher
 		/** Offer/Answer options (e.g. offer to receive audio/video) */
 		webrtc::PeerConnectionInterface::RTCOfferAnswerOptions OaOptions;
 
-		FWebRTCPeerConnection();
-
 		/** Get WebRTC Peerconnection configuration */
 		static FRTCConfig GetDefaultConfig();
 		/** Create an instance of FWebRTCPeerConnection */

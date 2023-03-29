@@ -57,7 +57,7 @@ void AudioDeviceCapturer::StopCapture()
 	if (RtcAudioTrack)
 	{
 		AudioCapture.StopStream();
-		RtcAudioTrack  = nullptr;
+		RtcAudioTrack = nullptr;
 	}
 }
 
