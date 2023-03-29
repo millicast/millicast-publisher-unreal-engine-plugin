@@ -315,8 +315,7 @@ void UMillicastPublisherComponent::UnPublish()
 			RemoteDescriptionObserver->OnFailureEvent.Remove(RemoteFailureHandle);
 		}
 
-		delete PeerConnection;
-		PeerConnection = nullptr;
+		PeerConnection.Reset();
 
 		// Check here as the PublisherSource code has already been moved to not rely on cleanup handling by the ActorComponent anymore
 		if( MillicastMediaSource->IsCapturing() )
@@ -372,7 +371,7 @@ bool UMillicastPublisherComponent::PublishToMillicast()
 
 	using namespace Millicast::Publisher;
 
-	PeerConnection = FWebRTCPeerConnection::Create(PeerConnectionConfig);
+	PeerConnection.Reset(FWebRTCPeerConnection::Create(PeerConnectionConfig));
 
 	// Starts the capture first and add track to the peerconnection
 	// TODO: add a boolean to let choose autoplay or not

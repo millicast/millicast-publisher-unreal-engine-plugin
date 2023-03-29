@@ -21,10 +21,10 @@ struct FMillicastLayeredTexture
 	const UTexture* Texture = nullptr;
 
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = Video)
-	FVector2D Position;
+	FVector2D Position = FVector2D::ZeroVector;
 
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = Video)
-	FVector2D Size;
+	FVector2D Size = FVector2D::ZeroVector;
 };
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnFrameRendered, UCanvas*, Canvas);
@@ -84,8 +84,8 @@ public:
 
 	/** Which audio capturer to use */
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = Audio, AssetRegistrySearchable)
-	EAudioCapturerType AudioCaptureType;
-
+	EAudioCapturerType AudioCaptureType = EAudioCapturerType::Submix;
+	
 	/** Audio submix */
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = Audio, AssetRegistrySearchable)
 	USoundSubmix* Submix;
@@ -159,8 +159,6 @@ public:
 
 private:
 	void HandleFrameRendered();
-	void HandleCleanupWorld(UWorld* InWorld, bool bSessionEnded, bool bCleanupResources);
-	void HandleRemoveWorld(UWorld* InWorld);
 	void TryInitRenderTargetCanvas();
 
 private:
@@ -175,6 +173,5 @@ private:
 	bool bRenderTargetInitialized = false; // TODO [RW] atomic enum with 3 stages for absolute state management would be best, but won't touch the bool now unless it becomes problematic
 
 	UWorld* World = nullptr;
-	bool WorldDelegatesBound = false;
 	// Custom DrawCanvas End
 };

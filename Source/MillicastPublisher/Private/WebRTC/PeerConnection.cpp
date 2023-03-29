@@ -19,11 +19,6 @@ TUniquePtr<rtc::Thread> FWebRTCPeerConnection::SignalingThread = nullptr;
 rtc::scoped_refptr<FAudioDeviceModule> FWebRTCPeerConnection::AudioDeviceModule = nullptr;
 std::unique_ptr<webrtc::TaskQueueFactory> FWebRTCPeerConnection::TaskQueueFactory = nullptr;
 
-FWebRTCPeerConnection::FWebRTCPeerConnection()
-{
-	RTCStatsCollector = nullptr;
-}
-
 void FWebRTCPeerConnection::CreatePeerConnectionFactory()
 {
 	UE_LOG(LogMillicastPublisher, Log, TEXT("Creating FWebRTCPeerConnectionFactory"));
@@ -119,7 +114,7 @@ FWebRTCPeerConnection* FWebRTCPeerConnection::Create(const FRTCConfig& Config)
 		CreatePeerConnectionFactory();
 	}
 
-	FWebRTCPeerConnection * PeerConnectionInstance = new FWebRTCPeerConnection();
+	FWebRTCPeerConnection* PeerConnectionInstance = new FWebRTCPeerConnection();
 	webrtc::PeerConnectionDependencies deps(PeerConnectionInstance);
 
 #if ENGINE_MAJOR_VERSION < 5 || ENGINE_MINOR_VERSION == 0

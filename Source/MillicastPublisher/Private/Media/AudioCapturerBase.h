@@ -31,7 +31,7 @@ namespace Millicast::Publisher
 		void CreateRtcSourceTrack();
 	public:
 		AudioCapturerBase() noexcept;
-		virtual ~AudioCapturerBase() override = default;
+
 		FStreamTrackInterface GetTrack() override;
 
 		void AddSink(webrtc::AudioTrackSinkInterface* Sink) override;

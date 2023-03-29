@@ -11,6 +11,7 @@
 
 #include "Engine/Canvas.h"
 #include "Subsystems/MillicastAudioDeviceCaptureSubsystem.h"
+#include "Subsystems/MillicastPublisherSourceRegistrySubsystem.h"
 #include "WebRTC/PeerConnection.h"
 
 UMillicastPublisherSource::UMillicastPublisherSource(const FObjectInitializer& ObjectInitializer)
@@ -306,26 +307,6 @@ void UMillicastPublisherSource::HandleFrameRendered()
 	}
 }
 
-void UMillicastPublisherSource::HandleCleanupWorld(UWorld* InWorld, bool bSessionEnded, bool bCleanupResources)
-{
-	HandleRemoveWorld(InWorld);
-}
-
-void UMillicastPublisherSource::HandleRemoveWorld(UWorld* InWorld)
-{
-	if (!World || World != InWorld)
-	{
-		return;
-	}
-
-	StopCapture(true);
-
-	WorldDelegatesBound = false;
-	FWorldDelegates::OnWorldCleanup.RemoveAll(this);
-	FWorldDelegates::OnWorldBeginTearDown.RemoveAll(this);
-	FWorldDelegates::OnPreWorldFinishDestroy.RemoveAll(this);
-}
-
 void UMillicastPublisherSource::TryInitRenderTargetCanvas()
 {
 	if (bRenderTargetInitialized)
@@ -351,15 +332,8 @@ void UMillicastPublisherSource::TryInitRenderTargetCanvas()
 			return;
 		}
 
-		// Setup static WorldEvent listeners in case that we haven't already
-		if (!WorldDelegatesBound)
-		{
-			WorldDelegatesBound = true;
-
-			FWorldDelegates::OnWorldCleanup.AddUObject(this, &UMillicastPublisherSource::HandleCleanupWorld);
-			FWorldDelegates::OnWorldBeginTearDown.AddUObject(this, &UMillicastPublisherSource::HandleRemoveWorld);
-			FWorldDelegates::OnPreWorldFinishDestroy.AddUObject(this, &UMillicastPublisherSource::HandleRemoveWorld);
-		}
+		auto* Subsystem = UGameInstance::GetSubsystem<UMillicastPublisherSourceRegistrySubsystem>(World->GetGameInstance());
+		Subsystem->Register(this);
 
 		FVector2D DummySize;
 		UKismetRenderingLibrary::BeginDrawCanvasToRenderTarget(World, RenderTarget, RenderTargetCanvas, DummySize, RenderTargetCanvasCtx);

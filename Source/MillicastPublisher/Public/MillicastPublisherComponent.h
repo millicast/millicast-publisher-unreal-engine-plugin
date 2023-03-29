@@ -235,7 +235,7 @@ private:
 	FDelegateHandle OnMessageHandle;
 
 	/** WebRTC */
-	Millicast::Publisher::FWebRTCPeerConnection* PeerConnection = nullptr;
+	TUniquePtr<Millicast::Publisher::FWebRTCPeerConnection> PeerConnection;
 	webrtc::PeerConnectionInterface::RTCConfiguration PeerConnectionConfig;
 
 	/** Publisher */
