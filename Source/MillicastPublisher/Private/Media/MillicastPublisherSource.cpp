@@ -289,7 +289,7 @@ void UMillicastPublisherSource::StopCapture(bool bDestroyLayeredTexturesCanvas)
 	World = nullptr;
 }
 
-void UMillicastPublisherSource::HandleFrameRendered()
+void UMillicastPublisherSource::HasndleFrameRendered()
 {
 	if (!RenderTargetCanvas)
 	{

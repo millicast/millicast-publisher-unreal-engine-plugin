@@ -10,9 +10,12 @@ namespace Millicast::Publisher
 	{
 	public:
 		// webrtc::VideoEncoderFactory Interface begin
-		virtual std::vector<webrtc::SdpVideoFormat> GetSupportedFormats() const override;
-		virtual CodecInfo QueryVideoEncoder(const webrtc::SdpVideoFormat& format) const override;
-		virtual std::unique_ptr<webrtc::VideoEncoder> CreateVideoEncoder(const webrtc::SdpVideoFormat& format) override;
+		std::vector<webrtc::SdpVideoFormat> GetSupportedFormats() const override;
+		CodecInfo QueryVideoEncoder(const webrtc::SdpVideoFormat& format) const /*override*/;
+		std::unique_ptr<webrtc::VideoEncoder> CreateVideoEncoder(const webrtc::SdpVideoFormat& format) override;
+
+		// Todo : ForceKeyFrame
+
 		// webrtc::VideoEncoderFactory Interface end
 	};
 }

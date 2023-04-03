@@ -24,7 +24,9 @@ namespace Millicast::Publisher
 	private:
 		bool AdaptVideoFrame(int64 TimestampUs, FIntPoint Resolution);
 
-		TUniquePtr<FAVEncoderContext> CaptureContext;
+		TArray<TUniquePtr<FAVEncoderContext>> CaptureContext;
+
+		bool Simulcast = true;
 	};
 
 }

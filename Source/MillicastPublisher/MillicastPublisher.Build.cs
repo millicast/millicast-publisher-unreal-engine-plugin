@@ -6,16 +6,27 @@ namespace UnrealBuildTool.Rules
 {
 	using System.IO;
 
-	public class MillicastPublisher: ModuleRules
+    public class MillicastPublisher: ModuleRules
 	{
 		public MillicastPublisher(ReadOnlyTargetRules Target) : base(Target)
 		{
 			PCHUsage = PCHUsageMode.UseExplicitOrSharedPCHs;
 
-			DynamicallyLoadedModuleNames.AddRange(
-				new string[] {
-					"Media",
-				});
+			System.Console.WriteLine("Threre ");
+
+			if(Target.Configuration == UnrealTargetConfiguration.Shipping)
+			{
+                System.Console.WriteLine("RELEASE ");
+            }
+			else
+			{
+                System.Console.WriteLine("NOT SHIPPING");
+            }
+
+            DynamicallyLoadedModuleNames.AddRange(
+			new string[] {
+				"Media",
+			});
 
 			PublicDependencyModuleNames.AddRange(
 				new string[] {

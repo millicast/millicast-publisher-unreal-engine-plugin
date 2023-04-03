@@ -1,0 +1,56 @@
+#include "SimulcastEncoderFactory.h"
+
+#include "MillicastVideoEncoderFactory.h"
+#include "SimulcastVideoEncoder.h"
+
+namespace Millicast::Publisher
+{
+
+FSimulcastEncoderFactory::FSimulcastEncoderFactory() 
+	: VideoEncoderFactory(MakeUnique<FMillicastVideoEncoderFactory>())
+{
+	FScopeLock Lock(&CriticalSection);
+
+	EncoderFactories.SetNum(webrtc::kMaxSimulcastStreams);
+
+	for (int i = 0; i < webrtc::kMaxSimulcastStreams; ++i)
+	{
+		EncoderFactories[i] = MakeUnique<FMillicastVideoEncoderFactory>();
+	}
+}
+
+std::vector<webrtc::SdpVideoFormat> FSimulcastEncoderFactory::GetSupportedFormats() const
+{
+	return VideoEncoderFactory->GetSupportedFormats();
+}
+
+FSimulcastEncoderFactory::CodecInfo FSimulcastEncoderFactory::QueryVideoEncoder(const webrtc::SdpVideoFormat& Format) const
+{
+	return VideoEncoderFactory->QueryVideoEncoder(Format);
+}
+
+std::unique_ptr<webrtc::VideoEncoder> FSimulcastEncoderFactory::CreateVideoEncoder(const webrtc::SdpVideoFormat& format)
+{
+	return std::make_unique<FSimulcastVideoEncoder>(*this, format);
+}
+
+FMillicastVideoEncoderFactory* FSimulcastEncoderFactory::GetEncoderFactory(int StreamIndex)
+{
+	FScopeLock Lock(&CriticalSection);
+	return EncoderFactories[StreamIndex].Get();
+}
+
+void FSimulcastEncoderFactory::ForceKeyFrame()
+{
+	FScopeLock Lock(&CriticalSection);
+	for (auto&& Encoder : EncoderFactories)
+	{
+		// Encoder->ForceKeyFrame();
+	}
+}
+
+FSimulcastEncoderFactory::~FSimulcastEncoderFactory()
+{
+}
+
+}

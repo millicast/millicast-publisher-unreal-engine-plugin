@@ -28,7 +28,6 @@ namespace libyuv
 
 namespace Millicast::Publisher
 {
-
 	class FFrameBufferRHI : public webrtc::VideoFrameBuffer
 	{
 	public:
@@ -64,12 +63,12 @@ namespace Millicast::Publisher
 			return Type::kNative;
 		}
 
-		virtual int width() const override
+		int width() const override
 		{
 			return Frame->GetWidth();
 		}
 
-		virtual int height() const override
+		int height() const override
 		{
 			return Frame->GetHeight();
 		}
@@ -163,4 +162,51 @@ namespace Millicast::Publisher
 		}
 	};
 
+
+	class FSimulcastFrameBuffer : public webrtc::VideoFrameBuffer
+	{
+		TArray<rtc::scoped_refptr<FFrameBufferRHI>> FrameBuffers;
+	public:
+
+		void AddLayer(rtc::scoped_refptr<FFrameBufferRHI> Layer)
+		{
+			FrameBuffers.Add(Layer);
+		}
+
+		int GetNumLayers()
+		{
+			return FrameBuffers.Num();
+		}
+
+		rtc::scoped_refptr<FFrameBufferRHI> GetLayer(int Id) 
+		{
+			return FrameBuffers[Id];
+		}
+
+		Type type() const override
+		{
+			return Type::kNative;
+		}
+
+		int width() const override
+		{
+			return FrameBuffers[0]->width();
+		}
+
+		int height() const override
+		{
+			return FrameBuffers[0]->height();
+		}
+
+		rtc::scoped_refptr<webrtc::I420BufferInterface> ToI420() override
+		{
+			return nullptr;
+		}
+
+
+		const webrtc::I420BufferInterface* GetI420() const override
+		{
+			return nullptr;
+		}
+	};
 }

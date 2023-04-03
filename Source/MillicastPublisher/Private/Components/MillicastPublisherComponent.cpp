@@ -778,7 +778,7 @@ bool UMillicastPublisherComponent::CanEditChange(const FProperty* InProperty) co
 	// Can't change render target if Capture video is disabled
 	if (Name == "Simulcast")
 	{
-		return SelectedVideoCodec == EMillicastVideoCodecs::Vp8;
+		// return SelectedVideoCodec == EMillicastVideoCodecs::Vp8;
 	}
 
 	return Super::CanEditChange(InProperty);
