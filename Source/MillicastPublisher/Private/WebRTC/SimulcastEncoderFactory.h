@@ -9,9 +9,7 @@ namespace Millicast::Publisher
 	class FSimulcastEncoderFactory : public webrtc::VideoEncoderFactory
 	{
 	public:
-
 		FSimulcastEncoderFactory();
-		~FSimulcastEncoderFactory();
 
 		std::vector<webrtc::SdpVideoFormat> GetSupportedFormats() const override;
 		CodecInfo QueryVideoEncoder(const webrtc::SdpVideoFormat& Format) const override;
@@ -24,8 +22,6 @@ namespace Millicast::Publisher
 
 	private:
 		TArray<TUniquePtr<FMillicastVideoEncoderFactory>> EncoderFactories;
-		FCriticalSection CriticalSection;
-
 		TUniquePtr<FMillicastVideoEncoderFactory> VideoEncoderFactory;
 	};
 }

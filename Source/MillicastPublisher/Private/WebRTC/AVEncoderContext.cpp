@@ -237,16 +237,15 @@ FAVEncoderContext::FCapturerInput FAVEncoderContext::ObtainCapturerInput()
 	if (!VideoEncoderInput.IsValid())
 	{
 		UE_LOG(LogMillicastPublisher, Error, TEXT("VideoEncoderInput is nullptr cannot capture a frame."));
-		return FAVEncoderContext::FCapturerInput();
+		return {};
 	}
 
 	// Obtain a frame from video encoder input, we use this frame to store an RHI specific texture.
 	// Note: obtain frame will recycle frames when they are no longer being used and become "available".
-	FVideoEncoderInputFrameType InputFrame = VideoEncoderInput->ObtainInputFrame();
-
-	if (InputFrame == nullptr)
+	const auto& InputFrame = VideoEncoderInput->ObtainInputFrame();
+	if (!InputFrame.Get())
 	{
-		return FAVEncoderContext::FCapturerInput();
+		return {};
 	}
 
 	// Back buffer already contains a texture for this particular frame, no need to go and make one.
@@ -256,7 +255,7 @@ FAVEncoderContext::FCapturerInput FAVEncoderContext::ObtainCapturerInput()
 	}
 
 	// Got here, backbuffer does not contain this frame/texture already, so we must create a new platform specific texture.
-	FString RHIName = GDynamicRHI->GetName();
+	const FString& RHIName = GDynamicRHI->GetName();
 
 	FTexture2DRHIRef OutTexture;
 
@@ -292,7 +291,7 @@ FAVEncoderContext::FCapturerInput FAVEncoderContext::ObtainCapturerInput()
 	else
 	{
 		UE_LOG(LogMillicastPublisher, Error, TEXT("Pixel Streaming does not support this RHI - %s"), *RHIName);
-		return FAVEncoderContext::FCapturerInput();
+		return {};
 	}
 
 	return FAVEncoderContext::FCapturerInput(InputFrame, OutTexture);
@@ -324,7 +323,7 @@ FTexture2DRHIRef FAVEncoderContext::SetBackbufferTextureCUDAVulkan(FVideoEncoder
 	// It is recommended to use NT handles where available, but these are only supported from Windows 8 onward, for earliers versions of Windows
 	// we need to use a Win7 style handle. NT handles require us to close them when we are done with them to prevent memory leaks.
 	// Refer to remarks section of https://docs.microsoft.com/en-us/windows/win32/api/dxgi1_2/nf-dxgi1_2-idxgiresource1-createsharedhandle
-	bool bUseNTHandle = IsWindows8OrGreater();
+	const bool bUseNTHandle = IsWindows8OrGreater();
 
 	{
 		// Generate VkMemoryGetWin32HandleInfoKHR
@@ -356,7 +355,7 @@ FTexture2DRHIRef FAVEncoderContext::SetBackbufferTextureCUDAVulkan(FVideoEncoder
 		// generate a cudaExternalMemoryHandleDesc
 		CUDA_EXTERNAL_MEMORY_HANDLE_DESC CudaExtMemHandleDesc = {};
 		CudaExtMemHandleDesc.type = bUseNTHandle ? CU_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_WIN32 : CU_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_WIN32_KMT;
-		CudaExtMemHandleDesc.handle.win32.name = NULL;
+		CudaExtMemHandleDesc.handle.win32.name = nullptr;
 		CudaExtMemHandleDesc.handle.win32.handle = Handle;
 
 		#if ENGINE_MAJOR_VERSION < 5 || ENGINE_MINOR_VERSION == 0
@@ -374,7 +373,7 @@ FTexture2DRHIRef FAVEncoderContext::SetBackbufferTextureCUDAVulkan(FVideoEncoder
 	}
 
 	// Only store handle to be closed on frame destruction if it is an NT handle
-	Handle = bUseNTHandle ? Handle : NULL;
+	Handle = bUseNTHandle ? Handle : nullptr;
 #else
 	void* Handle = nullptr;
 
@@ -385,7 +384,7 @@ FTexture2DRHIRef FAVEncoderContext::SetBackbufferTextureCUDAVulkan(FVideoEncoder
 		// Generate VkMemoryGetFdInfoKHR
 		VkMemoryGetFdInfoKHR MemoryGetFdInfoKHR = {};
 		MemoryGetFdInfoKHR.sType = VK_STRUCTURE_TYPE_MEMORY_GET_FD_INFO_KHR;
-		MemoryGetFdInfoKHR.pNext = NULL;
+		MemoryGetFdInfoKHR.pNext = nulllptr;
 
 		#if ENGINE_MAJOR_VERSION < 5 || ENGINE_MINOR_VERSION == 0
 		MemoryGetFdInfoKHR.memory = VulkanTexture->Surface.GetAllocationHandle();
@@ -462,7 +461,7 @@ FTexture2DRHIRef FAVEncoderContext::SetBackbufferTextureCUDAVulkan(FVideoEncoder
 		UE_LOG(LogMillicastPublisher, Error, TEXT("Failed to bind to mip 0."));
 	}
 
-	FCUDAModule::CUDA().cuCtxPopCurrent(NULL);
+	FCUDAModule::CUDA().cuCtxPopCurrent(nullptr);
 
 #if ENGINE_MAJOR_VERSION < 5
 	InputFrame->SetTexture(mappedArray,
@@ -501,7 +500,7 @@ FTexture2DRHIRef FAVEncoderContext::SetBackbufferTextureCUDAVulkan(FVideoEncoder
 			}
 		}
 
-		FCUDAModule::CUDA().cuCtxPopCurrent(NULL);
+		FCUDAModule::CUDA().cuCtxPopCurrent(nullptr);
 
 		// finally remove the input frame
 		BackBuffers.Remove(InputFrameRef);

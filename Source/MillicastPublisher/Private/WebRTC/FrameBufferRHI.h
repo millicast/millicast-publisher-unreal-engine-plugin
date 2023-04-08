@@ -77,8 +77,8 @@ namespace Millicast::Publisher
 		{
 			if (!Buffer)
 			{
-				int Width = TextureRef->GetSizeX();
-				int Height = TextureRef->GetSizeY();
+				const auto Width = TextureRef->GetSizeX();
+				const auto Height = TextureRef->GetSizeY();
 
 				Buffer = webrtc::I420Buffer::Create(Width, Height);
 				if (TextureData)
@@ -165,15 +165,13 @@ namespace Millicast::Publisher
 
 	class FSimulcastFrameBuffer : public webrtc::VideoFrameBuffer
 	{
-		TArray<rtc::scoped_refptr<FFrameBufferRHI>> FrameBuffers;
 	public:
-
 		void AddLayer(rtc::scoped_refptr<FFrameBufferRHI> Layer)
 		{
 			FrameBuffers.Add(Layer);
 		}
 
-		int GetNumLayers()
+		int32 GetNumLayers() const
 		{
 			return FrameBuffers.Num();
 		}
@@ -202,11 +200,13 @@ namespace Millicast::Publisher
 		{
 			return nullptr;
 		}
-
-
+		
 		const webrtc::I420BufferInterface* GetI420() const override
 		{
 			return nullptr;
 		}
+
+	private:
+		TArray<rtc::scoped_refptr<FFrameBufferRHI>> FrameBuffers;
 	};
 }

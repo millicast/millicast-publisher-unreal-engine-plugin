@@ -9,8 +9,6 @@ namespace Millicast::Publisher
 FSimulcastEncoderFactory::FSimulcastEncoderFactory() 
 	: VideoEncoderFactory(MakeUnique<FMillicastVideoEncoderFactory>())
 {
-	FScopeLock Lock(&CriticalSection);
-
 	EncoderFactories.SetNum(webrtc::kMaxSimulcastStreams);
 
 	for (int i = 0; i < webrtc::kMaxSimulcastStreams; ++i)
@@ -36,21 +34,15 @@ std::unique_ptr<webrtc::VideoEncoder> FSimulcastEncoderFactory::CreateVideoEncod
 
 FMillicastVideoEncoderFactory* FSimulcastEncoderFactory::GetEncoderFactory(int StreamIndex)
 {
-	FScopeLock Lock(&CriticalSection);
 	return EncoderFactories[StreamIndex].Get();
 }
 
 void FSimulcastEncoderFactory::ForceKeyFrame()
 {
-	FScopeLock Lock(&CriticalSection);
 	for (auto&& Encoder : EncoderFactories)
 	{
 		// Encoder->ForceKeyFrame();
 	}
-}
-
-FSimulcastEncoderFactory::~FSimulcastEncoderFactory()
-{
 }
 
 }
