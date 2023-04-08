@@ -17,33 +17,28 @@ void FTexture2DVideoSourceAdapter::OnFrameReady(const FTexture2DRHIRef& FrameBuf
 	if (!AdaptVideoFrame(Timestamp, FrameBuffer->GetSizeXY()))
 		return;
 
-	if (CaptureContexts.Num() == 0)
+	TryInitializeCaptureContexts(FrameBuffer);
+
+	const auto& SimulcastBuffer = rtc::make_ref_counted<FSimulcastFrameBuffer>();
+
+	TArray<FVideoEncoderInputFrameType> InputFrames;
+	InputFrames.Reserve( CaptureContexts.Num() );
+	
+	for (const auto& Context : CaptureContexts)
 	{
-		FIntPoint FBSize = FrameBuffer->GetSizeXY();
-		CaptureContexts.Add(MakeUnique<FAVEncoderContext>(FBSize.X, FBSize.Y, true));
+		const auto& CapturedInput = Context->ObtainCapturedInput();
+		FVideoEncoderInputFrameType InputFrame = CapturedInput.InputFrame;
+		InputFrames.Add(InputFrame);
 
-		if (Simulcast)
-		{
-			CaptureContexts.Add(MakeUnique<FAVEncoderContext>(FBSize.X / 2, FBSize.Y / 2, true));
-			CaptureContexts.Add(MakeUnique<FAVEncoderContext>(FBSize.X / 4, FBSize.Y / 4, true));
-		}
-	}
-
-	rtc::scoped_refptr<FSimulcastFrameBuffer> SimulcastBuffer = rtc::make_ref_counted<FSimulcastFrameBuffer>();
-
-	for (auto& Context : CaptureContexts)
-	{
-		FAVEncoderContext::FCapturerInput CapturerInput = Context->ObtainCapturerInput();
-		FVideoEncoderInputFrameType InputFrame = CapturerInput.InputFrame;
-		FTexture2DRHIRef Texture = CapturerInput.Texture.GetValue();
+		const FTexture2DRHIRef Texture = CapturedInput.Texture.GetValue();
 		
 		InputFrame->SetTimestampUs(Timestamp);
 		
 #if ENGINE_MAJOR_VERSION < 5 || ENGINE_MINOR_VERSION == 0
 #else
-		const FIntPoint FBSize = FrameBuffer->GetSizeXY();
-		InputFrame->SetWidth(FBSize.X);
-		InputFrame->SetHeight(FBSize.Y);
+		const FIntPoint FbSize = FrameBuffer->GetSizeXY();
+		InputFrame->SetWidth(FbSize.X);
+		InputFrame->SetHeight(FbSize.Y);
 #endif
 
 		FRHICommandListImmediate& RHICmdList = FRHICommandListExecutor::GetImmediateCommandList();
@@ -61,14 +56,35 @@ void FTexture2DVideoSourceAdapter::OnFrameReady(const FTexture2DRHIRef& FrameBuf
 
 	rtc::AdaptedVideoTrackSource::OnFrame(Frame);
 
-	for (auto& Context : CaptureContexts)
+	// Release the input frames that we obtained
+	for( auto& InputFrame : InputFrames )
 	{
-		const auto& CapturerInput = Context->ObtainCapturerInput();
-		const auto& InputFrame = CapturerInput.InputFrame;
 		InputFrame->Release();
 	}
 
 	FPublisherStats::Get().FrameRendered();
+}
+
+void FTexture2DVideoSourceAdapter::TryInitializeCaptureContexts(const FTexture2DRHIRef& FrameBuffer)
+{
+	if (!CaptureContexts.IsEmpty())
+	{
+		return;
+	}
+	
+	const auto& FBSize = FrameBuffer->GetSizeXY();
+	CaptureContexts.Add(MakeUnique<FAVEncoderContext>(FBSize.X, FBSize.Y, true));
+
+	if (Simulcast)
+	{
+		CaptureContexts.Add(MakeUnique<FAVEncoderContext>(FBSize.X / 2, FBSize.Y / 2, true));
+		CaptureContexts.Add(MakeUnique<FAVEncoderContext>(FBSize.X / 4, FBSize.Y / 4, true));
+	}
+}
+	
+webrtc::MediaSourceInterface::SourceState FTexture2DVideoSourceAdapter::state() const
+{
+	return webrtc::MediaSourceInterface::kLive;
 }
 
 bool FTexture2DVideoSourceAdapter::AdaptVideoFrame(int64 TimestampUs, FIntPoint Resolution)

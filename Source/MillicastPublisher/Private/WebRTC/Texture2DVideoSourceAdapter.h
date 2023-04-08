@@ -8,7 +8,6 @@
 /** Video Source adapter to create webrtc video frame from a Texture 2D and push it into webrtc pipelines */
 namespace Millicast::Publisher
 {
-
 	class FTexture2DVideoSourceAdapter : public rtc::AdaptedVideoTrackSource
 	{
 	public:
@@ -23,10 +22,10 @@ namespace Millicast::Publisher
 
 	private:
 		bool AdaptVideoFrame(int64 TimestampUs, FIntPoint Resolution);
-
-		TArray<TUniquePtr<FAVEncoderContext>> CaptureContexts;
+		void TryInitializeCaptureContexts(const FTexture2DRHIRef& FrameBuffer);
 		
+		TArray<TUniquePtr<FAVEncoderContext>> CaptureContexts;
+
 		bool Simulcast = true;
 	};
-
 }
