@@ -81,11 +81,6 @@ void FTexture2DVideoSourceAdapter::TryInitializeCaptureContexts(const FTexture2D
 		CaptureContexts.Add(MakeUnique<FAVEncoderContext>(FBSize.X / 4, FBSize.Y / 4, true));
 	}
 }
-	
-webrtc::MediaSourceInterface::SourceState FTexture2DVideoSourceAdapter::state() const
-{
-	return webrtc::MediaSourceInterface::kLive;
-}
 
 bool FTexture2DVideoSourceAdapter::AdaptVideoFrame(int64 TimestampUs, FIntPoint Resolution)
 {
