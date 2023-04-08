@@ -6,7 +6,6 @@
 #include "VideoEncoderInput.h"
 #include "RHI.h"
 #include "RHIGPUReadback.h"
-//#include "Stats.h"
 
 namespace libyuv
 {
@@ -188,11 +187,21 @@ namespace Millicast::Publisher
 
 		int width() const override
 		{
+			if( FrameBuffers.IsEmpty() )
+			{
+				return 0;
+			}
+
 			return FrameBuffers[0]->width();
 		}
 
 		int height() const override
 		{
+			if( FrameBuffers.IsEmpty() )
+			{
+				return 0;
+			}
+			
 			return FrameBuffers[0]->height();
 		}
 

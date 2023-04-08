@@ -768,25 +768,3 @@ void UMillicastPublisherComponent::HandleError(const FString& Message)
 	State = EMillicastPublisherState::Disconnected;
 	OnPublishingError.Broadcast(Message);
 }
-
-#if WITH_EDITOR
-bool UMillicastPublisherComponent::CanEditChange(const FProperty* InProperty) const
-{
-	FString Name;
-	InProperty->GetName(Name);
-
-	// Can't change render target if Capture video is disabled
-	if (Name == "Simulcast")
-	{
-		// return SelectedVideoCodec == EMillicastVideoCodecs::Vp8;
-	}
-
-	return Super::CanEditChange(InProperty);
-}
-
-void UMillicastPublisherComponent::PostEditChangeChainProperty(FPropertyChangedChainEvent& InPropertyChangedEvent)
-{
-	Super::PostEditChangeChainProperty(InPropertyChangedEvent);
-}
-
-#endif //WITH_EDITOR

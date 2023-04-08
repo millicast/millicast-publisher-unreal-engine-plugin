@@ -7,23 +7,19 @@
 
 #if PLATFORM_WINDOWS
 	#include "VideoCommon.h"
-	#include "D3D11State.h"
-	#include "D3D11Resources.h"
 	#include "D3D12RHICommon.h"
 	#include "D3D12RHIPrivate.h"
-	#include "D3D12Resources.h"
-	#include "D3D12Texture.h"
-	#include "Windows/AllowWindowsPlatformTypes.h"
 THIRD_PARTY_INCLUDES_START
+	#include "Windows/AllowWindowsPlatformTypes.h"
 	#include <VersionHelpers.h>
-THIRD_PARTY_INCLUDES_END
 	#include "Windows/HideWindowsPlatformTypes.h"
+THIRD_PARTY_INCLUDES_END
 #endif
 
 namespace Millicast::Publisher
 {
 
-FAVEncoderContext::FAVEncoderContext(int InCaptureWidth, int InCaptureHeight, bool bInFixedResolution)
+FAVEncoderContext::FAVEncoderContext(int32 InCaptureWidth, int32 InCaptureHeight, bool bInFixedResolution)
 	: CaptureWidth(InCaptureWidth)
 	, CaptureHeight(InCaptureHeight)
 	, bFixedResolution(bInFixedResolution)
@@ -44,21 +40,6 @@ bool FAVEncoderContext::IsFixedResolution() const
 #else
 	return false;
 #endif
-}
-
-int FAVEncoderContext::GetCaptureWidth() const
-{
-	return CaptureWidth;
-}
-
-int FAVEncoderContext::GetCaptureHeight() const
-{
-	return CaptureHeight;
-}
-
-TSharedPtr<AVEncoder::FVideoEncoderInput> FAVEncoderContext::GetVideoEncoderInput() const
-{
-	return VideoEncoderInput;
 }
 
 void FAVEncoderContext::SetCaptureResolution(int NewCaptureWidth, int NewCaptureHeight)
@@ -101,7 +82,7 @@ TSharedPtr<AVEncoder::FVideoEncoderInput> FAVEncoderContext::CreateVideoEncoderI
 		return nullptr;
 	}
 
-	FString RHIName = GDynamicRHI->GetName();
+	const FString& RHIName = GDynamicRHI->GetName();
 
 #if ENGINE_MAJOR_VERSION < 5 || ENGINE_MINOR_VERSION == 0
 	bool bIsResizable = !bInFixedResolution;
@@ -232,7 +213,7 @@ FTexture2DRHIRef FAVEncoderContext::SetBackbufferTexturePureVulkan(FVideoEncoder
 	return Texture;
 }
 
-FAVEncoderContext::FCapturerInput FAVEncoderContext::ObtainCapturerInput()
+FCapturedInput FAVEncoderContext::ObtainCapturedInput()
 {
 	if (!VideoEncoderInput.IsValid())
 	{
@@ -251,7 +232,7 @@ FAVEncoderContext::FCapturerInput FAVEncoderContext::ObtainCapturerInput()
 	// Back buffer already contains a texture for this particular frame, no need to go and make one.
 	if (BackBuffers.Contains(InputFrameRef))
 	{
-		return FAVEncoderContext::FCapturerInput(InputFrame, BackBuffers[InputFrameRef]);
+		return FCapturedInput(InputFrame, BackBuffers[InputFrameRef]);
 	}
 
 	// Got here, backbuffer does not contain this frame/texture already, so we must create a new platform specific texture.
@@ -273,7 +254,7 @@ FAVEncoderContext::FCapturerInput FAVEncoderContext::ObtainCapturerInput()
 		else
 		{
 			UE_LOG(LogMillicastPublisher, Error, TEXT("Pixel Streaming only supports AMD and NVIDIA devices, this device is neither of those."));
-			return FAVEncoderContext::FCapturerInput();
+			return {};
 		}
 	}
 #if PLATFORM_WINDOWS
@@ -294,7 +275,7 @@ FAVEncoderContext::FCapturerInput FAVEncoderContext::ObtainCapturerInput()
 		return {};
 	}
 
-	return FAVEncoderContext::FCapturerInput(InputFrame, OutTexture);
+	return FCapturedInput(InputFrame, OutTexture);
 }
 
 FTexture2DRHIRef FAVEncoderContext::SetBackbufferTextureCUDAVulkan(FVideoEncoderInputFrameType InputFrame)
@@ -493,10 +474,10 @@ FTexture2DRHIRef FAVEncoderContext::SetBackbufferTextureCUDAVulkan(FVideoEncoder
 
 		if (mappedExternalMemory)
 		{
-			auto result = FCUDAModule::CUDA().cuDestroyExternalMemory(mappedExternalMemory);
-			if (result != CUDA_SUCCESS)
+			const auto Result = FCUDAModule::CUDA().cuDestroyExternalMemory(mappedExternalMemory);
+			if (Result != CUDA_SUCCESS)
 			{
-				UE_LOG(LogMillicastPublisher, Error, TEXT("Failed to destroy mappedExternalMemoryArray: %d"), result);
+				UE_LOG(LogMillicastPublisher, Error, TEXT("Failed to destroy mappedExternalMemoryArray: %d"), Result);
 			}
 		}
 

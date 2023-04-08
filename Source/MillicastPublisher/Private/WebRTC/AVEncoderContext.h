@@ -14,32 +14,32 @@
 
 namespace Millicast::Publisher
 {
-	class FAVEncoderContext
+	struct FCapturedInput
+	{
+		FCapturedInput() = default;
+		FCapturedInput(FVideoEncoderInputFrameType InFrame, FTexture2DRHIRef InTexture)
+			: InputFrame(InFrame)
+			, Texture(InTexture)
+		{
+		}
+
+		FVideoEncoderInputFrameType InputFrame = nullptr;
+		TOptional<FTexture2DRHIRef> Texture;
+	};
+
+	// Final because the class has no virtual destructor
+	class FAVEncoderContext final
 	{
 	public:
-		struct FCapturerInput
-		{
-			FCapturerInput() = default;
-			FCapturerInput(FVideoEncoderInputFrameType InFrame, FTexture2DRHIRef InTexture)
-				: InputFrame(InFrame)
-				, Texture(InTexture)
-			{
-			}
+		FAVEncoderContext(int32 InCaptureWidth, int32 InCaptureHeight, bool bInFixedResolution);
 
-			FVideoEncoderInputFrameType InputFrame = nullptr;
-			TOptional<FTexture2DRHIRef> Texture;
-		};
-
-	public:
-		FAVEncoderContext(int InCaptureWidth, int InCaptureHeight, bool bInFixedResolution);
-
-		int GetCaptureWidth() const;
-		int GetCaptureHeight() const;
+		int32 GetCaptureWidth() const { return CaptureWidth; }
+		int32 GetCaptureHeight() const { return CaptureHeight; }
 		bool IsFixedResolution() const;
 		void SetCaptureResolution(int NewCaptureWidth, int NewCaptureHeight);
 
-		FCapturerInput ObtainCapturerInput();
-		TSharedPtr<AVEncoder::FVideoEncoderInput> GetVideoEncoderInput() const;
+		FCapturedInput ObtainCapturedInput();
+		TSharedPtr<AVEncoder::FVideoEncoderInput> GetVideoEncoderInput() const { return VideoEncoderInput; }
 
 	private:
 		TSharedPtr<AVEncoder::FVideoEncoderInput> CreateVideoEncoderInput(int InWidth, int InHeight, bool bInFixedResolution);
@@ -54,11 +54,11 @@ namespace Millicast::Publisher
 		FTexture2DRHIRef SetBackbufferTextureCUDAVulkan(FVideoEncoderInputFrameType InputFrame);
 
 	private:
-		int CaptureWidth;
-		int CaptureHeight;
-		bool bFixedResolution;
-		TSharedPtr<AVEncoder::FVideoEncoderInput> VideoEncoderInput = nullptr;
+		int32 CaptureWidth = 0;
+		int32 CaptureHeight = 0;
+		bool bFixedResolution = false;
+		
+		TSharedPtr<AVEncoder::FVideoEncoderInput> VideoEncoderInput;
 		TMap<AVEncoder::FVideoEncoderInputFrame*, FTexture2DRHIRef> BackBuffers;
 	};
-
 }
