@@ -52,6 +52,8 @@ public:
 	static TSharedPtr<IMillicastVideoSource> Create();
 	/** Creates VideoSource and capture from a RenderTarget */
 	static IMillicastVideoSource* Create(UTextureRenderTarget2D* RenderTarget);
+
+	virtual void SetSimulcast(bool InSimulcast) = 0; 
 };
 
 UENUM(BlueprintType)

@@ -12,17 +12,6 @@ namespace UnrealBuildTool.Rules
 		{
 			PCHUsage = PCHUsageMode.UseExplicitOrSharedPCHs;
 
-			System.Console.WriteLine("Threre ");
-
-			if(Target.Configuration == UnrealTargetConfiguration.Shipping)
-			{
-                System.Console.WriteLine("RELEASE ");
-            }
-			else
-			{
-                System.Console.WriteLine("NOT SHIPPING");
-            }
-
             DynamicallyLoadedModuleNames.AddRange(
 			new string[] {
 				"Media",
@@ -67,7 +56,6 @@ namespace UnrealBuildTool.Rules
 					"AudioPlatformConfiguration",
 					"AVEncoder"
 				});
-
 
 			if (ReadOnlyBuildVersion.Current.MajorVersion >= 5)
 			{

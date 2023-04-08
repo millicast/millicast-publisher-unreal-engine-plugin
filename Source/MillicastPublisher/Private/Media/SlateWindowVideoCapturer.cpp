@@ -17,7 +17,10 @@ namespace Millicast::Publisher
 
 TSharedPtr<SlateWindowVideoCapturer> SlateWindowVideoCapturer::CreateCapturer()
 {
-	TSharedPtr<SlateWindowVideoCapturer> Capturer = TSharedPtr<SlateWindowVideoCapturer>(new SlateWindowVideoCapturer());
+	TSharedPtr<SlateWindowVideoCapturer> Capturer( new SlateWindowVideoCapturer() );
+
+	// TODO [RW] Simulcast support for this?
+	Capturer->SetSimulcast(false);
 	
 	// We create TWeakPtr here because we don't want gamethread keeping this alive if it is deleted before this async task happens.
 	TWeakPtr<SlateWindowVideoCapturer> WeakSelf = TWeakPtr<SlateWindowVideoCapturer>(Capturer);
@@ -45,6 +48,7 @@ IMillicastSource::FStreamTrackInterface SlateWindowVideoCapturer::StartCapture()
 {
 	// Create WebRTC video source
 	RtcVideoSource = new rtc::RefCountedObject<Millicast::Publisher::FTexture2DVideoSourceAdapter>();
+	RtcVideoSource->SetSimulcast(Simulcast);
 
 	// Attach the callback to the Slate window renderer
 	OnBackBufferHandle = FSlateApplication::Get().GetRenderer()->OnBackBufferReadyToPresent().AddSP(this, 
@@ -93,7 +97,7 @@ void SlateWindowVideoCapturer::OnBackBufferReadyToPresent(SWindow& SlateWindow, 
 {
 	checkf(IsInRenderingThread(), TEXT("Window capture must happen on the render thread."));
 
-	FScopeLock lock(&CriticalSection);
+	FScopeLock Lock(&CriticalSection);
 
 	if(!RtcVideoSource)
 	{

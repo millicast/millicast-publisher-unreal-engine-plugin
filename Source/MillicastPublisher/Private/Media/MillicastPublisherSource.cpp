@@ -7,7 +7,6 @@
 
 #include "MillicastPublisherPrivate.h"
 #include "RenderTargetCapturer.h"
-#include "RenderTargetPool.h"
 
 #include "Engine/Canvas.h"
 #include "Subsystems/MillicastAudioDeviceCaptureSubsystem.h"
@@ -183,7 +182,7 @@ bool UMillicastPublisherSource::Validate() const
 	return !StreamName.IsEmpty() && !PublishingToken.IsEmpty();
 }
 
-void UMillicastPublisherSource::StartCapture(UWorld* InWorld, TFunction<void(IMillicastSource::FStreamTrackInterface)> Callback)
+void UMillicastPublisherSource::StartCapture(UWorld* InWorld, bool Simulcast, TFunction<void(IMillicastSource::FStreamTrackInterface)> Callback)
 {
 	if (IsCapturing())
 	{
@@ -235,14 +234,14 @@ void UMillicastPublisherSource::StartCapture(UWorld* InWorld, TFunction<void(IMi
 
 		if (AudioCaptureType == EAudioCapturerType::Device)
 		{
-			auto source = static_cast<AudioDeviceCapturer*>(AudioSource.Get());
-			source->SetAudioCaptureDevice(CaptureDeviceIndex);
-			source->SetVolumeMultiplier(VolumeMultiplier);
+			auto Source = static_cast<AudioDeviceCapturer*>(AudioSource.Get());
+			Source->SetAudioCaptureDevice(CaptureDeviceIndex);
+			Source->SetVolumeMultiplier(VolumeMultiplier);
 		}
 		else if (AudioCaptureType == EAudioCapturerType::Submix)
 		{
-			auto source = static_cast<AudioSubmixCapturer*>(AudioSource.Get());
-			source->SetAudioSubmix(Submix);
+			auto Source = static_cast<AudioSubmixCapturer*>(AudioSource.Get());
+			Source->SetAudioSubmix(Submix);
 		}
 
 		// Start the capture and notify observers

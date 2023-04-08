@@ -59,43 +59,43 @@ public:
 
 
 	/** The Millicast Stream name. */
-	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category=Stream, AssetRegistrySearchable)
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category=Stream)
 	FString StreamName;
 
 	/** Publishing token. */
-	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = Stream, AssetRegistrySearchable)
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = Stream)
 	FString PublishingToken;
 
 	/** Source id to use Millicast multisource feature */
-	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = Stream, AssetRegistrySearchable)
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = Stream)
 	FString SourceId;
 
 	/** Whether we should capture video or not */
-	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = Video, AssetRegistrySearchable)
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = Video)
 	bool CaptureVideo = true;
 
 	/** Publish video from this render target */
-	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = Video, AssetRegistrySearchable)
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = Video)
 	UTextureRenderTarget2D* RenderTarget = nullptr;
-
+	
 	/** Whether we should capture game audio or not */
-	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = Audio, AssetRegistrySearchable)
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = Audio)
 	bool CaptureAudio = true;
 
 	/** Which audio capturer to use */
-	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = Audio, AssetRegistrySearchable)
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = Audio)
 	EAudioCapturerType AudioCaptureType = EAudioCapturerType::Submix;
 	
 	/** Audio submix */
-	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = Audio, AssetRegistrySearchable)
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = Audio)
 	USoundSubmix* Submix;
 
 	/** Capture device index  */
-	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = Audio, AssetRegistrySearchable)
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = Audio)
 	int32 CaptureDeviceIndex; // UMETA(ArrayClamp = "CaptureDevicesName");
 
 	/** Apply a volume multiplier for the recorded data in dB */
-	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = Audio, AssetRegistrySearchable)
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = Audio)
 	float VolumeMultiplier = 20.f;
 
 public:
@@ -148,7 +148,7 @@ public:
 	* Create a capturer from the configuration set for video and audio and start the capture
 	* You can set a callback to get the track returns by the capturer when starting the capture
 	*/
-	void StartCapture(UWorld* InWorld, TFunction<void(IMillicastSource::FStreamTrackInterface)> Callback = nullptr);
+	void StartCapture(UWorld* InWorld, bool Simulcast, TFunction<void(IMillicastSource::FStreamTrackInterface)> Callback = nullptr);
 
 	/**
 	* Stop the capture and destroy all capturers

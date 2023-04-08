@@ -33,6 +33,7 @@ namespace Millicast::Publisher
 
 		// Create WebRTC Video source
 		RtcVideoSource = new rtc::RefCountedObject<Millicast::Publisher::FTexture2DVideoSourceAdapter>();
+		RtcVideoSource->SetSimulcast(Simulcast);
 
 		// Get PCF to create video track
 		auto PeerConnectionFactory = Millicast::Publisher::FWebRTCPeerConnection::GetPeerConnectionFactory();

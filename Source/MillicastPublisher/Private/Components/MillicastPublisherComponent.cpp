@@ -628,7 +628,7 @@ void UMillicastPublisherComponent::SetSimulcast(webrtc::RtpTransceiverInit& Tran
 void UMillicastPublisherComponent::CaptureAndAddTracks()
 {
 	// Starts audio and video capture
-	MillicastMediaSource->StartCapture(GetWorld(), [this](auto&& Track)
+	MillicastMediaSource->StartCapture(GetWorld(), Simulcast, [this](auto&& Track)
 	{
 		// Add transceiver with sendonly direction
 		webrtc::RtpTransceiverInit init;

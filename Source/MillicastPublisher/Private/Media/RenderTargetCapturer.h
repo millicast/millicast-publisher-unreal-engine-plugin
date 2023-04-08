@@ -20,6 +20,7 @@ namespace Millicast::Publisher
 
 		FStreamTrackInterface StartCapture() override;
 		void StopCapture() override;
+		void SetSimulcast(bool InSimulcast) override { Simulcast = InSimulcast; }
 
 		FStreamTrackInterface GetTrack() override;
 
@@ -31,6 +32,8 @@ namespace Millicast::Publisher
 		void OnEndFrameRenderThread();
 
 		UTextureRenderTarget2D* RenderTarget = nullptr;
+		bool Simulcast = false;
+		
 		FVideoTrackInterface RtcVideoTrack;
 		rtc::scoped_refptr<FTexture2DVideoSourceAdapter> RtcVideoSource;
 	};

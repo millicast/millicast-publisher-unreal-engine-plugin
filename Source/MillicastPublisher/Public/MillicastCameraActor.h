@@ -18,6 +18,6 @@ class MILLICASTPUBLISHER_API AMillicastCameraActor : public AActor
 	GENERATED_UCLASS_BODY()
 
 public:
-	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = Viewport, AssetRegistrySearchable)
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = Viewport)
 	UMillicastViewportCapturerComponent* ViewportCapturer;
 };
