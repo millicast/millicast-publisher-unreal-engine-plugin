@@ -36,9 +36,8 @@ void FTexture2DVideoSourceAdapter::OnFrameReady(const FTexture2DRHIRef& FrameBuf
 		
 #if ENGINE_MAJOR_VERSION < 5 || ENGINE_MINOR_VERSION == 0
 #else
-		const FIntPoint FbSize = FrameBuffer->GetSizeXY();
-		InputFrame->SetWidth(FbSize.X);
-		InputFrame->SetHeight(FbSize.Y);
+		InputFrame->SetWidth(Context->GetCaptureWidth());
+		InputFrame->SetHeight(Context->GetCaptureHeight());
 #endif
 
 		FRHICommandListImmediate& RHICmdList = FRHICommandListExecutor::GetImmediateCommandList();

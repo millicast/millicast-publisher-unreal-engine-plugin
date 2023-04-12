@@ -20,8 +20,7 @@ namespace Millicast::Publisher
 		FCapturedInput(FVideoEncoderInputFrameType InFrame, FTexture2DRHIRef InTexture)
 			: InputFrame(InFrame)
 			, Texture(InTexture)
-		{
-		}
+		{}
 
 		FVideoEncoderInputFrameType InputFrame = nullptr;
 		TOptional<FTexture2DRHIRef> Texture;
