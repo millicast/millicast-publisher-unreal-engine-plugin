@@ -206,6 +206,9 @@ void UMillicastPublisherSource::StartCapture(UWorld* InWorld, bool Simulcast, TF
 			VideoSource = IMillicastVideoSource::Create();
 		}
 
+		// Make sure we propagate the Simulcast setting
+		VideoSource->SetSimulcast(Simulcast);
+
 		//
 		if (VideoSource && RenderTarget)
 		{
