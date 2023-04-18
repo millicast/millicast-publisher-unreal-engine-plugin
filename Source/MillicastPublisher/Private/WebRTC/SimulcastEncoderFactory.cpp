@@ -37,12 +37,4 @@ FMillicastVideoEncoderFactory* FSimulcastEncoderFactory::GetEncoderFactory(int S
 	return EncoderFactories[StreamIndex].Get();
 }
 
-void FSimulcastEncoderFactory::ForceKeyFrame()
-{
-	for (auto&& Encoder : EncoderFactories)
-	{
-		// Encoder->ForceKeyFrame();
-	}
-}
-
 }

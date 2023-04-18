@@ -763,6 +763,36 @@ void UMillicastPublisherComponent::EnableStats(bool Enable)
 	}
 }
 
+#if WITH_EDITOR
+
+bool UMillicastPublisherComponent::CanEditChange(const FProperty* InProperty) const
+{
+	FString Name;
+	InProperty->GetName(Name);
+
+	if (Name == "Simulcast")
+	{
+		return SelectedVideoCodec != EMillicastVideoCodecs::Vp9;
+	}
+
+	return Super::CanEditChange(InProperty);
+}
+
+void UMillicastPublisherComponent::PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent)
+{
+	FName Name = PropertyChangedEvent.GetPropertyName();
+
+	if (Name == "SelectedVideoCodec")
+	{
+		if (SelectedVideoCodec == EMillicastVideoCodecs::Vp9)
+		{
+			Simulcast = false;
+		}
+	}
+}
+
+#endif
+
 void UMillicastPublisherComponent::HandleError(const FString& Message)
 {
 	State = EMillicastPublisherState::Disconnected;

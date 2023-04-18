@@ -154,6 +154,11 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "MillicastPublisher", META = (DisplayName = "EnableStat"))
 	void EnableStats(bool Enable);
 
+#if WITH_EDITOR
+	bool CanEditChange(const FProperty* InProperty) const override;
+	void PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent) override;
+#endif //WITH_EDITOR
+
 public:
 	/** Called when the response from the Publisher api is successfull */
 	UPROPERTY(BlueprintAssignable, Category = "Components|Activation")

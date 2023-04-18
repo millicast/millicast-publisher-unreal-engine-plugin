@@ -18,8 +18,6 @@ namespace Millicast::Publisher
 
 		FMillicastVideoEncoderFactory* GetEncoderFactory(int StreamIndex);
 
-		void ForceKeyFrame();
-
 	private:
 		TArray<TUniquePtr<FMillicastVideoEncoderFactory>> EncoderFactories;
 		TUniquePtr<FMillicastVideoEncoderFactory> VideoEncoderFactory;
