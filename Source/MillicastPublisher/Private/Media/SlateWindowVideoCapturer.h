@@ -17,10 +17,11 @@ namespace Millicast::Publisher
 		static TSharedPtr<SlateWindowVideoCapturer> CreateCapturer();
 
 		/* Begin IMillicastVideoSource */
-		FStreamTrackInterface StartCapture() override;
+		FStreamTrackInterface StartCapture(UWorld* InWorld) override;
 		void StopCapture() override;
 		FStreamTrackInterface GetTrack() override;
 		void SetSimulcast(bool InSimulcast) override { Simulcast = InSimulcast; }
+		void SetRenderTarget(UTextureRenderTarget2D* InRenderTarget) override { /*TODO [RW]*/ }
 		/* End IMillicastVideoSource */
 
 		/**
@@ -42,7 +43,9 @@ namespace Millicast::Publisher
 		FCriticalSection CriticalSection;
 		TSharedPtr<SWindow> TargetWindow;
 		FDelegateHandle OnBackBufferHandle;
+		
 		bool Simulcast = false;
+		UTextureRenderTarget2D* RenderTarget = nullptr;
 	};
 
 }

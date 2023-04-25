@@ -7,7 +7,7 @@
 #include "WebRTC/PeerConnection.h"
 #include "Widgets/SViewport.h"
 
-TSharedPtr<IMillicastVideoSource> IMillicastVideoSource::Create()
+TSharedPtr<IMillicastVideoSource> IMillicastVideoSource::CreateForSlate()
 {
 	return Millicast::Publisher::SlateWindowVideoCapturer::CreateCapturer();
 }
@@ -19,8 +19,9 @@ TSharedPtr<SlateWindowVideoCapturer> SlateWindowVideoCapturer::CreateCapturer()
 {
 	TSharedPtr<SlateWindowVideoCapturer> Capturer( new SlateWindowVideoCapturer() );
 
-	// TODO [RW] Simulcast support for this?
+	// TODO [RW] Simulcast support for Simulcast & RenderTarget?
 	Capturer->SetSimulcast(false);
+	Capturer->SetRenderTarget(nullptr);
 	
 	// We create TWeakPtr here because we don't want gamethread keeping this alive if it is deleted before this async task happens.
 	TWeakPtr<SlateWindowVideoCapturer> WeakSelf = TWeakPtr<SlateWindowVideoCapturer>(Capturer);
@@ -44,12 +45,14 @@ void SlateWindowVideoCapturer::SetTargetWindow(TSharedPtr<SWindow> InTargetWindo
 	TargetWindow = InTargetWindow;
 }
 
-IMillicastSource::FStreamTrackInterface SlateWindowVideoCapturer::StartCapture()
+IMillicastSource::FStreamTrackInterface SlateWindowVideoCapturer::StartCapture(UWorld* InWorld)
 {
 	// Create WebRTC video source
 	RtcVideoSource = new rtc::RefCountedObject<Millicast::Publisher::FTexture2DVideoSourceAdapter>();
 	RtcVideoSource->SetSimulcast(Simulcast);
-
+	//RtcVideoSource->SetRenderTarget(RenderTarget);
+	//RtcVideoSource->SetWorld(InWorld);
+	
 	// Attach the callback to the Slate window renderer
 	OnBackBufferHandle = FSlateApplication::Get().GetRenderer()->OnBackBufferReadyToPresent().AddSP(this, 
 		&SlateWindowVideoCapturer::OnBackBufferReadyToPresent);

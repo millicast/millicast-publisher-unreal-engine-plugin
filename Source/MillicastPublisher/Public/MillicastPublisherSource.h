@@ -3,6 +3,7 @@
 
 #include "AudioCaptureDeviceInterface.h"
 #include "IMillicastSource.h"
+#include "Media/MillicastRenderTargetCanvas.h"
 #include "StreamMediaSource.h"
 
 #include "Engine/TextureRenderTarget2D.h"
@@ -106,7 +107,7 @@ public:
 	/** Set a new render target while publishing */
 	UFUNCTION(BlueprintCallable, Category = "MillicastPublisher", META = (DisplayName = "ChangeRenderTarget"))
 	void ChangeRenderTarget(UTextureRenderTarget2D * InRenderTarget);
-
+	
 public:
 	/** Mute the audio stream */
 	UFUNCTION(BlueprintCallable, Category = "MillicastPublisher", META = (DisplayName = "MuteAudio"))
@@ -148,7 +149,7 @@ public:
 	* Create a capturer from the configuration set for video and audio and start the capture
 	* You can set a callback to get the track returns by the capturer when starting the capture
 	*/
-	void StartCapture(UWorld* InWorld, bool Simulcast, TFunction<void(IMillicastSource::FStreamTrackInterface)> Callback = nullptr);
+	void StartCapture(UWorld* InWorld, bool InSimulcast, TFunction<void(IMillicastSource::FStreamTrackInterface)> Callback = nullptr);
 
 	/**
 	* Stop the capture and destroy all capturers
@@ -159,19 +160,16 @@ public:
 
 private:
 	void HandleFrameRendered();
+	void HandleRenderTargetCanvasInitialized();
 	void TryInitRenderTargetCanvas();
 
 private:
 	TSharedPtr<IMillicastVideoSource> VideoSource;
 	TSharedPtr<IMillicastAudioSource> AudioSource;
+	FMillicastRenderTargetCanvas RenderTargetCanvas;
 
-	// Custom DrawCanvas
 	UPROPERTY()
-	UCanvas* RenderTargetCanvas = nullptr;
-
-	FDrawToRenderTargetContext RenderTargetCanvasCtx;
-	bool bRenderTargetInitialized = false; // TODO [RW] atomic enum with 3 stages for absolute state management would be best, but won't touch the bool now unless it becomes problematic
-
 	UWorld* World = nullptr;
-	// Custom DrawCanvas End
+
+	bool Simulcast = false;
 };

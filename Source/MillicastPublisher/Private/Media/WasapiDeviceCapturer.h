@@ -79,7 +79,7 @@ namespace Millicast::Publisher
 			Finalize();
 		}
 
-		FStreamTrackInterface StartCapture() override;
+		FStreamTrackInterface StartCapture(UWorld* InWorld) override;
 		void StopCapture() override;
 
 		bool Initialize(size_t tickRate, bool loopback);

@@ -17,7 +17,7 @@ namespace Millicast::Publisher
 		float VolumeMultiplier = 0.0f; // dB
 
 	public:
-		FStreamTrackInterface StartCapture() override;
+		FStreamTrackInterface StartCapture(UWorld* InWorld) override;
 		void StopCapture() override;
 
 		/**

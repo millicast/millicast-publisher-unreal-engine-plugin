@@ -223,8 +223,8 @@ FCapturedInput FAVEncoderContext::ObtainCapturedInput()
 
 	// Obtain a frame from video encoder input, we use this frame to store an RHI specific texture.
 	// Note: obtain frame will recycle frames when they are no longer being used and become "available".
-	const auto& InputFrame = VideoEncoderInput->ObtainInputFrame();
-	if (!InputFrame.Get())
+	FVideoEncoderInputFrameType InputFrame = VideoEncoderInput->ObtainInputFrame();
+	if (!InputFrame)
 	{
 		return {};
 	}

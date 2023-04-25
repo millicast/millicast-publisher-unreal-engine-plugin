@@ -6,6 +6,7 @@
 #include "RtcCodecsConstants.h"
 
 #include "Components/ActorComponent.h"
+#include "WebRTC/PeerConnection.h"
 
 #include "MillicastPublisherComponent.generated.h"
 
@@ -17,11 +18,6 @@ class IHttpResponse;
 namespace webrtc
 {
 	struct RtpTransceiverInit;
-}
-
-namespace Millicast::Publisher
-{
-	class FWebRTCPeerConnection;
 }
 
 enum class EMillicastPublisherState : uint8

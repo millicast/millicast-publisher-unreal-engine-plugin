@@ -629,7 +629,7 @@ namespace Millicast::Publisher
 	}
 
 	//-------------------------------------------------------------------------------------------------------------------------------------------------------------
-	WasapiDeviceCapturer::FStreamTrackInterface WasapiDeviceCapturer::StartCapture()
+	WasapiDeviceCapturer::FStreamTrackInterface WasapiDeviceCapturer::StartCapture(UWorld* InWorld)
 	{
 		if (!sWcore.initialized_ || !IsInitialized())
 		{
@@ -653,10 +653,12 @@ namespace Millicast::Publisher
 
 		sWcore.StartTickingStream(this, lep, UINT(Tmin / 10000));
 
-		if (FAILED(client_->Start())) {
+		if (FAILED(client_->Start()))
+		{
 			UE_LOG(LogMillicastPublisher, Error, TEXT("AudioDriver::StartStream( %s ): could not start!"), numChans_ == 2 ? "music input" : "voice input");
 		}
-		else {
+		else
+		{
 			UE_LOG(LogMillicastPublisher, Log, TEXT("AudioDriver::StartStream( %s ): SUCCESS"), numChans_ == 2 ? "music input" : "voice input");
 		}
 
@@ -703,11 +705,11 @@ namespace Millicast::Publisher
 		}
 
 		SAFE_RELEASE(capture_)
-			SAFE_RELEASE(render_)
-			SAFE_RELEASE(client_)
-			SAFE_RELEASE(device_)
+		SAFE_RELEASE(render_)
+		SAFE_RELEASE(client_)
+		SAFE_RELEASE(device_)
 
-			deviceID_.clear();
+		deviceID_.clear();
 
 		bufferLen_ = 0;
 		runStatus_ = false;

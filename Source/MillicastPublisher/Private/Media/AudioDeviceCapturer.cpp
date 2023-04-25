@@ -6,7 +6,7 @@
 
 namespace Millicast::Publisher
 {
-AudioDeviceCapturer::FStreamTrackInterface AudioDeviceCapturer::StartCapture()
+AudioDeviceCapturer::FStreamTrackInterface AudioDeviceCapturer::StartCapture(UWorld* InWorld)
 {
 	CreateRtcSourceTrack();
 

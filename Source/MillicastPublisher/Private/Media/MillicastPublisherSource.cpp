@@ -18,6 +18,8 @@ UMillicastPublisherSource::UMillicastPublisherSource(const FObjectInitializer& O
 {
 	// Add default StreamUrl
 	StreamUrl = "https://director.millicast.com/api/director/publish";
+
+	RenderTargetCanvas.OnInitialized.AddUObject(this, &UMillicastPublisherSource::HandleRenderTargetCanvasInitialized);
 }
 
 void UMillicastPublisherSource::Initialize(const FString& InPublishingToken, const FString& InStreamName, const FString& InSourceId,const FString& InStreamUrl)
@@ -182,7 +184,7 @@ bool UMillicastPublisherSource::Validate() const
 	return !StreamName.IsEmpty() && !PublishingToken.IsEmpty();
 }
 
-void UMillicastPublisherSource::StartCapture(UWorld* InWorld, bool Simulcast, TFunction<void(IMillicastSource::FStreamTrackInterface)> Callback)
+void UMillicastPublisherSource::StartCapture(UWorld* InWorld, bool InSimulcast, TFunction<void(IMillicastSource::FStreamTrackInterface)> Callback)
 {
 	if (IsCapturing())
 	{
@@ -190,6 +192,7 @@ void UMillicastPublisherSource::StartCapture(UWorld* InWorld, bool Simulcast, TF
 		return;
 	}
 	World = InWorld;
+	Simulcast = InSimulcast;
 
 	UE_LOG(LogMillicastPublisher, Log, TEXT("Start capture"));
 
@@ -199,15 +202,16 @@ void UMillicastPublisherSource::StartCapture(UWorld* InWorld, bool Simulcast, TF
 		// If a render target has been set, create a Render Target capturer
 		if (RenderTarget != nullptr)
 		{
-			VideoSource = TSharedPtr<IMillicastVideoSource>(IMillicastVideoSource::Create(RenderTarget));
+			VideoSource = TSharedPtr<IMillicastVideoSource>(IMillicastVideoSource::Create());
 		}
 		else
 		{
-			VideoSource = IMillicastVideoSource::Create();
+			VideoSource = IMillicastVideoSource::CreateForSlate();
 		}
 
 		// Make sure we propagate the Simulcast setting
 		VideoSource->SetSimulcast(Simulcast);
+		VideoSource->SetRenderTarget(RenderTarget);
 
 		//
 		if (VideoSource && RenderTarget)
@@ -224,7 +228,7 @@ void UMillicastPublisherSource::StartCapture(UWorld* InWorld, bool Simulcast, TF
 		// Starts the capture and notify observers
 		if (VideoSource && Callback)
 		{
-			Callback(VideoSource->StartCapture());
+			Callback(VideoSource->StartCapture(InWorld));
 		}
 	}
 
@@ -250,7 +254,7 @@ void UMillicastPublisherSource::StartCapture(UWorld* InWorld, bool Simulcast, TF
 		// Start the capture and notify observers
 		if (AudioSource && Callback)
 		{
-			Callback(AudioSource->StartCapture());
+			Callback(AudioSource->StartCapture(InWorld));
 		}
 	}
 }
@@ -279,13 +283,9 @@ void UMillicastPublisherSource::StopCapture(bool bDestroyLayeredTexturesCanvas)
 		AudioSource = nullptr;
 	}
 
-	if (bDestroyLayeredTexturesCanvas && bRenderTargetInitialized)
+	if (bDestroyLayeredTexturesCanvas)
 	{
-		UKismetRenderingLibrary::EndDrawCanvasToRenderTarget(World, RenderTargetCanvasCtx);
-
-		bRenderTargetInitialized = false;
-		RenderTargetCanvas = nullptr;
-		RenderTargetCanvasCtx = {};
+		RenderTargetCanvas.Reset();
 	}
 
 	World = nullptr;
@@ -293,57 +293,50 @@ void UMillicastPublisherSource::StopCapture(bool bDestroyLayeredTexturesCanvas)
 
 void UMillicastPublisherSource::HandleFrameRendered()
 {
-	if (!RenderTargetCanvas)
+	if (!RenderTargetCanvas.IsInitialized())
 	{
 		return;
 	}
 
-	OnFrameRendered.Broadcast(RenderTargetCanvas);
+	OnFrameRendered.Broadcast(RenderTargetCanvas.Get());
 
 	// Render Layered Textures
 	for (const auto& Texture : LayeredTextures)
 	{
 		// TODO [RW] Engine API mistake. Function param should be const UTexture*
 		const FVector2D CoordinatePosition;
-		RenderTargetCanvas->K2_DrawTexture(const_cast<UTexture*>(Texture.Texture), Texture.Position, Texture.Size, CoordinatePosition);
+		RenderTargetCanvas.Get()->K2_DrawTexture(const_cast<UTexture*>(Texture.Texture), Texture.Position, Texture.Size, CoordinatePosition);
 	}
 }
 
+void UMillicastPublisherSource::HandleRenderTargetCanvasInitialized()
+{
+	auto* Subsystem = UGameInstance::GetSubsystem<UMillicastPublisherSourceRegistrySubsystem>(World->GetGameInstance());
+	Subsystem->Register(this);
+}
+
+
 void UMillicastPublisherSource::TryInitRenderTargetCanvas()
 {
-	if (bRenderTargetInitialized)
-	{
-		return;
-	}
-
 	if (LayeredTextures.IsEmpty() && !bSupportCustomDrawCanvas)
 	{
 		return;
 	}
 
-	bRenderTargetInitialized = true;
-
-	// NOTE [RW] This means we currently only support 1 world with this approach.
-	// A more flexible API would need to be developed later
-
-	AsyncTask(ENamedThreads::GameThread, [this]()
-	{
-		if (!IsValid(World))
-		{
-			bRenderTargetInitialized = false;
-			return;
-		}
-
-		auto* Subsystem = UGameInstance::GetSubsystem<UMillicastPublisherSourceRegistrySubsystem>(World->GetGameInstance());
-		Subsystem->Register(this);
-
-		FVector2D DummySize;
-		UKismetRenderingLibrary::BeginDrawCanvasToRenderTarget(World, RenderTarget, RenderTargetCanvas, DummySize, RenderTargetCanvasCtx);
-	});
+	RenderTargetCanvas.Initialize(World, RenderTarget);
 }
 
 void UMillicastPublisherSource::ChangeRenderTarget(UTextureRenderTarget2D* InRenderTarget)
 {
+	if(Simulcast)
+	{
+		// TODO [RW] SUPPORT DISABLED WITH SIMULCAST
+		// Would need to stop canvas and do new one? Can we change the target of the canvas dynamically?
+
+		UE_LOG(LogMillicastPublisher, Error, TEXT("UMillicastPublisherSource::ChangeRenderTarget not supported with Simulcast"));
+		return;
+	}
+	
 	// This is allowed only when a capture has been starts with the Render Target capturer
 	if (InRenderTarget != nullptr && RenderTarget != nullptr && VideoSource != nullptr)
 	{
