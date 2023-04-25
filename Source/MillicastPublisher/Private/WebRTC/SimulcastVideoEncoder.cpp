@@ -62,7 +62,7 @@ public:
 		const webrtc::CodecSpecificInfo* codec_specific_info,
 		const webrtc::RTPFragmentationHeader* fragmentation) override
 	{
-		return adapter_->OnEncodedImage(stream_idx_, encoded_image, codec_specific_info, fragmentation);
+		return _adapter->OnEncodedImage(_stream_idx, encoded_image, codec_specific_info, fragmentation);
 	}
 #elif WEBRTC_VERSION == 96
 	EncodedImageCallback::Result OnEncodedImage(

@@ -28,8 +28,10 @@ namespace Millicast::Publisher
 		std::unique_ptr<webrtc::VideoEncoder> Encoder;
 		std::unique_ptr<webrtc::EncodedImageCallback> Callback;
 		std::unique_ptr<webrtc::FramerateController> FramerateController;
+
 		uint16_t Width;
 		uint16_t Height;
+
 		bool KeyFrameRequest;
 		bool bSendStream;
 	};

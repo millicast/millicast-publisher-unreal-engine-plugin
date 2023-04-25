@@ -58,6 +58,60 @@ THIRD_PARTY_INCLUDES_START
 #include "rtc_base/logging.h"
 #include "rtc_base/ssl_adapter.h"
 
+#if WEBRTC_VERSION ==  84
+
+#include "modules/video_coding/utility/framerate_controller.h"
+
+#include <type_traits>
+#include <utility>
+
+#include "rtc_base/ref_counted_object.h"
+
+namespace rtc {
+
+namespace webrtc_make_ref_counted_internal {
+// Determines if the given class has AddRef and Release methods.
+template <typename T>
+class HasAddRefAndRelease {
+private:
+    template <typename C,
+        decltype(std::declval<C>().AddRef())* = nullptr,
+        decltype(std::declval<C>().Release())* = nullptr>
+    static int Test(int);
+    template <typename>
+    static char Test(...);
+
+public:
+    static constexpr bool value = std::is_same_v<decltype(Test<T>(0)), int>;
+};
+}  // namespace webrtc_make_ref_counted_internal
+
+template <
+    typename T,
+    typename... Args,
+    typename std::enable_if<std::is_convertible_v<T*, RefCountInterface*>&&
+    std::is_abstract_v<T>,
+    T>::type* = nullptr>
+scoped_refptr<T> make_ref_counted(Args&&... args) {
+    return scoped_refptr<T>(new RefCountedObject<T>(std::forward<Args>(args)...));
+}
+
+template <
+    typename T,
+    typename... Args,
+    typename std::enable_if<
+    !std::is_convertible_v<T*, RefCountInterface*>&&
+    webrtc_make_ref_counted_internal::HasAddRefAndRelease<T>::value,
+    T>::type* = nullptr>
+scoped_refptr<T> make_ref_counted(Args&&... args) {
+    return scoped_refptr<T>(new T(std::forward<Args>(args)...));
+}
+
+}  // namespace rtc
+
+
+#endif
+
 // because WebRTC uses STL
 #include <string>
 #include <memory>
