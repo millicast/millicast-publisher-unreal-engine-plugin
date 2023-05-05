@@ -365,7 +365,7 @@ FTexture2DRHIRef FAVEncoderContext::SetBackbufferTextureCUDAVulkan(FVideoEncoder
 		// Generate VkMemoryGetFdInfoKHR
 		VkMemoryGetFdInfoKHR MemoryGetFdInfoKHR = {};
 		MemoryGetFdInfoKHR.sType = VK_STRUCTURE_TYPE_MEMORY_GET_FD_INFO_KHR;
-		MemoryGetFdInfoKHR.pNext = nulllptr;
+		MemoryGetFdInfoKHR.pNext = nullptr;
 
 		#if ENGINE_MAJOR_VERSION < 5 || ENGINE_MINOR_VERSION == 0
 		MemoryGetFdInfoKHR.memory = VulkanTexture->Surface.GetAllocationHandle();
