@@ -142,7 +142,7 @@ TSharedPtr<AVEncoder::FVideoEncoderInput> FAVEncoderContext::CreateVideoEncoderI
 	}
 #endif
 
-	UE_LOG(LogMillicastPublisher, Error, TEXT("Current RHI %s is not supported in Pixel Streaming"), *RHIName);
+	UE_LOG(LogMillicastPublisher, Error, TEXT("Current RHI %s is not supported"), *RHIName);
 	return nullptr;
 }
 
@@ -253,7 +253,7 @@ FCapturedInput FAVEncoderContext::ObtainCapturedInput()
 		}
 		else
 		{
-			UE_LOG(LogMillicastPublisher, Error, TEXT("Pixel Streaming only supports AMD and NVIDIA devices, this device is neither of those."));
+			UE_LOG(LogMillicastPublisher, Error, TEXT("Millicast Publisher plugin only supports AMD and NVIDIA devices, this device is neither of those."));
 			return {};
 		}
 	}
@@ -271,7 +271,7 @@ FCapturedInput FAVEncoderContext::ObtainCapturedInput()
 #endif // PLATFORM_WINDOWS
 	else
 	{
-		UE_LOG(LogMillicastPublisher, Error, TEXT("Pixel Streaming does not support this RHI - %s"), *RHIName);
+		UE_LOG(LogMillicastPublisher, Error, TEXT("RHI not supported - %s"), *RHIName);
 		return {};
 	}
 
