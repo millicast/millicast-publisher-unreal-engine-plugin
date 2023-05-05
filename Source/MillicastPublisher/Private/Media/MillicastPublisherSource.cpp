@@ -216,13 +216,13 @@ void UMillicastPublisherSource::StartCapture(UWorld* InWorld, bool InSimulcast, 
 		//
 		if (VideoSource && RenderTarget)
 		{
-			if (!LayeredTextures.IsEmpty() || bSupportCustomDrawCanvas)
-			{
+		        if (!Millicast::Publisher::IsEmpty(LayeredTextures) || bSupportCustomDrawCanvas)
+		        {
 				TryInitRenderTargetCanvas();
 
 				auto* RenderTargetVideoSource = static_cast<Millicast::Publisher::RenderTargetCapturer*>(VideoSource.Get());
 				RenderTargetVideoSource->OnFrameRendered.AddUObject(this, &UMillicastPublisherSource::HandleFrameRendered);
-			}
+		        }
 		}
 		
 		// Starts the capture and notify observers
@@ -318,7 +318,7 @@ void UMillicastPublisherSource::HandleRenderTargetCanvasInitialized()
 
 void UMillicastPublisherSource::TryInitRenderTargetCanvas()
 {
-	if (LayeredTextures.IsEmpty() && !bSupportCustomDrawCanvas)
+        if (Millicast::Publisher::IsEmpty(LayeredTextures) && !bSupportCustomDrawCanvas)
 	{
 		return;
 	}

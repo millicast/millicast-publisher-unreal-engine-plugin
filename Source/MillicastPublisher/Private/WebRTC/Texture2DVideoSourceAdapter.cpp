@@ -66,7 +66,7 @@ void FTexture2DVideoSourceAdapter::OnFrameReady(const FTexture2DRHIRef& FrameBuf
 
 void FTexture2DVideoSourceAdapter::TryInitializeCaptureContexts(const FTexture2DRHIRef& FrameBuffer)
 {
-	if (!CaptureContexts.IsEmpty())
+        if (!IsEmpty(CaptureContexts))
 	{
 		return;
 	}
