@@ -220,6 +220,16 @@ FRTCStatsCollector::FRTCStatsCollector(class FWebRTCPeerConnection* InPeerConnec
 	Timestamp = 0;
 }
 
+const FString& FRTCStatsCollector::Cluster() const
+{
+  return PeerConnection->ClusterId;
+}
+
+const FString& FRTCStatsCollector::Server() const
+{
+  return PeerConnection->ServerId;
+}
+
 FRTCStatsCollector::~FRTCStatsCollector()
 {
 	FPublisherStats::Get().UnregisterStatsCollector(this);

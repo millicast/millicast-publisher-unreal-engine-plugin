@@ -3,11 +3,13 @@
 #pragma once
 
 #include "Tickable.h"
-#include "WebRTC/PeerConnection.h"
 #include "api/peer_connection_interface.h"
 
 namespace Millicast::Publisher
 {
+
+class FWebRTCPeerConnection;
+
 	class FRTCStatsCollector : public webrtc::RTCStatsCollectorCallback
 	{
 		double LastVideoStatTimestamp;
@@ -15,7 +17,7 @@ namespace Millicast::Publisher
 
 	public:
 		FRTCStatsCollector(class FWebRTCPeerConnection* InPeerConnection);
-		~FRTCStatsCollector();
+		~FRTCStatsCollector() override;
 
 		void Poll();
 
@@ -53,8 +55,8 @@ namespace Millicast::Publisher
 
 		double Timestamp; // us
 
-		const FString& Cluster() const { return PeerConnection->ClusterId; }
-		const FString& Server() const { return PeerConnection->ServerId; }
+	        const FString& Cluster() const;
+	        const FString& Server() const;
 
 	private:
 		mutable int32 RefCount;
