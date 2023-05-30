@@ -38,6 +38,7 @@ DECLARE_DYNAMIC_MULTICAST_SPARSE_DELEGATE(FMillicastPublisherComponentActive, UM
 DECLARE_DYNAMIC_MULTICAST_SPARSE_DELEGATE(FMillicastPublisherComponentInactive, UMillicastPublisherComponent, OnInactive);
 DECLARE_DYNAMIC_MULTICAST_SPARSE_DELEGATE_OneParam(FMillicastPublisherComponentViewerCount, UMillicastPublisherComponent, OnViewerCount, int, Count);
 
+DECLARE_DYNAMIC_MULTICAST_SPARSE_DELEGATE_TwoParams(FMillicastPublisherComponentFrameMetadata, UMillicastPublisherComponent, OnAddFrameMetadata, int, Ssrc, int, Timestamp);
 
 /**
 	A component used to publish audio, video feed to millicast.
@@ -74,6 +75,13 @@ private:
 	UPROPERTY(EditDefaultsOnly, Category = "Properties", META = (DisplayName = "Automute"))
 	bool Automute = false;
 	
+	/** Whether to enable the frame transformer.
+	* If enabled, an event will be fired at each frame so you can append metadata to the frame.
+	*/
+	UPROPERTY(EditDefaultsOnly, Category = "Properties",
+		META = (DisplayName = "Add Frame Metadata", AllowPrivateAccess = true))
+	bool bUseFrameTransformer = false;
+
 public:
 	/**
 		Initialize this component with the media source required for publishing  audio, video to Millicast.
@@ -150,6 +158,19 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "MillicastPublisher", META = (DisplayName = "EnableStat"))
 	void EnableStats(bool Enable);
 
+	/**
+	* Enable the frame transformer
+	* Must be called before publishing to have effect
+	*/
+	UFUNCTION(BlueprintCallable, Category = "MillicastPublisher", META = (DisplayName = "EnableFrameTransformer"))
+	void EnableFrameTransformer(bool Enable);
+
+	/**
+	* Add Metadata to a frame. Call this method when the OnAddFrameMetadata is called
+	*/
+	UFUNCTION(BlueprintCallable, Category = "MillicastPublisher", META = (DisplayName = "AddMetadata"))
+	void AddMetadata(const TArray<uint8>& Data);
+
 #if WITH_EDITOR
 	bool CanEditChange(const FProperty* InProperty) const override;
 	void PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent) override;
@@ -183,6 +204,10 @@ public:
 	/** Called when the number of viewer watching the stream is updated */
 	UPROPERTY(BlueprintAssignable, Category = "Components|Activation")
 	FMillicastPublisherComponentViewerCount OnViewerCount;
+
+	/** Called when a new frame comes out of the encoder so you append metadata to it before sending */
+	UPROPERTY(BlueprintAssignable, Category = "Components|Activation")
+	FMillicastPublisherComponentFrameMetadata OnAddFrameMetadata;
 
 private:
 	void EndPlay(EEndPlayReason::Type Reason) override;
@@ -240,6 +265,8 @@ private:
 	TOptional<int> MinimumBitrate; // in bps
 	TOptional<int> MaximumBitrate; // in bps
 	TOptional<int> StartingBitrate; // in bps
+
+	TArray<uint8>* Metadata;
 
 	FCriticalSection CriticalSection;
 };

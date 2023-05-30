@@ -2,6 +2,7 @@
 
 #include "MillicastPublisherComponent.h"
 #include "MillicastPublisherPrivate.h"
+#include "WebRTC/FrameTransformer.h"
 
 #include <string>
 
@@ -668,6 +669,21 @@ void UMillicastPublisherComponent::CaptureAndAddTracks()
 				*FString(Track->kind().c_str()),
 				*FString(Track->id().c_str()),
 				*FString(result.error().message()));
+
+			return;
+		}
+
+		if (Track->kind() == webrtc::MediaStreamTrackInterface::kVideoKind && bUseFrameTransformer)
+		{
+			auto FrameTransformer = rtc::make_ref_counted<Millicast::Publisher::FFrameTransformer>(PeerConnection.Get());
+
+			PeerConnection->OnTransformableFrame = [this](uint32 Ssrc, uint32 Timestamp, TArray<uint8>& Data) {
+				Metadata = &Data;
+				OnAddFrameMetadata.Broadcast(Ssrc, Timestamp);
+			};
+
+			auto Transceiver = result.value();
+			Transceiver->sender()->SetEncoderToPacketizerFrameTransformer(FrameTransformer);
 		}
 	});
 
@@ -764,6 +780,16 @@ void UMillicastPublisherComponent::EnableStats(bool Enable)
 }
 
 #if WITH_EDITOR
+
+void UMillicastPublisherComponent::EnableFrameTransformer(bool Enable)
+{
+	bUseFrameTransformer = Enable;
+}
+
+void UMillicastPublisherComponent::AddMetadata(const TArray<uint8>& Data)
+{
+	Metadata->Append(Data);
+}
 
 bool UMillicastPublisherComponent::CanEditChange(const FProperty* InProperty) const
 {

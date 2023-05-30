@@ -52,6 +52,8 @@ namespace Millicast::Publisher
 		FString ClusterId;
 		FString ServerId;
 
+		std::function<void(uint32 Ssrc, uint32 Timestamp, TArray<uint8>& Data)> OnTransformableFrame = nullptr;
+
 		using FRTCConfig = webrtc::PeerConnectionInterface::RTCConfiguration;
 
 		/** Offer/Answer options (e.g. offer to receive audio/video) */
