@@ -1,11 +1,11 @@
 {
 	"FileVersion": 3,
 	"Version": 1,
-	"VersionName": "1.5.0",
+	"VersionName": "1.6.0",
 	"FriendlyName": "MillicastPublisher",
 	"Description": "Stream game contents to Millicast Platform",
 	"Category": "Media",
-	"CreatedBy": "Millicast",
+	"CreatedBy": "Dolby.io Realtime Streaming",
 	"CreatedByURL": "https://millicast.com",
 	"DocsURL": "https://docs.millicast.com/docs/millicast-publisher-plugin",
 	"MarketplaceURL": "",

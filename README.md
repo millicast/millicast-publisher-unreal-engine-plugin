@@ -1,6 +1,5 @@
-# MillicastPublisher plugin 1.5.0 for Unreal Engine 5.1
+# MillicastPublisher plugin 1.6.0 for Unreal Engine
 
-* Supported UE version 5.1
 * Supported on Windows and Linux
 
 This plugin enable to publish game audio and video content to Millicast.
@@ -18,11 +17,9 @@ The Unreal publisher supports Unreal engine 4.27, 5.0.3 and 5.1.
 
 ### Video
 
-* VP8 (software encoding)
+* VP8 (software encoding, simulcast available)
 * VP9 (software encoding)
-* H264 (hardware encoding)
-
-Simulcast is not yet available.
+* H264 (hardware encoding, simulcast available)
 
 ## Installation
 
