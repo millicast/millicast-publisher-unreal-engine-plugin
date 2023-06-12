@@ -1,4 +1,4 @@
-# MillicastPublisher plugin 1.6.0 for Unreal Engine
+# MillicastPublisher plugin 1.6.1 for Unreal Engine
 
 * Supported on Windows and Linux
 
