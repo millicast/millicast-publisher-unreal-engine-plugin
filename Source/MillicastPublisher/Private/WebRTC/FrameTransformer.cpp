@@ -5,6 +5,24 @@
 namespace Millicast::Publisher
 {
 
+template<typename T>
+void encode(TArray<uint8>& data, T value)
+{
+	constexpr auto size = sizeof(T);
+
+	for (int i = 0; i < size; ++i)
+	{
+		auto decl = (size - i - 1) * 8;
+		data.Add((value >> decl) & 0xff);
+	}
+}
+
+using FMetadataHeader = uint32_t;
+constexpr auto HEADER_TYPE_LENGTH = sizeof(FMetadataHeader);
+
+// Magic value for the begining of the metadata
+constexpr FMetadataHeader START_VALUE = 0xCAFEBABE;
+
 void FFrameTransformer::Transform(FTransformableFrame TransformableFrame)
 {
 	auto ssrc = TransformableFrame->GetSsrc();
@@ -24,18 +42,15 @@ void FFrameTransformer::Transform(FTransformableFrame TransformableFrame)
 		auto data_view = TransformableFrame->GetData();
 
 		// Copy the frame data because data_view is non mutable
-		// std::copy(data_view.begin(), data_view.end(), std::back_inserter(TransformedData));
 		TransformedData.Append(data_view.data(), data_view.size());
+		// Add magic value to signal the beginning of the user metadata
+		encode(TransformedData, START_VALUE);
 		// Add the user data at the end of the frame data
-		// std::copy(UserData.begin(), UserData.end(), std::back_inserter(TransformedData));
 		TransformedData.Append(UserData);
 
 		// Set the length of the user data in the last 4 bytes to help retrieving it on the viewer side
-		uint32_t length = static_cast<uint32_t>(UserData.Num());
-		TransformedData.Add((length >> 24) & 0xff);
-		TransformedData.Add((length >> 16) & 0xff);
-		TransformedData.Add((length >> 8) & 0xff);
-		TransformedData.Add(length & 0xff);
+		auto length = static_cast<FMetadataHeader>(UserData.Num());
+		encode(TransformedData, length);
 
 		// Set the final transformed data.
 		rtc::ArrayView<uint8_t> transformed_data_view(TransformedData.GetData(), TransformedData.Num());
