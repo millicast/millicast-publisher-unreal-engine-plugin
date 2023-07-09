@@ -1,34 +1,45 @@
 #include "Media/MillicastRenderTargetCanvas.h"
 
-void FMillicastRenderTargetCanvas::Initialize(UWorld* InWorld, UTextureRenderTarget2D* InRenderTarget)
+void UMillicastRenderTargetCanvas::Initialize(UWorld* InWorld, UTextureRenderTarget2D* InRenderTarget)
 {
-	if(bInitialized)
+	if(State != EMillicastRenderTargetCanvasState::Uninitialized)
 	{
 		return;
 	}
-	bInitialized = true;
+	State = EMillicastRenderTargetCanvasState::Initializing;
 
 	RenderTarget = InRenderTarget;
 	World = InWorld;
 	
 	AsyncTask(ENamedThreads::GameThread, [this]()
 	{
+		FScopeLock Lock(&CriticalSection);
 		if (!IsValid(World))
 		{
-			bInitialized = false;
+			State = EMillicastRenderTargetCanvasState::Uninitialized;
 			return;
 		}
 
+		if (State != EMillicastRenderTargetCanvasState::Initializing)
+		{
+			return;
+		}
+		
 		FVector2D DummySize;
 		UKismetRenderingLibrary::BeginDrawCanvasToRenderTarget(World, RenderTarget, Canvas, DummySize, CanvasCtx);
 
+		State = EMillicastRenderTargetCanvasState::Ready;
 		OnInitialized.Broadcast();
 	});
 }
 
-void FMillicastRenderTargetCanvas::Reset()
+void UMillicastRenderTargetCanvas::Reset()
 {
-	if(!bInitialized)
+	RenderTarget = nullptr;
+	World = nullptr;
+	
+	FScopeLock Lock(&CriticalSection);
+	if(State != EMillicastRenderTargetCanvasState::Ready)
 	{
 		return;
 	}
@@ -37,8 +48,8 @@ void FMillicastRenderTargetCanvas::Reset()
 	{
 		UKismetRenderingLibrary::EndDrawCanvasToRenderTarget(World, CanvasCtx);
 	}
-	
-	bInitialized = false;
+
+	State = EMillicastRenderTargetCanvasState::Uninitialized;
 	Canvas = nullptr;
 	CanvasCtx = {};
 }

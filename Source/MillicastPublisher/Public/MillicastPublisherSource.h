@@ -166,7 +166,9 @@ private:
 private:
 	TSharedPtr<IMillicastVideoSource> VideoSource;
 	TSharedPtr<IMillicastAudioSource> AudioSource;
-	FMillicastRenderTargetCanvas RenderTargetCanvas;
+
+	UPROPERTY()
+	UMillicastRenderTargetCanvas* RenderTargetCanvas;
 
 	UPROPERTY()
 	UWorld* World = nullptr;

@@ -19,7 +19,8 @@ UMillicastPublisherSource::UMillicastPublisherSource(const FObjectInitializer& O
 	// Add default StreamUrl
 	StreamUrl = "https://director.millicast.com/api/director/publish";
 
-	RenderTargetCanvas.OnInitialized.AddUObject(this, &UMillicastPublisherSource::HandleRenderTargetCanvasInitialized);
+	RenderTargetCanvas = NewObject<UMillicastRenderTargetCanvas>(this, TEXT("RenderTargetCanvas"));
+	RenderTargetCanvas->OnInitialized.AddUObject(this, &UMillicastPublisherSource::HandleRenderTargetCanvasInitialized);
 }
 
 void UMillicastPublisherSource::Initialize(const FString& InPublishingToken, const FString& InStreamName, const FString& InSourceId,const FString& InStreamUrl)
@@ -216,13 +217,13 @@ void UMillicastPublisherSource::StartCapture(UWorld* InWorld, bool InSimulcast, 
 		//
 		if (VideoSource && RenderTarget)
 		{
-		        if (!Millicast::Publisher::IsEmpty(LayeredTextures) || bSupportCustomDrawCanvas)
-		        {
+			if (!Millicast::Publisher::IsEmpty(LayeredTextures) || bSupportCustomDrawCanvas)
+			{
 				TryInitRenderTargetCanvas();
 
 				auto* RenderTargetVideoSource = static_cast<Millicast::Publisher::RenderTargetCapturer*>(VideoSource.Get());
 				RenderTargetVideoSource->OnFrameRendered.AddUObject(this, &UMillicastPublisherSource::HandleFrameRendered);
-		        }
+			}
 		}
 		
 		// Starts the capture and notify observers
@@ -285,7 +286,7 @@ void UMillicastPublisherSource::StopCapture(bool bDestroyLayeredTexturesCanvas)
 
 	if (bDestroyLayeredTexturesCanvas)
 	{
-		RenderTargetCanvas.Reset();
+		RenderTargetCanvas->Reset();
 	}
 
 	World = nullptr;
@@ -293,19 +294,19 @@ void UMillicastPublisherSource::StopCapture(bool bDestroyLayeredTexturesCanvas)
 
 void UMillicastPublisherSource::HandleFrameRendered()
 {
-	if (!RenderTargetCanvas.IsInitialized())
+	if (!RenderTargetCanvas->IsReady())
 	{
 		return;
 	}
 
-	OnFrameRendered.Broadcast(RenderTargetCanvas.Get());
+	OnFrameRendered.Broadcast(RenderTargetCanvas->Get());
 
 	// Render Layered Textures
 	for (const auto& Texture : LayeredTextures)
 	{
 		// TODO [RW] Engine API mistake. Function param should be const UTexture*
 		const FVector2D CoordinatePosition;
-		RenderTargetCanvas.Get()->K2_DrawTexture(const_cast<UTexture*>(Texture.Texture), Texture.Position, Texture.Size, CoordinatePosition);
+		RenderTargetCanvas->Get()->K2_DrawTexture(const_cast<UTexture*>(Texture.Texture), Texture.Position, Texture.Size, CoordinatePosition);
 	}
 }
 
@@ -318,12 +319,12 @@ void UMillicastPublisherSource::HandleRenderTargetCanvasInitialized()
 
 void UMillicastPublisherSource::TryInitRenderTargetCanvas()
 {
-        if (Millicast::Publisher::IsEmpty(LayeredTextures) && !bSupportCustomDrawCanvas)
+	if (Millicast::Publisher::IsEmpty(LayeredTextures) && !bSupportCustomDrawCanvas)
 	{
 		return;
 	}
 
-	RenderTargetCanvas.Initialize(World, RenderTarget);
+	RenderTargetCanvas->Initialize(World, RenderTarget);
 }
 
 void UMillicastPublisherSource::ChangeRenderTarget(UTextureRenderTarget2D* InRenderTarget)

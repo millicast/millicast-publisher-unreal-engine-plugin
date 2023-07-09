@@ -5,17 +5,25 @@
 
 #include "MillicastRenderTargetCanvas.generated.h"
 
-USTRUCT()
-struct FMillicastRenderTargetCanvas
+enum class EMillicastRenderTargetCanvasState : uint8
+{
+	Uninitialized,
+	Initializing,
+	Ready
+};
+
+UCLASS()
+class UMillicastRenderTargetCanvas : public UObject
 {
 	GENERATED_BODY()
 
+public:
 	DECLARE_EVENT(RenderTargetCapturer, FMillicastOnRenderTargetCanvasInitialized)
 	FMillicastOnRenderTargetCanvasInitialized OnInitialized;
 	
 	UCanvas* Get() const { return Canvas; }
 
-	bool IsInitialized() const { return bInitialized; }
+	bool IsReady() const { return State == EMillicastRenderTargetCanvasState::Ready; }
 
 	void Initialize(UWorld* InWorld, UTextureRenderTarget2D* InRenderTarget);
 	void Reset();
@@ -30,7 +38,8 @@ private:
 	UPROPERTY()
 	UTextureRenderTarget2D* RenderTarget = nullptr;
 	
-	// TODO [RW] atomic enum with 3 stages for absolute state management would be best, but won't touch the bool now unless it becomes problematic
-	bool bInitialized = false;
+	EMillicastRenderTargetCanvasState State = EMillicastRenderTargetCanvasState::Uninitialized;
 	FDrawToRenderTargetContext CanvasCtx;
+
+	FCriticalSection CriticalSection;
 };
