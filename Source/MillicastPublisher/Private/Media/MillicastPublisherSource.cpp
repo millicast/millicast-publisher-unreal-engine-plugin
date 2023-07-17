@@ -19,8 +19,11 @@ UMillicastPublisherSource::UMillicastPublisherSource(const FObjectInitializer& O
 	// Add default StreamUrl
 	StreamUrl = "https://director.millicast.com/api/director/publish";
 
-	RenderTargetCanvas = NewObject<UMillicastRenderTargetCanvas>(this, TEXT("RenderTargetCanvas"));
-	RenderTargetCanvas->OnInitialized.AddUObject(this, &UMillicastPublisherSource::HandleRenderTargetCanvasInitialized);
+	if(!HasAnyFlags(RF_ClassDefaultObject))
+	{
+		RenderTargetCanvas = NewObject<UMillicastRenderTargetCanvas>(this, TEXT("RenderTargetCanvas"));
+		RenderTargetCanvas->OnInitialized.AddUObject(this, &UMillicastPublisherSource::HandleRenderTargetCanvasInitialized);
+	}
 }
 
 void UMillicastPublisherSource::Initialize(const FString& InPublishingToken, const FString& InStreamName, const FString& InSourceId,const FString& InStreamUrl)
