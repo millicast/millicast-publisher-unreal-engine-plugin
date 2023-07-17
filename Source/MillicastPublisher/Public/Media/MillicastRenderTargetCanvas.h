@@ -13,7 +13,7 @@ enum class EMillicastRenderTargetCanvasState : uint8
 };
 
 UCLASS()
-class UMillicastRenderTargetCanvas : public UObject
+class MILLICASTPUBLISHER_API UMillicastRenderTargetCanvas : public UObject
 {
 	GENERATED_BODY()
 
