@@ -779,8 +779,6 @@ void UMillicastPublisherComponent::EnableStats(bool Enable)
 	}
 }
 
-#if WITH_EDITOR
-
 void UMillicastPublisherComponent::EnableFrameTransformer(bool Enable)
 {
 	bUseFrameTransformer = Enable;
@@ -791,6 +789,7 @@ void UMillicastPublisherComponent::AddMetadata(const TArray<uint8>& Data)
 	Metadata->Append(Data);
 }
 
+#if WITH_EDITOR
 bool UMillicastPublisherComponent::CanEditChange(const FProperty* InProperty) const
 {
 	FString Name;
