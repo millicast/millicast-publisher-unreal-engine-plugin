@@ -3,7 +3,7 @@
 #pragma once
 
 #include "WebRTCInc.h"
-#include "VideoEncoderInput.h"
+#include "MillicastTypes.h"
 #include "RHI.h"
 #include "RHIGPUReadback.h"
 #include "Util.h"
