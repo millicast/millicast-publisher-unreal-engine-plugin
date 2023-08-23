@@ -102,18 +102,29 @@ namespace UnrealBuildTool.Rules
 						Path.Combine(EngineDir, "Source/Runtime/D3D12RHI/Private/Windows")
 					});
 
-				AddEngineThirdPartyPrivateStaticDependencies(Target, "DX12");
+#if UE_5_2_OR_LATER
+		        AddEngineThirdPartyPrivateStaticDependencies(Target, "DX11", "DX12");
+#else
+                AddEngineThirdPartyPrivateStaticDependencies(Target, "DX12");
 				PublicSystemLibraries.AddRange(new string[] {
 					"DXGI.lib",
 					"d3d11.lib",
-				});
+				})
+#endif
 
-				PrivateIncludePaths.Add(Path.Combine(EngineDir, "Source/Runtime/VulkanRHI/Private/Windows"));
+                ;
+
+                PrivateIncludePaths.Add(Path.Combine(EngineDir, "Source/Runtime/VulkanRHI/Private/Windows"));
 			}
 			else if (Target.IsInPlatformGroup(UnrealPlatformGroup.Linux))
 			{
 				PrivateIncludePaths.Add(Path.Combine(EngineDir, "Source/Runtime/VulkanRHI/Private/Linux"));
 			}
-		}
-	}
+
+#if UE_5_2_OR_LATER
+		    PublicDefinitions.Add("WEBRTC_VERSION=96");
+		    PublicDefinitions.Add("INTEL_EXTENSIONS=0");
+#endif
+        }
+    }
 }

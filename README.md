@@ -1,13 +1,13 @@
-# MillicastPublisher plugin 1.6.1 for Unreal Engine
+# MillicastPublisher plugin 1.6.2 for Unreal Engine
 
-* Supported on Windows and Linux
+* Supported on Windows, Linux and Mac
 
 This plugin enable to publish game audio and video content to Millicast.
 You can configure your credentials and configure your game logic using unreal object, capture and publish from virtual camera.
 
 ## Supported Unreal Engine
 
-The Unreal publisher supports Unreal engine 4.27, 5.0.3 and 5.1.
+The Unreal publisher supports Unreal engine 4.27, 5.0.3, 5.1 and 5.2.
 
 ## Support codec
 
