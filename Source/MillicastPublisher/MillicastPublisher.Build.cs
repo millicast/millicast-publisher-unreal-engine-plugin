@@ -73,12 +73,6 @@ namespace UnrealBuildTool.Rules
 					"Media",
 				});
 
-			PrivateIncludePaths.AddRange(
-				new string[] {
-					"MillicastPublisher/Private",
-					Path.Combine(Path.GetFullPath(Target.RelativeEnginePath), "Source/ThirdParty/WebRTC/4147/Include/third_party/libyuv/include"), // for libyuv headers
-				});
-
 			var EngineDir = Path.GetFullPath(Target.RelativeEnginePath);
 
 			AddEngineThirdPartyPrivateStaticDependencies(Target, "Vulkan");
@@ -104,12 +98,21 @@ namespace UnrealBuildTool.Rules
 
 #if UE_5_2_OR_LATER
 		        AddEngineThirdPartyPrivateStaticDependencies(Target, "DX11", "DX12");
+				PrivateIncludePaths.AddRange(new string[] {
+					"MillicastPublisher/Private",
+                    Path.Combine(Path.GetFullPath(Target.RelativeEnginePath), "Source/ThirdParty/WebRTC/4664/Include/third_party/libyuv/include"), // for libyuv headers
+				});
 #else
                 AddEngineThirdPartyPrivateStaticDependencies(Target, "DX12");
 				PublicSystemLibraries.AddRange(new string[] {
 					"DXGI.lib",
 					"d3d11.lib",
 				})
+
+                PrivateIncludePaths.AddRange(new string[] {
+					"MillicastPublisher/Private",
+                    Path.Combine(Path.GetFullPath(Target.RelativeEnginePath), "Source/ThirdParty/WebRTC/4147/Include/third_party/libyuv/include"), // for libyuv headers
+				});
 #endif
 
                 ;
