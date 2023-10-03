@@ -123,6 +123,7 @@ AudioDeviceCapturer::FStreamTrackInterface AudioDeviceCapturer::StartCapture(UWo
 	{
 #if PLATFORM_WINDOWS
 		TUniquePtr<WasapiDeviceCapturer> WasapiCapturer = MakeUnique<WasapiDeviceCapturer>(10, true);
+		WasapiCapturer->SetAudioDeviceById(DeviceInfo.DeviceId);
 
 		AudioCapture = MoveTemp(WasapiCapturer);
 #else
