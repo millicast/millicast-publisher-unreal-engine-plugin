@@ -135,23 +135,6 @@ namespace Millicast::Publisher
 
 	// -----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
-	struct DeviceDesc
-	{
-		DeviceDesc() = default;
-
-		std::wstring DeviceID;
-		std::wstring DeviceName;
-
-		REFERENCE_TIME DefaultDevicePeriod;
-		REFERENCE_TIME MinimumDevicePeriod;
-
-		WAVEFORMATEXTENSIBLE MixFormat;
-		EndpointFormFactor FormFactor;
-
-		bool isSystemDefault = false;
-		bool isCommunicationDefault = false;
-	};
-
 	class WasapiCore
 	{
 	public:
@@ -833,6 +816,11 @@ namespace Millicast::Publisher
 			capture_->ReleaseBuffer(numFramesAvailable);
 			capture_->GetNextPacketSize(&packetLength);
 		}
+	}
+
+	void WasapiDeviceCapturer::EnumerateDevice(std::vector<DeviceDesc>& deviceList)
+	{
+		sWcore.EnumerateDevices(sWcore.deviceEnumerator_, deviceList, eRender);
 	}
 
 	bool WasapiDeviceCapturer::ColdInit()

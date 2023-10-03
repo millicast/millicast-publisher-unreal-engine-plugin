@@ -63,7 +63,6 @@ enum class EAudioCapturerType : uint8
 {
 	Submix   UMETA(DisplayName = "Submix"),
 	Device   UMETA(DisplayName = "Device"),
-	Loopback UMETA(DisplayName = "Loopback (windows only)"),
 };
 
 /**

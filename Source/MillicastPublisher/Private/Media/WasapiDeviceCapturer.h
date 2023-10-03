@@ -23,6 +23,24 @@
 
 namespace Millicast::Publisher
 {
+
+	struct DeviceDesc
+	{
+		DeviceDesc() = default;
+
+		std::wstring DeviceID;
+		std::wstring DeviceName;
+
+		REFERENCE_TIME DefaultDevicePeriod;
+		REFERENCE_TIME MinimumDevicePeriod;
+
+		WAVEFORMATEXTENSIBLE MixFormat;
+		EndpointFormFactor FormFactor;
+
+		bool isSystemDefault = false;
+		bool isCommunicationDefault = false;
+	};
+
 	/** Class to capture audio from a windows system audio device */
 	class WasapiDeviceCapturer : public AudioCapturerBase
 	{
@@ -89,6 +107,8 @@ namespace Millicast::Publisher
 		void Finalize();
 
 		void OnTick();
+
+		void EnumerateDevice(std::vector<DeviceDesc>& deviceList);
 
 		bool IsInitialized() const { return device_ != nullptr && client_ != nullptr && format_ != nullptr /*&& frameQ_ != nullptr*/; }
 

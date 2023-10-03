@@ -21,12 +21,6 @@ IMillicastAudioSource* IMillicastAudioSource::Create(EAudioCapturerType Capturer
 	{
 	case EAudioCapturerType::Submix: return new AudioSubmixCapturer;
 	case EAudioCapturerType::Device: return new AudioDeviceCapturer;
-	case EAudioCapturerType::Loopback:
-#if PLATFORM_WINDOWS
-		return new WasapiDeviceCapturer(10, true);
-#else
-		return nullptr;
-#endif
 	}
 
 	return nullptr;

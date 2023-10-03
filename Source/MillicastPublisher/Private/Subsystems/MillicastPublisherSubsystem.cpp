@@ -10,10 +10,6 @@
 void UMillicastPublisherSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 {
 	rtc::InitializeSSL();
-
-#if PLATFORM_WINDOWS
-	Millicast::Publisher::WasapiDeviceCapturer::ColdInit();
-#endif
 	
 	Millicast::Publisher::RedirectWebRtcLogsToUnreal(rtc::LoggingSeverity::LS_VERBOSE);
 }
@@ -21,8 +17,4 @@ void UMillicastPublisherSubsystem::Initialize(FSubsystemCollectionBase& Collecti
 void UMillicastPublisherSubsystem::Deinitialize()
 {
 	rtc::CleanupSSL();
-
-#if PLATFORM_WINDOWS
-	Millicast::Publisher::WasapiDeviceCapturer::ColdExit();
-#endif
 }

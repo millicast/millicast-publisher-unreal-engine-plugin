@@ -4,6 +4,13 @@
 
 #include "MillicastAudioDeviceCaptureSubsystem.generated.h"
 
+UENUM(BlueprintType)
+enum class EAudioCaptureDirection : uint8
+{
+	Input    UMETA(DisplayName = "Input"),
+	Ouptut   UMETA(DisplayName = "Output"),
+};
+
 USTRUCT(BlueprintType)
 struct FAudioCaptureInfo
 {
@@ -15,10 +22,13 @@ struct FAudioCaptureInfo
 	UPROPERTY(BlueprintReadOnly, VisibleAnywhere, Category = "MillicastPublisher")
 	FString DeviceId;
 
+	UPROPERTY(BlueprintReadOnly, VisibleAnywhere, Category = "MillicastPublisher")
+	EAudioCaptureDirection Direction;
+
 	FAudioCaptureInfo() noexcept = default;
 
-	FAudioCaptureInfo(FString InDeviceName, FString InDeviceId) noexcept :
-		DeviceName(MoveTemp(InDeviceName)), DeviceId(MoveTemp(InDeviceId)) {}
+	FAudioCaptureInfo(FString InDeviceName, FString InDeviceId, EAudioCaptureDirection InDirection) noexcept 
+		: DeviceName(MoveTemp(InDeviceName)), DeviceId(MoveTemp(InDeviceId)), Direction(MoveTemp(InDirection)) {}
 };
 
 UCLASS()

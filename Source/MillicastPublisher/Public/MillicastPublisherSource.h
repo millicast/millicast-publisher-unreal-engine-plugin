@@ -91,10 +91,6 @@ public:
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = Audio)
 	USoundSubmix* Submix;
 
-	/** Capture device index  */
-	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = Audio)
-	int32 CaptureDeviceIndex; // UMETA(ArrayClamp = "CaptureDevicesName");
-
 	/** Apply a volume multiplier for the recorded data in dB */
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = Audio)
 	float VolumeMultiplier = 20.f;
@@ -174,4 +170,7 @@ private:
 	UWorld* World = nullptr;
 
 	bool Simulcast = false;
+
+	/** Capture device index  */
+	int32 CaptureDeviceIndex;
 };
