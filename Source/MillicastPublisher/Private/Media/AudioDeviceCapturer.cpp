@@ -33,8 +33,26 @@ AudioDeviceCapturer::FStreamTrackInterface InputCapturer::StartCapture(UWorld* I
 {
 	CreateRtcSourceTrack();
 
-	Audio::FOnCaptureFunction OnCapture = [this](const float* AudioData, int32 NumFrames, int32 InNumChannels, int32 SampleRate, double StreamTime, bool bOverFlow)
+#if ENGINE_MAJOR_VERSION >= 5 && ENGINE_MINOR_VERSION >= 3
+	using AudioCaptureFunction = Audio::FOnAudioCaptureFunction;
+
+	auto OpenAudioCaptureStream = [this](auto&& InParams, auto&& InOnCapture, auto&& NumFramesDesired)
 	{
+		return AudioCapture.OpenAudioCaptureStream(InParams, InOnCapture, NumFramesDesired);
+	};
+#else
+	using AudioCaptureFunction = Audio::FOnCaptureFunction;
+
+	auto OpenAudioCaptureStream = [this](auto&& InParams, auto&& InOnCapture, auto&& NumFramesDesired)
+	{
+		return AudioCapture.OpenCaptureStream(InParams, InOnCapture, NumFramesDesired);
+	};
+#endif
+
+	AudioCaptureFunction OnCapture = [this](const void* InAudioData, int32 NumFrames, int32 InNumChannels, int32 SampleRate, double StreamTime, bool bOverFlow)
+	{
+		auto AudioData = reinterpret_cast<const float*>(InAudioData);
+
 		if (SamplePerSecond != SampleRate)
 		{
 			return;
@@ -62,7 +80,7 @@ AudioDeviceCapturer::FStreamTrackInterface InputCapturer::StartCapture(UWorld* I
 	Params.DeviceIndex = DeviceIndex;
 
 	// Start the stream here to avoid hitching the audio render thread. 
-	if (AudioCapture.OpenCaptureStream(Params, MoveTemp(OnCapture), 1024))
+	if (OpenAudioCaptureStream(Params, MoveTemp(OnCapture), 1024))
 	{
 		UE_LOG(LogMillicastPublisher, Log, TEXT("Starting audio capture"));
 		AudioCapture.StartStream();

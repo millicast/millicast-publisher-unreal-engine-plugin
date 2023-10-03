@@ -43,7 +43,13 @@ void CopyTexture_DiffSize(FRHICommandListImmediate& RHICmdList, FTexture2DRHIRef
 			GraphicsPSOInit.BoundShaderState.PixelShaderRHI = PixelShader.GetPixelShader();
 
 			MillicastSetGraphicsPipelineState(RHICmdList, GraphicsPSOInit);
+
+#if ENGINE_MAJOR_VERSION >= 5 && ENGINE_MINOR_VERSION >= 3
+			FRHIBatchedShaderParameters Params;
+			PixelShader->SetParameters(Params, PixelSampler, SourceTexture);
+#else
 			PixelShader->SetParameters(RHICmdList, PixelSampler, SourceTexture);
+#endif
 		}
 		else
 		{
@@ -51,7 +57,12 @@ void CopyTexture_DiffSize(FRHICommandListImmediate& RHICmdList, FTexture2DRHIRef
 			GraphicsPSOInit.BoundShaderState.PixelShaderRHI = PixelShader.GetPixelShader();
 
 			MillicastSetGraphicsPipelineState(RHICmdList, GraphicsPSOInit);
+#if ENGINE_MAJOR_VERSION >= 5 && ENGINE_MINOR_VERSION >= 3
+			FRHIBatchedShaderParameters Params;
+			PixelShader->SetParameters(Params, PixelSampler, SourceTexture);
+#else
 			PixelShader->SetParameters(RHICmdList, PixelSampler, SourceTexture);
+#endif
 		}
 
 		auto* RendererModule = &FModuleManager::GetModuleChecked<IRendererModule>("Renderer");

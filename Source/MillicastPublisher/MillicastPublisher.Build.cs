@@ -107,15 +107,13 @@ namespace UnrealBuildTool.Rules
 				PublicSystemLibraries.AddRange(new string[] {
 					"DXGI.lib",
 					"d3d11.lib",
-				})
+				});
 
                 PrivateIncludePaths.AddRange(new string[] {
 					"MillicastPublisher/Private",
                     Path.Combine(Path.GetFullPath(Target.RelativeEnginePath), "Source/ThirdParty/WebRTC/4147/Include/third_party/libyuv/include"), // for libyuv headers
 				});
 #endif
-
-                ;
 
                 PrivateIncludePaths.Add(Path.Combine(EngineDir, "Source/Runtime/VulkanRHI/Private/Windows"));
 			}
@@ -127,6 +125,10 @@ namespace UnrealBuildTool.Rules
 #if UE_5_2_OR_LATER
 		    PublicDefinitions.Add("WEBRTC_VERSION=96");
 		    PublicDefinitions.Add("INTEL_EXTENSIONS=0");
+#endif
+
+#if UE_5_3_OR_LATER
+            PublicDefinitions.Add("WITH_NVAPI=0");
 #endif
         }
     }
