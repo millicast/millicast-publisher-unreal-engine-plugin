@@ -4,9 +4,32 @@
 #include "common_audio/include/audio_util.h"
 #include "MillicastPublisherPrivate.h"
 
+#if PLATFORM_WINDOWS
+#include "WasapiDeviceCapturer.h"
+#endif
+
 namespace Millicast::Publisher
 {
-AudioDeviceCapturer::FStreamTrackInterface AudioDeviceCapturer::StartCapture(UWorld* InWorld)
+
+/** Class to capture audio from a system audio device */
+
+class InputCapturer : public AudioCapturerBase
+{
+	int32                     DeviceIndex;
+	Audio::FAudioCapture      AudioCapture;
+
+	float VolumeMultiplier = 0.0f; // dB
+
+public:
+	FStreamTrackInterface StartCapture(UWorld* InWorld) override;
+	void StopCapture() override;
+
+	void SetAudioCaptureDevice(int32 InDeviceIndex);
+
+	void SetVolumeMultiplier(float f) noexcept { VolumeMultiplier = f; }
+};
+
+AudioDeviceCapturer::FStreamTrackInterface InputCapturer::StartCapture(UWorld* InWorld)
 {
 	CreateRtcSourceTrack();
 
@@ -52,7 +75,7 @@ AudioDeviceCapturer::FStreamTrackInterface AudioDeviceCapturer::StartCapture(UWo
 	return RtcAudioTrack;
 }
 
-void AudioDeviceCapturer::StopCapture()
+void InputCapturer::StopCapture()
 {
 	if (RtcAudioTrack)
 	{
@@ -61,9 +84,63 @@ void AudioDeviceCapturer::StopCapture()
 	}
 }
 
-void AudioDeviceCapturer::SetAudioCaptureDevice(int32 InDeviceIndex)
+void InputCapturer::SetAudioCaptureDevice(int32 InDeviceIndex)
 {
 	DeviceIndex = InDeviceIndex;
+}
+
+/** Class to capture audio from a system audio device */
+
+AudioDeviceCapturer::FStreamTrackInterface AudioDeviceCapturer::StartCapture(UWorld* InWorld)
+{
+	if (DeviceInfo.Direction == EAudioCaptureDirection::Input)
+	{
+		TUniquePtr<InputCapturer> CapturerImpl = MakeUnique<InputCapturer>();
+		CapturerImpl->SetVolumeMultiplier(VolumeMultiplier);
+
+		auto* Subsystem = GEngine->GetEngineSubsystem<UMillicastAudioDeviceCaptureSubsystem>();
+
+		if (!Subsystem)
+		{
+			UE_LOG(LogMillicastPublisher, Warning, TEXT("[UMillicastPublisherSource::SetAudioDeviceById] UMillicastAudioDeviceCaptureSubsystem not found"));
+			return nullptr;
+		}
+
+		const auto Index = Subsystem->Devices.IndexOfByPredicate([this](const auto& e) { 
+			return DeviceInfo.DeviceId == e.DeviceId; 
+			});
+
+		if (Index == INDEX_NONE)
+		{
+			UE_LOG(LogMillicastPublisher, Warning, TEXT("[UMillicastPublisherSource::SetAudioDeviceById] Device not found: %s %s"), *DeviceInfo.DeviceName, *DeviceInfo.DeviceId);
+			return nullptr;
+		}
+
+		CapturerImpl->SetAudioCaptureDevice(Index);
+		AudioCapture = MoveTemp(CapturerImpl);
+	}
+	else
+	{
+#if PLATFORM_WINDOWS
+		TUniquePtr<WasapiDeviceCapturer> WasapiCapturer = MakeUnique<WasapiDeviceCapturer>(10, true);
+
+		AudioCapture = MoveTemp(WasapiCapturer);
+#else
+		return nullptr;
+#endif
+	}
+
+	return AudioCapture->StartCapture(InWorld);
+}
+void AudioDeviceCapturer::StopCapture()
+{
+	AudioCapture->StopCapture();
+	AudioCapture = nullptr;
+}
+
+void AudioDeviceCapturer::SetAudioCaptureDevice(const FAudioCaptureInfo& InDeviceIndex)
+{
+	DeviceInfo = InDeviceIndex;
 }
 
 }

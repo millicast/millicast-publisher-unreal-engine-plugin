@@ -101,6 +101,7 @@ namespace Millicast::Publisher
 		void StopCapture() override;
 
 		bool Initialize(size_t tickRate, bool loopback);
+		bool HotInit();
 		bool IsInterleaved() const { return interleaved_; }
 		bool IsExclusive() const { return exclusive_; }
 		bool IsReleased() const { return released_; }
@@ -109,6 +110,7 @@ namespace Millicast::Publisher
 		void OnTick();
 
 		void EnumerateDevice(std::vector<DeviceDesc>& deviceList);
+		void SetAudioDeviceById(FStringView Id);
 
 		bool IsInitialized() const { return device_ != nullptr && client_ != nullptr && format_ != nullptr /*&& frameQ_ != nullptr*/; }
 

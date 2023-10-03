@@ -554,6 +554,12 @@ namespace Millicast::Publisher
 			return false;
 		}
 
+		return HotInit();
+	}
+
+	bool WasapiDeviceCapturer::HotInit()
+	{
+		HRESULT hr;
 		// Obtain endpoint's IAudioClient interface
 		if (FAILED(hr = device_->Activate(IID_IAudioClient, CLSCTX_ALL, nullptr, (void**)&client_)))
 		{
@@ -586,7 +592,7 @@ namespace Millicast::Publisher
 			devBitsPerSample_ = kSampleBitsFloat;
 		}
 
-		size_t frameLenPerChan = nextPow2(static_cast<size_t>(format_->nSamplesPerSec / float(tickRate)));
+		size_t frameLenPerChan = nextPow2(static_cast<size_t>(format_->nSamplesPerSec / float(tickRate_)));
 		REFERENCE_TIME hnsRequestedDuration = (REFERENCE_TIME)REFTIMES_PER_SEC * frameLenPerChan / format_->nSamplesPerSec;
 
 		// allocate the audio endpoint buffer
@@ -821,6 +827,20 @@ namespace Millicast::Publisher
 	void WasapiDeviceCapturer::EnumerateDevice(std::vector<DeviceDesc>& deviceList)
 	{
 		sWcore.EnumerateDevices(sWcore.deviceEnumerator_, deviceList, eRender);
+	}
+
+	void WasapiDeviceCapturer::SetAudioDeviceById(FStringView Id)
+	{
+		SAFE_RELEASE(device_);
+
+		HRESULT hr;
+		if (FAILED(hr = sWcore.deviceEnumerator_->GetDevice(Id.GetData(), &device_)))
+		{
+			UE_LOG(LogMillicastPublisher, Error, TEXT("AudioDriver::Initialize: Couldn't get default endpoint! (%s)"), getError(hr));
+			return;
+		}
+
+		HotInit();
 	}
 
 	bool WasapiDeviceCapturer::ColdInit()

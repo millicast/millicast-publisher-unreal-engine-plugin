@@ -246,7 +246,10 @@ void UMillicastPublisherSource::StartCapture(UWorld* InWorld, bool InSimulcast, 
 		if (AudioCaptureType == EAudioCapturerType::Device)
 		{
 			auto Source = static_cast<AudioDeviceCapturer*>(AudioSource.Get());
-			Source->SetAudioCaptureDevice(CaptureDeviceIndex);
+
+			auto* Subsystem = GEngine->GetEngineSubsystem<UMillicastAudioDeviceCaptureSubsystem>();
+
+			Source->SetAudioCaptureDevice(Subsystem->Devices[CaptureDeviceIndex]);
 			Source->SetVolumeMultiplier(VolumeMultiplier);
 		}
 		else if (AudioCaptureType == EAudioCapturerType::Submix)
