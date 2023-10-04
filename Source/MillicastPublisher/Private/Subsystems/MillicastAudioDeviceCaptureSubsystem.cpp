@@ -8,18 +8,10 @@
 
 void UMillicastAudioDeviceCaptureSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 {
-#if PLATFORM_WINDOWS
-	Millicast::Publisher::WasapiDeviceCapturer::ColdInit();
-#endif
-
-	Refresh();
 }
 
 void UMillicastAudioDeviceCaptureSubsystem::Deinitialize()
 {
-#if PLATFORM_WINDOWS
-	Millicast::Publisher::WasapiDeviceCapturer::ColdExit();
-#endif	
 }
 
 void UMillicastAudioDeviceCaptureSubsystem::Refresh()
