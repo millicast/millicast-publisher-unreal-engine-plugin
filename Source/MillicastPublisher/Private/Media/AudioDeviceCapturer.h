@@ -22,6 +22,8 @@ namespace Millicast::Publisher
 		FStreamTrackInterface StartCapture(UWorld* InWorld) override;
 		void StopCapture() override;
 
+		IMillicastSource::FStreamTrackInterface GetTrack() override;
+
 		void SetAudioCaptureDevice(const FAudioCaptureInfo& InDeviceIndex);
 
 		void SetVolumeMultiplier(float f) noexcept { VolumeMultiplier = f; }

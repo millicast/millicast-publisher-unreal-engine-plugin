@@ -223,7 +223,16 @@ int FSimulcastVideoEncoder::Encode(const webrtc::VideoFrame& input_image, const 
 		}
 	}
 
+	if (input_image.video_frame_buffer()->GetI420())
+	{
+		return WEBRTC_VIDEO_CODEC_OK;
+	}
+
 	auto* FrameBuffer = static_cast<FSimulcastFrameBuffer*>(input_image.video_frame_buffer().get());
+	if (!FrameBuffer)
+	{
+		return WEBRTC_VIDEO_CODEC_ENCODER_FAILURE;
+	}
 
 	for (size_t StreamIdx = 0; StreamIdx < StreamInfos.size(); ++StreamIdx)
 	{
@@ -237,6 +246,12 @@ int FSimulcastVideoEncoder::Encode(const webrtc::VideoFrame& input_image, const 
 		webrtc::VideoFrame NewFrame(input_image);
 		const int LayerIndex = StreamInfos.size() == 1 ? 0 : StreamIdx;
 		rtc::scoped_refptr<FFrameBufferRHI> LayerFrameBuffer = FrameBuffer->GetLayer(LayerIndex);
+
+		if (!LayerFrameBuffer)
+		{
+			return WEBRTC_VIDEO_CODEC_ENCODER_FAILURE;
+		}
+
 		NewFrame.set_video_frame_buffer(LayerFrameBuffer);
 
 #if WEBRTC_VERSION == 84

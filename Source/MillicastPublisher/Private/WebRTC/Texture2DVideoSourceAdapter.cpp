@@ -19,7 +19,7 @@ void FTexture2DVideoSourceAdapter::OnFrameReady(const FTexture2DRHIRef& FrameBuf
 
 	TryInitializeCaptureContexts(FrameBuffer);
 
-	const auto& SimulcastBuffer = rtc::make_ref_counted<FSimulcastFrameBuffer>();
+	auto SimulcastBuffer = rtc::make_ref_counted<FSimulcastFrameBuffer>();
 
 	TArray<FVideoEncoderInputFrameType> InputFrames;
 	InputFrames.Reserve( CaptureContexts.Num() );

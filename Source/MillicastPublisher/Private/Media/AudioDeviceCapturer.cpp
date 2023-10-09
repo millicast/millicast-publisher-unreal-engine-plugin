@@ -149,12 +149,17 @@ AudioDeviceCapturer::FStreamTrackInterface AudioDeviceCapturer::StartCapture(UWo
 #endif
 	}
 
-	return AudioCapture->StartCapture(InWorld);
+	return AudioCapture->StartCapture(InWorld);;
 }
 void AudioDeviceCapturer::StopCapture()
 {
 	AudioCapture->StopCapture();
 	AudioCapture = nullptr;
+}
+
+IMillicastSource::FStreamTrackInterface AudioDeviceCapturer::GetTrack()
+{
+	return AudioCapture->GetTrack();
 }
 
 void AudioDeviceCapturer::SetAudioCaptureDevice(const FAudioCaptureInfo& InDeviceIndex)

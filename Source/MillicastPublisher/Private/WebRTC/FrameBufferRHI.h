@@ -168,17 +168,20 @@ namespace Millicast::Publisher
 	public:
 		void AddLayer(rtc::scoped_refptr<FFrameBufferRHI> Layer)
 		{
+			FScopeLock Lock(&CriticalSection);
 			FrameBuffers.Add(Layer);
 		}
 
 		int32 GetNumLayers() const
 		{
+			FScopeLock Lock(&CriticalSection);
 			return FrameBuffers.Num();
 		}
 
 		rtc::scoped_refptr<FFrameBufferRHI> GetLayer(int Id) 
 		{
-			return FrameBuffers[Id];
+			FScopeLock Lock(&CriticalSection);
+			return ((Id < FrameBuffers.Num()) ? FrameBuffers[Id] : nullptr);
 		}
 
 		Type type() const override
@@ -188,7 +191,9 @@ namespace Millicast::Publisher
 
 		int width() const override
 		{
-      		        if( IsEmpty(FrameBuffers) )
+			FScopeLock Lock(&CriticalSection);
+
+      		if( IsEmpty(FrameBuffers) )
 			{
 				return 0;
 			}
@@ -198,7 +203,8 @@ namespace Millicast::Publisher
 
 		int height() const override
 		{
-		        if( IsEmpty(FrameBuffers) )
+			FScopeLock Lock(&CriticalSection);
+		    if( IsEmpty(FrameBuffers) )
 			{
 				return 0;
 			}
@@ -218,5 +224,6 @@ namespace Millicast::Publisher
 
 	private:
 		TArray<rtc::scoped_refptr<FFrameBufferRHI>> FrameBuffers;
+		mutable FCriticalSection CriticalSection;
 	};
 }
