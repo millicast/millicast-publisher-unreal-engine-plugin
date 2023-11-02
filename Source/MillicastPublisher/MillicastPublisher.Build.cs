@@ -109,7 +109,12 @@ namespace UnrealBuildTool.Rules
 					"d3d11.lib",
 				});
 
-                PrivateIncludePaths.AddRange(new string[] {
+				PublicIncludePaths.AddRange(
+				new string[] {
+					Path.Combine(ModuleDirectory, "Private")
+				});
+
+				PrivateIncludePaths.AddRange(new string[] {
 					"MillicastPublisher/Private",
                     Path.Combine(Path.GetFullPath(Target.RelativeEnginePath), "Source/ThirdParty/WebRTC/4147/Include/third_party/libyuv/include"), // for libyuv headers
 				});
