@@ -50,6 +50,9 @@ THIRD_PARTY_INCLUDES_START
 #include "modules/video_coding/codecs/vp8/include/vp8.h"
 #include "modules/video_coding/codecs/vp9/include/vp9.h"
 #include "modules/video_capture/video_capture.h"
+#include "modules/desktop_capture/desktop_capturer.h"
+#include <modules/desktop_capture/desktop_frame.h>
+#include <modules/desktop_capture/desktop_capture_options.h>
 
 #include "pc/session_description.h"
 #include "pc/video_track_source.h"
