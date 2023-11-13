@@ -1,4 +1,4 @@
-// Copyright Millicast 2022. All Rights Reserved.
+// Copyright Dolby.io 2023. All Rights Reserved.
 
 #pragma once
 

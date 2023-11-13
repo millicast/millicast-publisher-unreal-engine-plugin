@@ -1,3 +1,5 @@
+// Copyright Dolby.io 2023. All Rights Reserved.
+
 #include "SlateWindowVideoCapturer.h"
 
 #include "MillicastPublisherPrivate.h"

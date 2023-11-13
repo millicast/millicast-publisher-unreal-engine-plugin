@@ -1,3 +1,5 @@
+// Copyright Dolby.io 2023. All Rights Reserved.
+
 #include "MillicastCameraActor.h"
 
 #include "Components/MillicastViewportCapturerComponent.h"

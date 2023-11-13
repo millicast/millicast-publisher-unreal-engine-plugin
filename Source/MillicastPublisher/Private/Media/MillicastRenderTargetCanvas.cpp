@@ -1,3 +1,5 @@
+// Copyright Dolby.io 2023. All Rights Reserved.
+
 #include "Media/MillicastRenderTargetCanvas.h"
 
 void UMillicastRenderTargetCanvas::Initialize(UWorld* InWorld, UTextureRenderTarget2D* InRenderTarget)
