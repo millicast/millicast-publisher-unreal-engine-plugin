@@ -6,7 +6,7 @@
 #include "RtcCodecsConstants.h"
 
 #include "Components/ActorComponent.h"
-#include "WebRTC/PeerConnection.h"
+// #include "WebRTC/PeerConnection.h"
 
 #include "MillicastPublisherComponent.generated.h"
 
@@ -18,6 +18,12 @@ class IHttpResponse;
 namespace webrtc
 {
 	struct RtpTransceiverInit;
+}
+
+namespace Millicast::Publisher
+{
+	class FWebRTCPeerConnection;
+	class FWebRTCPeerConnectionConfig;
 }
 
 enum class EMillicastPublisherState : uint8
@@ -257,7 +263,7 @@ private:
 
 	/** WebRTC */
 	TUniquePtr<Millicast::Publisher::FWebRTCPeerConnection> PeerConnection;
-	webrtc::PeerConnectionInterface::RTCConfiguration PeerConnectionConfig;
+	TUniquePtr<Millicast::Publisher::FWebRTCPeerConnectionConfig> PeerConnectionConfig;
 
 	/** Publisher */
 	TAtomic<EMillicastPublisherState> State = EMillicastPublisherState::Disconnected;

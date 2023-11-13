@@ -59,7 +59,10 @@ UMillicastPublisherComponent::UMillicastPublisherComponent(const FObjectInitiali
 	EventBroadcaster.Emplace("inactive", [this](TSharedPtr<FJsonObject> Msg) { ParseInactiveEvent(Msg); });
 	EventBroadcaster.Emplace("viewercount", [this](TSharedPtr<FJsonObject> Msg) { ParseViewerCountEvent(Msg); });
 
-	PeerConnectionConfig = Millicast::Publisher::FWebRTCPeerConnection::GetDefaultConfig();
+
+	PeerConnectionConfig = 
+		MakeUnique<Millicast::Publisher::FWebRTCPeerConnectionConfig>(
+			Millicast::Publisher::FWebRTCPeerConnection::GetDefaultConfig());
 
 	MaximumBitrate = 4'000'000;
 	StartingBitrate = 2'000'000;
@@ -94,7 +97,7 @@ void UMillicastPublisherComponent::SetupIceServersFromJson(TArray<TSharedPtr<FJs
 {
 	using namespace Millicast::Publisher;
 
-	PeerConnectionConfig.servers.clear();
+	(*PeerConnectionConfig)->servers.clear();
 	for (const auto& Server : IceServersField)
 	{
 		// Grab Ice Server Details
@@ -137,7 +140,7 @@ void UMillicastPublisherComponent::SetupIceServersFromJson(TArray<TSharedPtr<FJs
 			}
 		}
 
-		PeerConnectionConfig.servers.push_back(IceServer);
+		(*PeerConnectionConfig)->servers.push_back(IceServer);
 	}
 }
 
@@ -372,7 +375,7 @@ bool UMillicastPublisherComponent::PublishToMillicast()
 
 	using namespace Millicast::Publisher;
 
-	PeerConnection.Reset(FWebRTCPeerConnection::Create(PeerConnectionConfig));
+	PeerConnection.Reset(FWebRTCPeerConnection::Create(*(*PeerConnectionConfig)));
 
 	// Starts the capture first and add track to the peerconnection
 	// TODO: add a boolean to let choose autoplay or not

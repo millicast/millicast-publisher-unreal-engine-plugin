@@ -17,6 +17,25 @@ class TaskQueueFactory;
 
 namespace Millicast::Publisher
 {
+	class FWebRTCPeerConnectionConfig
+	{
+	public:
+		webrtc::PeerConnectionInterface::RTCConfiguration Config;
+
+		explicit FWebRTCPeerConnectionConfig(const webrtc::PeerConnectionInterface::RTCConfiguration& Other)
+			: Config(Other) {}
+
+		webrtc::PeerConnectionInterface::RTCConfiguration* operator->()
+		{
+			return &Config;
+		}
+
+		webrtc::PeerConnectionInterface::RTCConfiguration& operator*()
+		{
+			return Config;
+		}
+	};
+
 	/*
 	 * Small wrapper for the WebRTC peerconnection
 	 */
