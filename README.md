@@ -1,4 +1,4 @@
-# MillicastPublisher plugin 1.6.2 for Unreal Engine
+# MillicastPublisher plugin 1.7.0 for Unreal Engine
 
 * Supported on Windows, Linux and Mac
 
@@ -7,7 +7,7 @@ You can configure your credentials and configure your game logic using unreal ob
 
 ## Supported Unreal Engine
 
-The Unreal publisher supports Unreal engine 4.27, 5.0.3, 5.1 and 5.2.
+The Unreal publisher supports Unreal engine 4.27, 5.0.3, 5.1, 5.2, 5.3
 
 ## Support codec
 
