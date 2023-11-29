@@ -3,8 +3,9 @@
 #pragma once
 
 #include "WebRTCInc.h"
+#if !defined(PLATFORM_ANDROID) && !defined(PLATFORM_IOS)
 #include "AVEncoderContext.h"
-
+#endif
 /** Video Source adapter to create webrtc video frame from a Texture 2D and push it into webrtc pipelines */
 namespace Millicast::Publisher
 {
@@ -25,8 +26,10 @@ namespace Millicast::Publisher
 	private:
 		bool AdaptVideoFrame(int64 TimestampUs, FIntPoint Resolution);
 		void TryInitializeCaptureContexts(const FTexture2DRHIRef& FrameBuffer);
-		
+#if !defined(PLATFORM_ANDROID) && !defined(PLATFORM_IOS)
+
 		TArray<TUniquePtr<FAVEncoderContext>> CaptureContexts;
+#endif
 		bool Simulcast = false;
 	};
 }

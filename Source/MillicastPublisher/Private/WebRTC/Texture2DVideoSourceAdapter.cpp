@@ -16,7 +16,7 @@ void FTexture2DVideoSourceAdapter::OnFrameReady(const FTexture2DRHIRef& FrameBuf
 
 	if (!AdaptVideoFrame(Timestamp, FrameBuffer->GetSizeXY()))
 		return;
-
+#if !defined(PLATFORM_ANDROID) && !defined(PLATFORM_IOS)
 	TryInitializeCaptureContexts(FrameBuffer);
 
 	auto SimulcastBuffer = rtc::make_ref_counted<FSimulcastFrameBuffer>();
@@ -62,7 +62,34 @@ void FTexture2DVideoSourceAdapter::OnFrameReady(const FTexture2DRHIRef& FrameBuf
 	}
 
 	FPublisherStats::Get().FrameRendered();
+#else
+#if ENGINE_MAJOR_VERSION < 5 || ENGINE_MINOR_VERSION == 0
+	FRHIResourceCreateInfo CreateInfo(TEXT("VideoCapturerBackBuffer"));
+	FTexture2DRHIRef Texture = GDynamicRHI->RHICreateTexture2D(CaptureWidth, CaptureHeight, EPixelFormat::PF_B8G8R8A8, 1, 1, TexCreate_Shared | TexCreate_RenderTargetable, ERHIAccess::CopyDest, CreateInfo);
+#else
+
+	FRHITextureCreateDesc CreateDesc = FRHITextureCreateDesc::Create2D(TEXT("VideoCapturerBackBuffer"),
+		FrameBuffer->GetTexture2D()->GetSizeX(), FrameBuffer->GetTexture2D()->GetSizeY(), EPixelFormat::PF_B8G8R8A8);
+	CreateDesc.SetFlags(TexCreate_Shared | TexCreate_RenderTargetable);
+	CreateDesc.SetInitialState(ERHIAccess::CopyDest);
+
+	FTexture2DRHIRef Texture = GDynamicRHI->RHICreateTexture(CreateDesc);
+#endif
+	auto SimulcastBuffer = rtc::make_ref_counted<FSimulcastFrameBuffer>();
+
+	FRHICommandListImmediate& RHICmdList = FRHICommandListExecutor::GetImmediateCommandList();
+	CopyTexture(RHICmdList, FrameBuffer, Texture);
+	const auto& Buffer = rtc::make_ref_counted<FFrameBufferRHI>(Texture, nullptr, nullptr);
+	webrtc::VideoFrame Frame = webrtc::VideoFrame::Builder()
+		.set_video_frame_buffer(SimulcastBuffer)
+		.set_timestamp_us(Timestamp)
+		.set_rotation(webrtc::VideoRotation::kVideoRotation_0)
+		.build();
+	FPublisherStats::Get().FrameRendered();
+	rtc::AdaptedVideoTrackSource::OnFrame(Frame);
+#endif
 }
+#if !defined(PLATFORM_ANDROID) && !defined(PLATFORM_IOS)
 
 void FTexture2DVideoSourceAdapter::TryInitializeCaptureContexts(const FTexture2DRHIRef& FrameBuffer)
 {
@@ -80,7 +107,7 @@ void FTexture2DVideoSourceAdapter::TryInitializeCaptureContexts(const FTexture2D
 		CaptureContexts.Add(MakeUnique<FAVEncoderContext>(FBSize.X / 4, FBSize.Y / 4, true));
 	}
 }
-
+#endif
 bool FTexture2DVideoSourceAdapter::AdaptVideoFrame(int64 TimestampUs, FIntPoint Resolution)
 {
 	int out_width, out_height, crop_width, crop_height, crop_x, crop_y;
