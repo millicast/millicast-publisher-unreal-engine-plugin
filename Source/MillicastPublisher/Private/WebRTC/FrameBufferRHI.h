@@ -28,16 +28,44 @@ namespace libyuv
 
 namespace Millicast::Publisher
 {
+
+	class FDummyFrameInput
+	{
+	public:
+		void Obtain()const {}
+		void Release()const {}
+		int GetWidth()const { return 1000; }
+		int GetHeight()const { return 1000; }
+		
+	};
+#if PLATFORM_ANDROID || PLATFORM_IOS
+
+	namespace AVEncoder
+	{
+		using FVideoEncoderInput = nullptr_t;
+		using FVideoEncoderFrameInput = TSharedPtr<FDummyFrameInput>;
+
+	}
+#endif
 	class FFrameBufferRHI : public webrtc::VideoFrameBuffer
 	{
 	public:
 		FFrameBufferRHI(FTexture2DRHIRef SourceTexture,
+#if !PLATFORM_ANDROID && !PLATFORM_IOS
 			FVideoEncoderInputFrameType InputFrame,
 			TSharedPtr<AVEncoder::FVideoEncoderInput> InputVideoEncoderInput)
+#else
+			AVEncoder::FVideoEncoderFrameInput InputFrame,
+			AVEncoder::FVideoEncoderInput InputVideoEncoderInput)
+#endif
 			: TextureRef(SourceTexture)
 			, Frame(InputFrame)
 			, VideoEncoderInput(InputVideoEncoderInput)
 		{
+#if PLATFORM_ANDROID || PLATFORM_IOS
+			Frame = MakeShared<FDummyFrameInput>();
+#endif
+
 			Frame->Obtain();
 
 			//FPublisherStats::Get().TextureReadbackStart();
@@ -65,11 +93,19 @@ namespace Millicast::Publisher
 
 		int width() const override
 		{
+#if !PLATFORM_ANDROID && !PLATFORM_IOS
+			return TextureRef->GetTexture2D()->GetSizeX();
+#endif
 			return Frame->GetWidth();
+
 		}
 
 		int height() const override
 		{
+#if !PLATFORM_ANDROID && !PLATFORM_IOS
+			return TextureRef->GetTexture2D()->GetSizeY();
+
+#endif 
 			return Frame->GetHeight();
 		}
 
@@ -96,10 +132,8 @@ namespace Millicast::Publisher
 						Buffer->height());
 				}
 			}
-
 			return Buffer;
 		}
-
 
 		virtual const webrtc::I420BufferInterface* GetI420() const override
 		{
@@ -112,11 +146,17 @@ namespace Millicast::Publisher
 			return TextureRef;
 		}
 
+#if !PLATFORM_ANDROID && !PLATFORM_IOS
 		FVideoEncoderInputFrameType GetFrame() const
 		{
 			return Frame;
 		}
-
+#else
+		AVEncoder::FVideoEncoderFrameInput GetFrame() const
+		{
+			return Frame;
+		}
+#endif
 		TSharedPtr<AVEncoder::FVideoEncoderInput> GetVideoEncoderInput() const
 		{
 			return VideoEncoderInput;
@@ -124,8 +164,17 @@ namespace Millicast::Publisher
 
 	private:
 		FTexture2DRHIRef TextureRef;
+
+#if !PLATFORM_ANDROID && !PLATFORM_IOS
 		FVideoEncoderInputFrameType Frame;
 		TSharedPtr<AVEncoder::FVideoEncoderInput> VideoEncoderInput;
+
+#else
+		AVEncoder::FVideoEncoderFrameInput Frame;
+		AVEncoder::FVideoEncoderInput VideoEncoderInput;
+
+#endif
+
 		rtc::scoped_refptr<webrtc::I420Buffer> Buffer = nullptr;
 		TUniquePtr<FRHIGPUTextureReadback> Readback;
 		void* TextureData = nullptr;

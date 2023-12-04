@@ -1,5 +1,5 @@
 // Copyright Dolby.io 2023. All Rights Reserved.
-#if !defined(WEBRTC_ANDROID) && !defined(WEBRTC_IOS)
+#if !PLATFORM_ANDROID && !PLATFORM_IOS
 
 #include "VideoEncoderNVENC.h"
 #include "FrameBufferRHI.h"

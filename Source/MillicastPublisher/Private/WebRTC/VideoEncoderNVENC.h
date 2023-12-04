@@ -2,6 +2,8 @@
 
 #pragma once
 
+
+#if !PLATFORM_ANDROID && !PLATFORM_IOS
 #include "VideoEncoder.h"
 
 namespace Millicast::Publisher
@@ -45,3 +47,4 @@ namespace Millicast::Publisher
 		TOptional<RateControlParameters> PendingRateChange;
 	};
 }
+#endif

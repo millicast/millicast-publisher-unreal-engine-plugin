@@ -18,7 +18,7 @@
 namespace Millicast::Publisher
 {
 //#if ENGINE_MAJOR_VERSION < 5 || ENGINE_MINOR_VERSION == 0
-#if !defined(PLATFORM_ANDROID) && !defined(PLATFORM_IOS)
+#if !PLATFORM_ANDROID && !PLATFORM_IOS
 #if WEBRTC_VERSION < 96
 #define H264_Level webrtc::H264::Level
 #define H264_Profile webrtc::H264::Profile
@@ -90,7 +90,7 @@ std::unique_ptr<webrtc::VideoEncoder> FMillicastVideoEncoderFactory::CreateVideo
 		return std::make_unique<Millicast::Publisher::FVideoEncoderVPX>(9);
 	}
 
-#if !defined(PLATFORM_ANDROID) && !defined(PLATFORM_IOS)
+#if !PLATFORM_ANDROID && !PLATFORM_IOS
 	if (absl::EqualsIgnoreCase(format.name, cricket::kH264CodecName))
 	{
 		return std::make_unique<Millicast::Publisher::FVideoEncoderNVENC>();

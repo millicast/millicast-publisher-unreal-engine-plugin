@@ -3,7 +3,9 @@
 #include "PeerConnection.h"
 #include "MillicastPublisherPrivate.h"
 #include "AudioDeviceModule.h"
+#if !PLATFORM_ANDROID && !PLATFORM_IOS
 #include "VideoEncoderFactory.h"
+#endif
 #include "MillicastVideoEncoderFactory.h"
 #include "SimulcastEncoderFactory.h"
 
@@ -128,7 +130,7 @@ FWebRTCPeerConnection* FWebRTCPeerConnection::Create(const FRTCConfig& Config)
 	auto result = PeerConnectionFactory->CreatePeerConnectionOrError(Config, std::move(deps));
 	if (!result.ok())
 	{
-		UE_LOG(LogMillicastPublisher, Error, TEXT("Could not create peerconnection : %s"), result.error().message());
+		UE_LOG(LogMillicastPublisher, Error, TEXT("Could not create peerconnection : %S"), result.error().message());
 		PeerConnectionInstance->PeerConnection = nullptr;
 		return nullptr;
 	}

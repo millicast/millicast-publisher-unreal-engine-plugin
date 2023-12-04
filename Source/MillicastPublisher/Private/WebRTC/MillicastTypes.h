@@ -1,9 +1,9 @@
 // Copyright Dolby.io 2023. All Rights Reserved.
 
 #pragma once
-
+#if !PLATFORM_ANDROID && !PLATFORM_IOS
 #include "VideoEncoderInput.h"
-
+#endif
 #if ENGINE_MAJOR_VERSION < 5 || ENGINE_MINOR_VERSION == 0
 #define FVideoEncoderInputFrameType AVEncoder::FVideoEncoderInputFrame*
 #define InputFrameRef InputFrame

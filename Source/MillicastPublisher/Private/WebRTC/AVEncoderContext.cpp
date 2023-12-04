@@ -1,6 +1,6 @@
 // Copyright Dolby.io 2023. All Rights Reserved.
 
-#if !defined(PLATFORM_ANDROID) && !defined(PLATFORM_IOS)
+#if !PLATFORM_ANDROID && !PLATFORM_IOS
 
 #include "AVEncoderContext.h"
 #include "CudaModule.h"

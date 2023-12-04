@@ -45,13 +45,20 @@ public:
 	int32 CaptureFrameRate = 30; // Capture every 30ms
 
 public:
+#if !PLATFORM_ANDROID && !PLATFORM_IOS
 	void OnCaptureResult(webrtc::DesktopCapturer::Result result,
 		std::unique_ptr<webrtc::DesktopFrame> frame) override;
 
 	void InitializeComponent() override;
 	void UninitializeComponent() override;
 	void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
-
+#else 
+	void OnCaptureResult(webrtc::DesktopCapturer::Result result,
+		std::unique_ptr<webrtc::DesktopFrame> frame) override {}
+	void InitializeComponent() override {}
+	void UninitializeComponent() override {}
+	void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override {}
+#endif
 	UFUNCTION(BlueprintCallable, Category = "MillicastPublisher", META = (DisplayName = "GetMillicastScreenCapturerInfo"))
 	TArray<FMillicastScreenCapturerInfo> GetMillicastScreenCapturerInfo();
 
@@ -59,6 +66,7 @@ public:
 	void ChangeMillicastScreenCapturer(FMillicastScreenCapturerInfo Info);
 
 private:
+//#if !PLATFORM_ANDROID && !PLATFORM_IOS
 	TUniquePtr<webrtc::DesktopCapturer> DesktopCapturer;
 	FPooledRenderTargetDesc RenderTargetDescriptor;
 	TRefCountPtr<IPooledRenderTarget> PooledRenderTarget;
@@ -69,4 +77,5 @@ private:
 	static constexpr ETextureCreateFlags TextureCreateFlags = TexCreate_SRGB | TexCreate_Dynamic;
 
 	void CreateTexture(FTexture2DRHIRef& TargetRef, int32 Width, int32 Height);
+//#endif
 };

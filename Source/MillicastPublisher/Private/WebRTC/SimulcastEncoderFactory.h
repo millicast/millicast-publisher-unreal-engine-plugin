@@ -12,7 +12,6 @@ namespace Millicast::Publisher
 	{
 	public:
 		FSimulcastEncoderFactory();
-
 		std::vector<webrtc::SdpVideoFormat> GetSupportedFormats() const override;
 		CodecInfo QueryVideoEncoder(const webrtc::SdpVideoFormat& Format) const override;
 
