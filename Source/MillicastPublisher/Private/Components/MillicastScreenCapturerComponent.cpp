@@ -1,5 +1,6 @@
 // Copyright Dolby.io 2023. All Rights Reserved.
 
+
 #include "MillicastScreenCapturerComponent.h"
 #include "Engine/TextureRenderTarget2D.h"
 #include "RenderTargetPool.h"
@@ -14,6 +15,7 @@ UMillicastScreenCapturerComponent::UMillicastScreenCapturerComponent(const FObje
 	bWantsInitializeComponent = true;
 }
 
+#if !PLATFORM_ANDROID && !PLATFORM_IOS
 void UMillicastScreenCapturerComponent::OnCaptureResult(webrtc::DesktopCapturer::Result result, 
 	std::unique_ptr<webrtc::DesktopFrame> frame)
 {	
@@ -81,9 +83,11 @@ void UMillicastScreenCapturerComponent::TickComponent(float DeltaTime, ELevelTic
 		DesktopCapturer->CaptureFrame();
 	}
 }
+#endif
 
 TArray<FMillicastScreenCapturerInfo> UMillicastScreenCapturerComponent::GetMillicastScreenCapturerInfo()
 {
+#if !PLATFORM_ANDROID && !PLATFORM_IOS
 	TArray<FMillicastScreenCapturerInfo> Info;
 	webrtc::DesktopCaptureOptions options = webrtc::DesktopCaptureOptions::CreateDefault();
 
@@ -125,10 +129,15 @@ TArray<FMillicastScreenCapturerInfo> UMillicastScreenCapturerComponent::GetMilli
 	}
 
 	return Info;
+#else
+	TArray<FMillicastScreenCapturerInfo> Info;
+	return Info;
+#endif
 }
 
 void UMillicastScreenCapturerComponent::ChangeMillicastScreenCapturer(FMillicastScreenCapturerInfo Info)
 {
+#if !PLATFORM_ANDROID && !PLATFORM_IOS
 	webrtc::DesktopCaptureOptions options = webrtc::DesktopCaptureOptions::CreateDefault();
 
 	std::unique_ptr<webrtc::DesktopCapturer> NewCapturer = nullptr;
@@ -158,6 +167,7 @@ void UMillicastScreenCapturerComponent::ChangeMillicastScreenCapturer(FMillicast
 		UE_LOG(LogMillicastPublisher, Error, 
 			TEXT("Could not select screen capturer source %s id %d"), *Info.Name, Info.Id)
 	}
+#endif
 }
 
 void UMillicastScreenCapturerComponent::CreateTexture(FTexture2DRHIRef& TargetRef, int32 Width, int32 Height)
@@ -181,3 +191,4 @@ void UMillicastScreenCapturerComponent::CreateTexture(FTexture2DRHIRef& TargetRe
 		TargetRef, ShaderTexture2D);
 #endif
 }
+

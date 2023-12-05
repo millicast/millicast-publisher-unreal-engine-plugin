@@ -27,7 +27,7 @@ namespace UnrealBuildTool.Rules
 					"OpenSSL",
 					"RenderCore",
 					"TimeManagement",
-					"WebRTC",
+					"MillicastWebRTC",
 				});
 
 			PrivateDependencyModuleNames.AddRange(
@@ -53,9 +53,12 @@ namespace UnrealBuildTool.Rules
 					"CinematicCamera",
 					"InputCore",
 					"libOpus",
-					"AudioPlatformConfiguration",
-					"AVEncoder"
+					"AudioPlatformConfiguration"
 				});
+			if(Target.Platform.ToString() != "Android" && Target.Platform.ToString() != "IOS")
+			{
+				PrivateDependencyModuleNames.Add("AVEncoder");
+            }
 
 			if (ReadOnlyBuildVersion.Current.MajorVersion >= 5)
 			{

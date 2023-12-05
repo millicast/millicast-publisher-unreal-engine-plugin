@@ -45,13 +45,20 @@ public:
 	int32 CaptureFrameRate = 30; // Capture every 30ms
 
 public:
+#if !PLATFORM_ANDROID && !PLATFORM_IOS
 	void OnCaptureResult(webrtc::DesktopCapturer::Result result,
 		std::unique_ptr<webrtc::DesktopFrame> frame) override;
 
 	void InitializeComponent() override;
 	void UninitializeComponent() override;
 	void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
-
+#else 
+	void OnCaptureResult(webrtc::DesktopCapturer::Result result,
+		std::unique_ptr<webrtc::DesktopFrame> frame) override {}
+	void InitializeComponent() override {}
+	void UninitializeComponent() override {}
+	void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override {}
+#endif
 	UFUNCTION(BlueprintCallable, Category = "MillicastPublisher", META = (DisplayName = "GetMillicastScreenCapturerInfo"))
 	TArray<FMillicastScreenCapturerInfo> GetMillicastScreenCapturerInfo();
 

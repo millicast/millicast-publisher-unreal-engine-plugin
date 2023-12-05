@@ -1,5 +1,7 @@
 // Copyright Dolby.io 2023. All Rights Reserved.
 
+#if !PLATFORM_ANDROID && !PLATFORM_IOS
+
 #include "AVEncoderContext.h"
 #include "CudaModule.h"
 #include "VulkanRHIPrivate.h"
@@ -492,3 +494,4 @@ FTexture2DRHIRef FAVEncoderContext::SetBackbufferTextureCUDAVulkan(FVideoEncoder
 }
 
 }
+#endif

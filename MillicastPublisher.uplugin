@@ -11,7 +11,7 @@
 	"MarketplaceURL": "",
 	"SupportURL": "",
 	"CanContainContent": true,
-	"SupportedTargetPlatforms": [ "Win64", "Linux" ],
+	"SupportedTargetPlatforms": [ "Win64", "Linux", "Android", "IOS" ],
 	"IsBetaVersion": true,
 	"IsExperimentalVersion": true,
 	"Installed": false,
@@ -20,14 +20,14 @@
 			"Name": "MillicastPublisher",
 			"Type": "Runtime",
 			"LoadingPhase": "PreLoadingScreen",
-			"WhitelistPlatforms": [ "Win64", "Linux" ],
+			"WhitelistPlatforms": [ "Win64", "Linux", "Android", "IOS" ],
 			"EngineVersion": "5.1"
 		},
 		{
 			"Name": "MillicastPublisherEditor",
 			"Type": "Editor",
 			"LoadingPhase": "PostEngineInit",
-			"WhitelistPlatforms": [ "Win64", "Linux" ],
+			"WhitelistPlatforms": [ "Win64", "Linux", "Android", "IOS" ],
 			"EngineVersion": "5.1"
 		}
 	],

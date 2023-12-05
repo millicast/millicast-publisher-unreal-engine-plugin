@@ -1,4 +1,5 @@
 // Copyright Dolby.io 2023. All Rights Reserved.
+//#if ENGINE_MAJOR_VERSION < 5 || ENGINE_MINOR_VERSION == 0
 
 #include "MillicastVideoEncoderFactory.h"
 #include "absl/strings/match.h"
@@ -10,7 +11,6 @@
 #else
 #include "api/video_codecs/h264_profile_level_id.h"
 #endif
-
 #include "VideoEncoderNVENC.h"
 #include "VideoEncoderVPX.h"
 #include "MillicastPublisherPrivate.h"
@@ -18,6 +18,7 @@
 namespace Millicast::Publisher
 {
 //#if ENGINE_MAJOR_VERSION < 5 || ENGINE_MINOR_VERSION == 0
+#if !PLATFORM_ANDROID && !PLATFORM_IOS
 #if WEBRTC_VERSION < 96
 #define H264_Level webrtc::H264::Level
 #define H264_Profile webrtc::H264::Profile
@@ -42,13 +43,15 @@ webrtc::SdpVideoFormat CreateH264Format(H264_Profile profile, H264_Level level)
 			{ cricket::kH264FmtpPacketizationMode, "1" }
 		});
 }
-
+#endif
 std::vector<webrtc::SdpVideoFormat> FMillicastVideoEncoderFactory::GetSupportedFormats() const
 {
 	std::vector<webrtc::SdpVideoFormat> VideoFormats;
+#if !defined(PLATFORM_ANDROID) && !defined(PLATFORM_IOS)
 	VideoFormats.push_back(CreateH264Format(H264_Profile::kProfileMain, H264_Level::kLevel1));
 	VideoFormats.push_back(CreateH264Format(H264_Profile::kProfileConstrainedBaseline, H264_Level::kLevel3_1));
 	VideoFormats.push_back(CreateH264Format(H264_Profile::kProfileBaseline, H264_Level::kLevel3_1));
+#endif
 	VideoFormats.push_back(webrtc::SdpVideoFormat(cricket::kVp8CodecName));
 	VideoFormats.push_back(webrtc::SdpVideoFormat(cricket::kVp9CodecName));
 	return VideoFormats;
@@ -87,10 +90,12 @@ std::unique_ptr<webrtc::VideoEncoder> FMillicastVideoEncoderFactory::CreateVideo
 		return std::make_unique<Millicast::Publisher::FVideoEncoderVPX>(9);
 	}
 
+#if !PLATFORM_ANDROID && !PLATFORM_IOS
 	if (absl::EqualsIgnoreCase(format.name, cricket::kH264CodecName))
 	{
 		return std::make_unique<Millicast::Publisher::FVideoEncoderNVENC>();
 	}
+#endif
 
 	UE_LOG(LogMillicastPublisher, Warning, TEXT("CreateVideoEncoder called with unknown encoder: %s"), *FString(format.name.c_str()) );
 	return nullptr;

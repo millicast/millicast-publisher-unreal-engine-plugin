@@ -1,11 +1,12 @@
 // Copyright Dolby.io 2023. All Rights Reserved.
+#if !PLATFORM_ANDROID && !PLATFORM_IOS
 
 #include "VideoEncoderNVENC.h"
 #include "FrameBufferRHI.h"
-#include "VideoEncoderFactory.h"
 #include "AVEncoderContext.h"
 #include "RHI/CopyTexture.h"
 #include "Stats.h"
+#include "VideoEncoderFactory.h"
 
 namespace Millicast::Publisher
 {
@@ -104,7 +105,6 @@ int FVideoEncoderNVENC::InitEncode(webrtc::VideoCodec const* codec_settings, Vid
 	EncoderConfig.MaxFramerate = codec_settings->maxFramerate;
 	EncoderConfig.H264Profile = AVEncoder::FVideoEncoder::H264Profile::MAIN;
 	EncoderConfig.RateControlMode = AVEncoder::FVideoEncoder::RateControlMode::VBR;
-
 	return WEBRTC_VIDEO_CODEC_OK;
 }
 
@@ -291,3 +291,4 @@ void FVideoEncoderNVENC::CreateAVEncoder(TSharedPtr<AVEncoder::FVideoEncoderInpu
 }
 
 }
+#endif

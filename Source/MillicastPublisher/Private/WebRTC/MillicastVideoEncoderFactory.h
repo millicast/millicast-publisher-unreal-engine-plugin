@@ -9,6 +9,7 @@ namespace Millicast::Publisher
 	class FMillicastVideoEncoderFactory : public webrtc::VideoEncoderFactory
 	{
 	public:
+
 		// webrtc::VideoEncoderFactory Interface begin
 		std::vector<webrtc::SdpVideoFormat> GetSupportedFormats() const override;
 		CodecInfo QueryVideoEncoder(const webrtc::SdpVideoFormat& format) const /*override*/;

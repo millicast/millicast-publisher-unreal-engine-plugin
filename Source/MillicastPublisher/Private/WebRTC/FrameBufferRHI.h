@@ -26,6 +26,20 @@ namespace libyuv
 	}
 } // namespace libyuv
 
+
+#if PLATFORM_ANDROID || PLATFORM_IOS
+
+	namespace AVEncoder
+	{
+		class FVideoEncoderInputFrame
+		{
+		public:
+			void Obtain()const {}
+			void Release()const {}
+		};
+		using FVideoEncoderInput = nullptr_t;
+	}
+#endif
 namespace Millicast::Publisher
 {
 	class FFrameBufferRHI : public webrtc::VideoFrameBuffer
@@ -65,12 +79,12 @@ namespace Millicast::Publisher
 
 		int width() const override
 		{
-			return Frame->GetWidth();
+			return TextureRef->GetTexture2D()->GetSizeX();
 		}
 
 		int height() const override
 		{
-			return Frame->GetHeight();
+			return TextureRef->GetTexture2D()->GetSizeY();
 		}
 
 		virtual rtc::scoped_refptr<webrtc::I420BufferInterface> ToI420() override
@@ -96,10 +110,8 @@ namespace Millicast::Publisher
 						Buffer->height());
 				}
 			}
-
 			return Buffer;
 		}
-
 
 		virtual const webrtc::I420BufferInterface* GetI420() const override
 		{
@@ -112,11 +124,12 @@ namespace Millicast::Publisher
 			return TextureRef;
 		}
 
+#if !PLATFORM_ANDROID && !PLATFORM_IOS
 		FVideoEncoderInputFrameType GetFrame() const
 		{
 			return Frame;
 		}
-
+#endif
 		TSharedPtr<AVEncoder::FVideoEncoderInput> GetVideoEncoderInput() const
 		{
 			return VideoEncoderInput;
