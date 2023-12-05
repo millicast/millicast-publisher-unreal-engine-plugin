@@ -66,7 +66,6 @@ public:
 	void ChangeMillicastScreenCapturer(FMillicastScreenCapturerInfo Info);
 
 private:
-//#if !PLATFORM_ANDROID && !PLATFORM_IOS
 	TUniquePtr<webrtc::DesktopCapturer> DesktopCapturer;
 	FPooledRenderTargetDesc RenderTargetDescriptor;
 	TRefCountPtr<IPooledRenderTarget> PooledRenderTarget;
@@ -77,5 +76,4 @@ private:
 	static constexpr ETextureCreateFlags TextureCreateFlags = TexCreate_SRGB | TexCreate_Dynamic;
 
 	void CreateTexture(FTexture2DRHIRef& TargetRef, int32 Width, int32 Height);
-//#endif
 };

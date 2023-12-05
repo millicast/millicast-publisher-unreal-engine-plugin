@@ -169,7 +169,7 @@ void UMillicastScreenCapturerComponent::ChangeMillicastScreenCapturer(FMillicast
 	}
 #endif
 }
-//#if !PLATFORM_ANDROID && !PLATFORM_IOS
+
 void UMillicastScreenCapturerComponent::CreateTexture(FTexture2DRHIRef& TargetRef, int32 Width, int32 Height)
 {
 #if ENGINE_MAJOR_VERSION >= 5 && ENGINE_MINOR_VERSION > 0
@@ -191,4 +191,3 @@ void UMillicastScreenCapturerComponent::CreateTexture(FTexture2DRHIRef& TargetRe
 		TargetRef, ShaderTexture2D);
 #endif
 }
-//#endif

@@ -69,17 +69,19 @@ void FTexture2DVideoSourceAdapter::OnFrameReady(const FTexture2DRHIRef& FrameBuf
 #else
 
 	FRHITextureCreateDesc CreateDesc = FRHITextureCreateDesc::Create2D(TEXT("VideoCapturerBackBuffer"),
-		FrameBuffer->GetTexture2D()->GetSizeX(), FrameBuffer->GetTexture2D()->GetSizeY(), EPixelFormat::PF_B8G8R8A8);
+		FrameBuffer->GetTexture2D()->GetSizeX(), FrameBuffer->GetTexture2D()->GetSizeY(), EPixelFormat::PF_R8G8B8A8);
 	CreateDesc.SetFlags(TexCreate_Shared | TexCreate_RenderTargetable);
 	CreateDesc.SetInitialState(ERHIAccess::CopyDest);
 
 	FTexture2DRHIRef Texture = GDynamicRHI->RHICreateTexture(CreateDesc);
 #endif
 	auto SimulcastBuffer = rtc::make_ref_counted<FSimulcastFrameBuffer>();
+	auto InputFrame = MakeShared<AVEncoder::FVideoEncoderInputFrame>();
 
 	FRHICommandListImmediate& RHICmdList = FRHICommandListExecutor::GetImmediateCommandList();
 	CopyTexture(RHICmdList, FrameBuffer, Texture);
-	const auto& Buffer = rtc::make_ref_counted<FFrameBufferRHI>(Texture, nullptr, nullptr);
+	const auto& Buffer = rtc::make_ref_counted<FFrameBufferRHI>(Texture, InputFrame, nullptr);
+	SimulcastBuffer->AddLayer(Buffer);
 	webrtc::VideoFrame Frame = webrtc::VideoFrame::Builder()
 		.set_video_frame_buffer(SimulcastBuffer)
 		.set_timestamp_us(Timestamp)
