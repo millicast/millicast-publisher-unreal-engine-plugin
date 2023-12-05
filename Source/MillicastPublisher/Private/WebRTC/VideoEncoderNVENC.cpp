@@ -103,10 +103,8 @@ int FVideoEncoderNVENC::InitEncode(webrtc::VideoCodec const* codec_settings, Vid
 	EncoderConfig.MaxBitrate = codec_settings->maxBitrate * 1000;
 	EncoderConfig.TargetBitrate = codec_settings->startBitrate * 1000;
 	EncoderConfig.MaxFramerate = codec_settings->maxFramerate;
-#if defined(WEBRTC_ANDROID) || defined(WEBRTC_IOS)
 	EncoderConfig.H264Profile = AVEncoder::FVideoEncoder::H264Profile::MAIN;
 	EncoderConfig.RateControlMode = AVEncoder::FVideoEncoder::RateControlMode::VBR;
-#endif
 	return WEBRTC_VIDEO_CODEC_OK;
 }
 
@@ -161,7 +159,7 @@ int32 FVideoEncoderNVENC::Encode(webrtc::VideoFrame const& frame, std::vector<we
 	return WEBRTC_VIDEO_CODEC_OK;
 }
 
-#if ENGINE_MAJOR_VERSION < 5 || ENGINE_MINOR_VERSION == 0 || defined(WEBRTC_ANDROID) || defined(WEBRTC_IOS)
+#if ENGINE_MAJOR_VERSION < 5 || ENGINE_MINOR_VERSION == 0
 void CreateH264FragmentHeader(const uint8* CodedData, size_t CodedDataSize, webrtc::RTPFragmentationHeader& Fragments)
 {
 	// count the number of nal units

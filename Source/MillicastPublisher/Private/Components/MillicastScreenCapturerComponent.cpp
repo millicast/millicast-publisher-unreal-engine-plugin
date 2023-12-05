@@ -191,3 +191,4 @@ void UMillicastScreenCapturerComponent::CreateTexture(FTexture2DRHIRef& TargetRe
 		TargetRef, ShaderTexture2D);
 #endif
 }
+

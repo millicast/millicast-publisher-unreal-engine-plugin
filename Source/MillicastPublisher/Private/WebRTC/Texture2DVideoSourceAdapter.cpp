@@ -65,11 +65,11 @@ void FTexture2DVideoSourceAdapter::OnFrameReady(const FTexture2DRHIRef& FrameBuf
 #else
 #if ENGINE_MAJOR_VERSION < 5 || ENGINE_MINOR_VERSION == 0
 	FRHIResourceCreateInfo CreateInfo(TEXT("VideoCapturerBackBuffer"));
-	FTexture2DRHIRef Texture = GDynamicRHI->RHICreateTexture2D(CaptureWidth, CaptureHeight, EPixelFormat::PF_B8G8R8A8, 1, 1, TexCreate_Shared | TexCreate_RenderTargetable, ERHIAccess::CopyDest, CreateInfo);
+	FTexture2DRHIRef Texture = GDynamicRHI->RHICreateTexture2D(FrameBuffer->GetTexture2D()->GetSizeX(), FrameBuffer->GetTexture2D()->GetSizeX(), EPixelFormat::PF_B8G8R8A8, 1, 1, TexCreate_Shared | TexCreate_RenderTargetable, ERHIAccess::CopyDest, CreateInfo);
 #else
 
 	FRHITextureCreateDesc CreateDesc = FRHITextureCreateDesc::Create2D(TEXT("VideoCapturerBackBuffer"),
-		FrameBuffer->GetTexture2D()->GetSizeX(), FrameBuffer->GetTexture2D()->GetSizeY(), EPixelFormat::PF_R8G8B8A8);
+		FrameBuffer->GetTexture2D()->GetSizeX(), FrameBuffer->GetTexture2D()->GetSizeY(), EPixelFormat::PF_B8G8R8A8);
 	CreateDesc.SetFlags(TexCreate_Shared | TexCreate_RenderTargetable);
 	CreateDesc.SetInitialState(ERHIAccess::CopyDest);
 
