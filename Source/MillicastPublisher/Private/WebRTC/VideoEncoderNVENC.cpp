@@ -1,5 +1,5 @@
 // Copyright Dolby.io 2023. All Rights Reserved.
-#if !PLATFORM_ANDROID && !PLATFORM_IOS
+#if WITH_AVENCODER
 
 #include "VideoEncoderNVENC.h"
 #include "FrameBufferRHI.h"

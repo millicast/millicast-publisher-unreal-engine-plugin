@@ -18,7 +18,7 @@
 namespace Millicast::Publisher
 {
 //#if ENGINE_MAJOR_VERSION < 5 || ENGINE_MINOR_VERSION == 0
-#if !PLATFORM_ANDROID && !PLATFORM_IOS
+#if WITH_AVENCODER
 #if WEBRTC_VERSION < 96
 #define H264_Level webrtc::H264::Level
 #define H264_Profile webrtc::H264::Profile
@@ -47,7 +47,7 @@ webrtc::SdpVideoFormat CreateH264Format(H264_Profile profile, H264_Level level)
 std::vector<webrtc::SdpVideoFormat> FMillicastVideoEncoderFactory::GetSupportedFormats() const
 {
 	std::vector<webrtc::SdpVideoFormat> VideoFormats;
-#if !defined(PLATFORM_ANDROID) && !defined(PLATFORM_IOS)
+#if WITH_AVENCODER
 	VideoFormats.push_back(CreateH264Format(H264_Profile::kProfileMain, H264_Level::kLevel1));
 	VideoFormats.push_back(CreateH264Format(H264_Profile::kProfileConstrainedBaseline, H264_Level::kLevel3_1));
 	VideoFormats.push_back(CreateH264Format(H264_Profile::kProfileBaseline, H264_Level::kLevel3_1));
@@ -90,7 +90,7 @@ std::unique_ptr<webrtc::VideoEncoder> FMillicastVideoEncoderFactory::CreateVideo
 		return std::make_unique<Millicast::Publisher::FVideoEncoderVPX>(9);
 	}
 
-#if !PLATFORM_ANDROID && !PLATFORM_IOS
+#if WITH_AVENCODER
 	if (absl::EqualsIgnoreCase(format.name, cricket::kH264CodecName))
 	{
 		return std::make_unique<Millicast::Publisher::FVideoEncoderNVENC>();

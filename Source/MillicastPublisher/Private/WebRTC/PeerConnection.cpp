@@ -3,7 +3,7 @@
 #include "PeerConnection.h"
 #include "MillicastPublisherPrivate.h"
 #include "AudioDeviceModule.h"
-#if !PLATFORM_ANDROID && !PLATFORM_IOS
+#if WITH_AVENCODER
 #include "VideoEncoderFactory.h"
 #endif
 #include "MillicastVideoEncoderFactory.h"

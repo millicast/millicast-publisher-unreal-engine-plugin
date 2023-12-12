@@ -27,8 +27,7 @@ namespace libyuv
 } // namespace libyuv
 
 
-#if PLATFORM_ANDROID || PLATFORM_IOS
-
+#if !WITH_AVENCODER
 	namespace AVEncoder
 	{
 		class FVideoEncoderInputFrame

@@ -16,7 +16,7 @@ void FTexture2DVideoSourceAdapter::OnFrameReady(const FTexture2DRHIRef& FrameBuf
 
 	if (!AdaptVideoFrame(Timestamp, FrameBuffer->GetSizeXY()))
 		return;
-#if !PLATFORM_ANDROID && !PLATFORM_IOS
+#if WITH_AVENCODER
 	TryInitializeCaptureContexts(FrameBuffer);
 
 	auto SimulcastBuffer = rtc::make_ref_counted<FSimulcastFrameBuffer>();
@@ -91,7 +91,7 @@ void FTexture2DVideoSourceAdapter::OnFrameReady(const FTexture2DRHIRef& FrameBuf
 	rtc::AdaptedVideoTrackSource::OnFrame(Frame);
 #endif
 }
-#if !PLATFORM_ANDROID && !PLATFORM_IOS
+#if WITH_AVENCODER
 
 void FTexture2DVideoSourceAdapter::TryInitializeCaptureContexts(const FTexture2DRHIRef& FrameBuffer)
 {

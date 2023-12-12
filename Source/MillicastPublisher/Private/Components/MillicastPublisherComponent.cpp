@@ -26,7 +26,9 @@
 
 #define WEAK_CAPTURE WeakThis = TWeakObjectPtr<UMillicastPublisherComponent>(this)
 
+#if !PLATFORM_MAC
 constexpr auto HTTP_OK = 200;
+#endif
 
 inline FString ToString(EMillicastVideoCodecs Codec)
 {

@@ -55,10 +55,18 @@ namespace UnrealBuildTool.Rules
 					"libOpus",
 					"AudioPlatformConfiguration"
 				});
-			if(Target.Platform.ToString() != "Android" && Target.Platform.ToString() != "IOS")
+
+			if(Target.Platform.ToString() == "Android" || Target.Platform.ToString() == "IOS" || Target.Platform.ToString() == "Mac")
+			{	
+				PublicDefinitions.Add("WITH_AVENCODER=0");
+			}
+			else 
 			{
-				PrivateDependencyModuleNames.Add("AVEncoder");
-            }
+				PublicDefinitions.Add("WITH_AVENCODER=1");
+				// required for casting UE4 BackBuffer to Vulkan Texture2D for NvEnc
+				PrivateDependencyModuleNames.AddRange(new string[] { "CUDA", "VulkanRHI", "nvEncode" });
+				AddEngineThirdPartyPrivateStaticDependencies(Target, "NVAftermath");
+			}
 
 			if (ReadOnlyBuildVersion.Current.MajorVersion >= 5)
 			{
@@ -79,11 +87,6 @@ namespace UnrealBuildTool.Rules
 			var EngineDir = Path.GetFullPath(Target.RelativeEnginePath);
 
 			AddEngineThirdPartyPrivateStaticDependencies(Target, "Vulkan");
-
-			// required for casting UE4 BackBuffer to Vulkan Texture2D for NvEnc
-			PrivateDependencyModuleNames.AddRange(new string[] { "CUDA", "VulkanRHI", "nvEncode" });
-
-			AddEngineThirdPartyPrivateStaticDependencies(Target, "NVAftermath");
 			
 			PrivateIncludePathModuleNames.Add("VulkanRHI");
 			PrivateIncludePaths.Add(Path.Combine(EngineDir, "Source/Runtime/VulkanRHI/Private"));

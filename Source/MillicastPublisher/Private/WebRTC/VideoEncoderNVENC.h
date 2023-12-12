@@ -3,7 +3,7 @@
 #pragma once
 
 
-#if !PLATFORM_ANDROID && !PLATFORM_IOS
+#if WITH_AVENCODER
 #include "VideoEncoder.h"
 
 namespace Millicast::Publisher
