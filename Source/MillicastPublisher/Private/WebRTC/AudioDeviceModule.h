@@ -182,6 +182,11 @@ namespace Millicast::Publisher
 		{
 			return -1;
 		}
+    
+#ifdef WEBRTC_IOS
+    int GetPlayoutAudioParameters(webrtc::AudioParameters* params) const { return 0; }
+    int GetRecordAudioParameters(webrtc::AudioParameters* params) const { return 0; }
+#endif
 	};
 
 }

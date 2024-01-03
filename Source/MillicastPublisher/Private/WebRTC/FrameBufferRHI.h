@@ -54,8 +54,9 @@ namespace Millicast::Publisher
 			Frame->Obtain();
 
 			//FPublisherStats::Get().TextureReadbackStart();
+      
 			FRHICommandListImmediate& RHICmdList = FRHICommandListExecutor::GetImmediateCommandList();
-			if (GDynamicRHI && (GDynamicRHI->GetName() == FString(TEXT("D3D12")) || GDynamicRHI->GetName() == FString(TEXT("Vulkan"))))
+			if (GDynamicRHI && (GDynamicRHI->GetName() == FString(TEXT("D3D12")) || GDynamicRHI->GetName() == FString(TEXT("Vulkan")) || GDynamicRHI->GetName() == FString(TEXT("Metal"))))
 			{
 				ReadTextureDX12(RHICmdList);
 			}
@@ -63,6 +64,7 @@ namespace Millicast::Publisher
 			{
 				ReadTexture(RHICmdList);
 			}
+      
 			//FPublisherStats::Get().TextureReadbackEnd();
 		}
 
@@ -97,7 +99,11 @@ namespace Millicast::Publisher
 				if (TextureData)
 				{
 					libyuv::ARGBToI420(
-						static_cast<uint8*>(TextureData),
+#if PLATFORM_MAC || PLATFORM_IOS
+						static_cast<uint8*>(TextureData.get()),
+#else
+            static_cast<uint8*>(TextureData)
+#endif
 						PitchPixels * 4,
 						Buffer->MutableDataY(),
 						Buffer->StrideY(),
@@ -129,6 +135,7 @@ namespace Millicast::Publisher
 			return Frame;
 		}
 #endif
+    
 		TSharedPtr<AVEncoder::FVideoEncoderInput> GetVideoEncoderInput() const
 		{
 			return VideoEncoderInput;
@@ -140,8 +147,13 @@ namespace Millicast::Publisher
 		TSharedPtr<AVEncoder::FVideoEncoderInput> VideoEncoderInput;
 		rtc::scoped_refptr<webrtc::I420Buffer> Buffer = nullptr;
 		TUniquePtr<FRHIGPUTextureReadback> Readback;
-		void* TextureData = nullptr;
 		int PitchPixels = 0;
+    
+#if PLATFORM_IOS || PLATFORM_MAC
+    std::unique_ptr<uint8[]> TextureData = nullptr;
+#else
+    uint8 * TextureData = nullptr;
+#endif
 
 		void ReadTextureDX12(FRHICommandListImmediate& RHICmdList)
 		{
@@ -153,8 +165,15 @@ namespace Millicast::Publisher
 			Readback->EnqueueCopy(RHICmdList, TextureRef);
 			RHICmdList.BlockUntilGPUIdle();
 			check(Readback->IsReady());
-			TextureData = Readback->Lock(PitchPixels);
-
+      
+#if PLATFORM_IOS || PLATFORM_MAC
+			auto data = Readback->Lock(PitchPixels);
+      TextureData = std::make_unique<uint8[]>(width() * height() * 4);
+      std::memcpy(TextureData.get(), data, width() * height() * 4);
+#else
+      TextureData = Readback->Lock(PitchPixels);
+#endif
+      
 #if ENGINE_MAJOR_VERSION < 5
 			int Width = TextureRef->GetSizeX();
 			PitchPixels = Width;
@@ -165,9 +184,16 @@ namespace Millicast::Publisher
 
 		void ReadTexture(FRHICommandListImmediate& RHICmdList)
 		{
-			uint32 Stride;
-			TextureData = (uint8*)RHICmdList.LockTexture2D(TextureRef, 0, EResourceLockMode::RLM_ReadOnly, Stride, true);
-
+			uint32 Stride = 0;
+      
+#if PLATFORM_IOS || PLATFORM_MAC
+			auto data = (uint8*)RHICmdList.LockTexture2D(TextureRef, 0, EResourceLockMode::RLM_ReadOnly, Stride, true);
+      TextureData = std::make_unique<uint8[]>(width() * height() * 4);
+      std::memcpy(TextureData.get(), data, width() * height() * 4);
+#else
+      TextureData = (uint8*)RHICmdList.LockTexture2D(TextureRef, 0, EResourceLockMode::RLM_ReadOnly, Stride, true);
+#endif
+      
 			PitchPixels = Stride / 4;
 
 			RHICmdList.UnlockTexture2D(TextureRef, 0, true);
