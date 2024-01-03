@@ -4,13 +4,39 @@ using System.IO;
 
 namespace UnrealBuildTool.Rules
 {
-	using System.IO;
+    using System;
+    using System.IO;
 
     public class MillicastPublisher: ModuleRules
 	{
 		public MillicastPublisher(ReadOnlyTargetRules Target) : base(Target)
 		{
 			PCHUsage = PCHUsageMode.UseExplicitOrSharedPCHs;
+
+            bool bUseMillicastWebRTC = true;
+
+            try
+            {
+                String modulePath = GetModuleDirectory("MillicastWebRTC"); // This throw an exception if the module does not exists
+                bUseMillicastWebRTC = !modulePath.Equals("");
+            }
+            catch (Exception)
+            {
+                bUseMillicastWebRTC = false;
+            }
+
+            if (bUseMillicastWebRTC)
+            {
+                Console.WriteLine("The plugin will link against MillicastWebRTC");
+                PublicDependencyModuleNames.AddRange(new string[] { "MillicastWebRTC" });
+                PublicDefinitions.Add("WITH_MILLICAST_WEBRTC=1");
+            }
+            else
+            {
+                Console.WriteLine("The plugin will link against UnrealEngine WebRTC module");
+                PublicDependencyModuleNames.AddRange(new string[] { "WebRTC" });
+                PublicDefinitions.Add("WEBRTC_VERSION=96");
+            }
 
             DynamicallyLoadedModuleNames.AddRange(
 			new string[] {
@@ -26,8 +52,7 @@ namespace UnrealBuildTool.Rules
 					"MediaAssets",
 					"OpenSSL",
 					"RenderCore",
-					"TimeManagement",
-					"MillicastWebRTC",
+					"TimeManagement"
 				});
 
 			PrivateDependencyModuleNames.AddRange(
@@ -64,7 +89,7 @@ namespace UnrealBuildTool.Rules
 			{
 				PublicDefinitions.Add("WITH_AVENCODER=1");
 				// required for casting UE4 BackBuffer to Vulkan Texture2D for NvEnc
-				PrivateDependencyModuleNames.AddRange(new string[] { "CUDA", "VulkanRHI", "nvEncode" });
+				PrivateDependencyModuleNames.AddRange(new string[] { "AVEncoder", "CUDA", "VulkanRHI", "nvEncode" });
 				AddEngineThirdPartyPrivateStaticDependencies(Target, "NVAftermath");
 			}
 

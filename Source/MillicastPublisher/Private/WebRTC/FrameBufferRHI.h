@@ -102,7 +102,7 @@ namespace Millicast::Publisher
 #if PLATFORM_MAC || PLATFORM_IOS
 						static_cast<uint8*>(TextureData.get()),
 #else
-            static_cast<uint8*>(TextureData)
+						static_cast<uint8*>(TextureData),
 #endif
 						PitchPixels * 4,
 						Buffer->MutableDataY(),
@@ -168,10 +168,10 @@ namespace Millicast::Publisher
       
 #if PLATFORM_IOS || PLATFORM_MAC
 			auto data = Readback->Lock(PitchPixels);
-      TextureData = std::make_unique<uint8[]>(width() * height() * 4);
-      std::memcpy(TextureData.get(), data, width() * height() * 4);
+			TextureData = std::make_unique<uint8[]>(width() * height() * 4);
+			std::memcpy(TextureData.get(), data, width() * height() * 4);
 #else
-      TextureData = Readback->Lock(PitchPixels);
+			TextureData = (uint8*)Readback->Lock(PitchPixels);
 #endif
       
 #if ENGINE_MAJOR_VERSION < 5
