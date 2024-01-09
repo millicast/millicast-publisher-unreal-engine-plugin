@@ -1,6 +1,6 @@
 # MillicastPublisher plugin 1.8.0 for Unreal Engine
 
-* Supported on Windows, Linux and Mac
+* Supported on Windows, Linux, Mac (intel and M1), Android and iOS
 
 This plugin enable to publish game audio and video content to Millicast.
 You can configure your credentials and configure your game logic using unreal object, capture and publish from virtual camera.
