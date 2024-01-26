@@ -775,6 +775,16 @@ bool UMillicastPublisherComponent::SetAudioCodec(EMillicastAudioCodecs InAudioCo
 	return true;
 }
 
+void UMillicastPublisherComponent::EnableSimulcast(bool InSimulcast)
+{
+	Simulcast = InSimulcast;
+}
+
+void UMillicastPublisherComponent::EnableAutomute(bool InAutomute)
+{
+	Automute = InAutomute;
+}
+
 void UMillicastPublisherComponent::EnableStats(bool Enable)
 {
 	RtcStatsEnabled = Enable;

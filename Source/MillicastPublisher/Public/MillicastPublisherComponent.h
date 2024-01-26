@@ -158,6 +158,20 @@ public:
 	bool SetAudioCodec(EMillicastAudioCodecs InAudioCodec);
 
 	/**
+	 * Enable the Simulcast
+	 * Have to be called before Publish
+	*/
+	UFUNCTION(BlueprintCallable, Category = "MillicastPublisher", META = (DisplayName = "EnableSimulcast"))
+	void EnableSimulcast(bool InSimulcast = true);
+	
+	/**
+	 * Enable the Automute function
+	 * Have to be called before Publish
+	*/
+	UFUNCTION(BlueprintCallable, Category = "MillicastPublisher", META = (DisplayName = "EnableAutomute"))
+	void EnableAutomute(bool InAutomute = false);
+
+	/**
 	* Enable RTC stats gathering
 	* Enter the cmd: ``stat millicast_publisher`` in order to display them
 	*/
