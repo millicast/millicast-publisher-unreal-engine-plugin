@@ -3,9 +3,8 @@
 #include "MillicastPublisherComponent.h"
 #include "MillicastPublisherPrivate.h"
 #include "WebRTC/FrameTransformer.h"
-#include <string>
 
-#include "Media/AudioCapturerBase.h"
+#include <string>
 
 #include "Http.h"
 
@@ -806,7 +805,6 @@ void UMillicastPublisherComponent::AddMetadata(const TArray<uint8>& Data)
 }
 
 #if WITH_EDITOR
-
 bool UMillicastPublisherComponent::CanEditChange(const FProperty* InProperty) const
 {
 	FString Name;
