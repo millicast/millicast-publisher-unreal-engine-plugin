@@ -3,8 +3,9 @@
 #include "MillicastPublisherComponent.h"
 #include "MillicastPublisherPrivate.h"
 #include "WebRTC/FrameTransformer.h"
-
 #include <string>
+
+#include "Media/AudioCapturerBase.h"
 
 #include "Http.h"
 
@@ -238,7 +239,7 @@ bool UMillicastPublisherComponent::Publish()
 	// Fill HTTP request headers
 	PostHttpRequest.SetHeader("Content-Type", "application/json");
 	PostHttpRequest.SetHeader("Authorization", "Bearer " + MillicastMediaSource->PublishingToken);
-
+	
 	// Creates JSON data fro the request
 	auto RequestData = MakeShared<FJsonObject>();
 	RequestData->SetStringField("streamName", MillicastMediaSource->StreamName);
@@ -449,7 +450,7 @@ bool UMillicastPublisherComponent::PublishToMillicast()
 		DataJson->SetStringField("sdp", ToString(sdp));
 		DataJson->SetStringField("codec", ToString(SelectedVideoCodec));
 		DataJson->SetArrayField("events", eventsJson);
-
+		DataJson->SetBoolField("record", Record);
 		// If multisource feature
 		if (!MillicastMediaSource->SourceId.IsEmpty())
 		{
@@ -805,6 +806,7 @@ void UMillicastPublisherComponent::AddMetadata(const TArray<uint8>& Data)
 }
 
 #if WITH_EDITOR
+
 bool UMillicastPublisherComponent::CanEditChange(const FProperty* InProperty) const
 {
 	FString Name;

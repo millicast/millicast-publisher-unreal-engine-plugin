@@ -6,8 +6,6 @@
 #include "RtcCodecsConstants.h"
 
 #include "Components/ActorComponent.h"
-// #include "WebRTC/PeerConnection.h"
-
 #include "MillicastPublisherComponent.generated.h"
 
 class FJsonValue;
@@ -84,9 +82,12 @@ private:
 	/** Whether to enable the frame transformer.
 	* If enabled, an event will be fired at each frame so you can append metadata to the frame.
 	*/
-	UPROPERTY(EditDefaultsOnly, Category = "Properties",
-		META = (DisplayName = "Add Frame Metadata", AllowPrivateAccess = true))
+	UPROPERTY(EditDefaultsOnly, Category = "Properties", META = (DisplayName = "Add Frame Metadata", AllowPrivateAccess = true))
 	bool bUseFrameTransformer = false;
+
+	/** Whether to record the stream or not */
+	UPROPERTY(EditDefaultsOnly, Category = "Properties", META = (DisplayName = "Record Stream"))
+	bool Record = false;
 
 public:
 	/**
